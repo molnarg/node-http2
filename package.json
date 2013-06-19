@@ -1,0 +1,24 @@
+{
+  "name": "http2",
+  "version": "0.0.0",
+  "description": "An HTTP/2 server implementation",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/molnarg/node-http2.git"
+  },
+  "homepage": "https://github.com/molnarg/node-http2",
+  "bugs": {
+    "url": "https://github.com/molnarg/node-http2/issues"
+  },
+  "keywords": [
+    "http2"
+  ],
+  "author": {
+    "name": "Gábor Molnár",
+    "email": "gabor@molnar.es",
+    "url": "http://gabor.molnar.es"
+  },
+  "license": "BSD",
+  "readmeFilename": "README.md"
+}
