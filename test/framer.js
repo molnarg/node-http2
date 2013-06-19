@@ -121,6 +121,30 @@ var test_frames = [{
   buffer: new Buffer('0004' + '09' + '00' + '0000000A' +   '12345678', 'hex')
 }]
 
+// Concatenate two buffer into a new buffer
+function concat(buffer1, buffer2) {
+  var concatenated = new Buffer(buffer1.length + buffer2.length)
+  buffer1.copy(concatenated)
+  buffer2.copy(concatenated, buffer1.length)
+  return concatenated
+}
+
+// Concatenate an array of buffers and then cut them into random size buffers
+function shuffle_buffers(buffers) {
+  var concatenated = new Buffer(0)
+  for (var i = 0; i < buffers.length; i++) concatenated = concat(concatenated, buffers[i])
+
+  var output = []
+  var written = 0
+  while (written < concatenated.length) {
+    var chunk_size = Math.min(concatenated.length - written, Math.ceil(Math.random()*20))
+    output.push(concatenated.slice(written, written + chunk_size))
+    written += chunk_size
+  }
+
+  return output
+}
+
 describe('Framer', function() {
   describe('Serializer', function() {
     describe('static method .commonHeader({ length, type, flags, stream })', function() {
@@ -142,6 +166,19 @@ describe('Framer', function() {
             expect(Serializer[type](test.frame)).to.deep.equal(test.buffer.slice(8))
           }
         })
+      })
+    })
+
+    describe('transform stream', function() {
+      it('should transform frame objects to appropriate buffers', function() {
+        var stream = new Serializer()
+        for (var i = 0; i < test_frames.length; i++) {
+          var test = test_frames[i]
+          stream.write(test.frame)
+          var chunk, buffer = new Buffer(0)
+          while (chunk = stream.read()) buffer = concat(buffer, chunk)
+          expect(buffer).to.be.deep.equal(test.buffer)
+        }
       })
     })
   })
@@ -176,6 +213,21 @@ describe('Framer', function() {
             expect(parsed).to.deep.equal(test.frame)
           }
         })
+      })
+    })
+
+    describe('transform stream', function() {
+      it('should transform buffers to appropriate frame object', function() {
+        var stream = new Deserializer()
+
+        shuffle_buffers(test_frames.map(function(test) { return test.buffer }))
+          .forEach(stream.write.bind(stream))
+
+        for (var j = 0; j < test_frames.length; j++) {
+          var parsed_frame = stream.read()
+          parsed_frame.length = test_frames[j].frame.length
+          expect(parsed_frame).to.be.deep.equal(test_frames[j].frame)
+        }
       })
     })
   })
