@@ -3,6 +3,16 @@
   "version": "0.0.0",
   "description": "An HTTP/2 server implementation",
   "main": "index.js",
+  "engines" : {
+    "node" : ">=0.10.0"
+  },
+  "devDependencies": {
+    "chai": "*",
+    "mocha": "*"
+  },
+  "scripts": {
+    "test": "mocha --reporter spec"
+  },
   "repository": {
     "type": "git",
     "url": "git://github.com/molnarg/node-http2.git"
@@ -14,11 +24,7 @@
   "keywords": [
     "http2"
   ],
-  "author": {
-    "name": "Gábor Molnár",
-    "email": "gabor@molnar.es",
-    "url": "http://gabor.molnar.es"
-  },
+  "author": "Gábor Molnár <gabor@molnar.es> (http://gabor.molnar.es)",
   "license": "BSD",
   "readmeFilename": "README.md"
 }
