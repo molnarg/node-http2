@@ -56,9 +56,9 @@ var test_frames = [{
     stream: 10,
     length: 4,
 
-    error: 0x101010
+    error: 'INTERNAL_ERROR'
   },
-  buffer: new Buffer('0004' + '03' + '00' + '0000000A' +   '00101010', 'hex')
+  buffer: new Buffer('0004' + '03' + '00' + '0000000A' +   '00000002', 'hex')
 }, {
   frame: {
     type: 'SETTINGS',
@@ -104,9 +104,9 @@ var test_frames = [{
     length: 8,
 
     last_stream: 0x12345678,
-    error: 0x87654321
+    error: 'PROTOCOL_ERROR'
   },
-  buffer: new Buffer('0008' + '07' + '00' + '0000000A' +   '12345678' + '87654321', 'hex')
+  buffer: new Buffer('0008' + '07' + '00' + '0000000A' +   '12345678' + '00000001', 'hex')
 }, {
   frame: {
     type: 'HEADERS',
