@@ -64,9 +64,17 @@ var test_frames = [{
     type: 'SETTINGS',
     flags: { 'FINAL': false, 'CLEAR_PERSISTED': false },
     stream: 10,
-    length: 0
+    length: 24,
+
+    settings: {
+      SETTINGS_MAX_CONCURRENT_STREAMS: 0x01234567,
+      SETTINGS_INITIAL_WINDOW_SIZE:    0x89ABCDEF,
+      SETTINGS_FLOW_CONTROL_OPTIONS:   true
+    }
   },
-  buffer: new Buffer('0000' + '04' + '00' + '0000000A' +   '', 'hex')
+  buffer: new Buffer('0018' + '04' + '00' + '0000000A' +   '00' + '000004' + '01234567' +
+                                                           '00' + '000007' + '89ABCDEF' +
+                                                           '00' + '00000A' + '00000001', 'hex')
 }, {
   frame: {
     type: 'PUSH_PROMISE',
