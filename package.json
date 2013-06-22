@@ -13,7 +13,7 @@
   },
   "scripts": {
     "test": "mocha --reporter spec",
-    "prepublish": "docco lib/* --output doc --layout parallel -css doc/docco.css"
+    "prepublish": "docco lib/* --output doc --layout parallel --css doc/docco.css"
   },
   "repository": {
     "type": "git",
