@@ -27,7 +27,8 @@
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-1">&#182;</a>
               </div>
-              <p>The framer consists of two transform streams: the Serializer and the Deserializer</p>
+              <p>The framer consists of two <a href="http://nodejs.org/api/stream.html#stream_class_stream_transform">Transform Stream</a> subclasses that operate in <a href="http://nodejs.org/api/stream.html#stream_new_stream_readable_options">object mode</a>:
+the Serializer and the Deserializer</p>
 
             </div>
             
@@ -58,15 +59,33 @@ exports.Deserializer = Deserializer</pre></div></div>
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-3">&#182;</a>
               </div>
-              
+              <pre><code>Frame Objects      +-----------------------------+      Buffers
+* * * * * * * ---&gt; | Serializer Transform Stream | ---&gt; * * * *
+                   +-----------------------------+</code></pre>
+
             </div>
             
             <div class="content"><div class='highlight'><pre><span class="function"><span class="keyword">function</span> <span class="title">Serializer</span><span class="params">()</span> {</span>
   Transform.call(<span class="keyword">this</span>, { objectMode: <span class="literal">true</span> })
 }
-Serializer.prototype = Object.create(Transform.prototype, { constructor: { value: Serializer } })
+Serializer.prototype = Object.create(Transform.prototype, { constructor: { value: Serializer } })</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-4">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-4">&#182;</a>
+              </div>
+              <p>When there&#39;s an incoming frame object, it first generates the frame type specific part of the
+frame (payload), and then then header part which holds fields that are common to all frame types
+(like the length of the payload).</p>
 
-Serializer.prototype._transform = <span class="function"><span class="keyword">function</span> <span class="title">_transform</span><span class="params">(frame, encoding, done)</span> {</span>
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>Serializer.prototype._transform = <span class="function"><span class="keyword">function</span> <span class="title">_transform</span><span class="params">(frame, encoding, done)</span> {</span>
   <span class="keyword">var</span> payload = Serializer[frame.type](frame)
   frame.length = payload.length
   <span class="keyword">var</span> header = Serializer.commonHeader(frame)
@@ -79,11 +98,11 @@ Serializer.prototype._transform = <span class="function"><span class="keyword">f
         </li>
         
         
-        <li id="section-4">
+        <li id="section-5">
             <div class="annotation">
               
               <div class="pilwrap for-h2">
-                <a class="pilcrow" href="#section-4">&#182;</a>
+                <a class="pilcrow" href="#section-5">&#182;</a>
               </div>
               <h2>Deserializer</h2>
 
@@ -92,50 +111,142 @@ Serializer.prototype._transform = <span class="function"><span class="keyword">f
         </li>
         
         
-        <li id="section-5">
+        <li id="section-6">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-5">&#182;</a>
+                <a class="pilcrow" href="#section-6">&#182;</a>
               </div>
-              
+              <pre><code>Buffers      +-------------------------------+      Frame Objects
+* * * * ---&gt; | Deserializer Transform Stream | ---&gt; * * * * * * *
+             +-------------------------------+</code></pre>
+
             </div>
             
             <div class="content"><div class='highlight'><pre><span class="function"><span class="keyword">function</span> <span class="title">Deserializer</span><span class="params">()</span> {</span>
   Transform.call(<span class="keyword">this</span>, { objectMode: <span class="literal">true</span> })
-  <span class="keyword">this</span>._waiting_for_header = <span class="literal">true</span>
-  <span class="keyword">this</span>._cursor = <span class="number">0</span>
-  <span class="keyword">this</span>._buffer = <span class="keyword">new</span> Buffer(<span class="number">8</span>)
+  <span class="keyword">this</span>._next(<span class="number">8</span>)
 }
-Deserializer.prototype = Object.create(Transform.prototype, { constructor: { value: Serializer } })
+Deserializer.prototype = Object.create(Transform.prototype, { constructor: { value: Deserializer } })</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-7">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-7">&#182;</a>
+              </div>
+              <p>The Deserializer is stateful, and it&#39;s two main alternating states are: <em>waiting for header</em> and
+<em>waiting for payload</em>. The state is stored in the boolean property <code>_waiting_for_header</code>.</p>
+<p>When entering a new state, a <code>_buffer</code> is created that will hold the accumulated data (header or
+payload). The <code>_cursor</code> is used to track the progress.</p>
 
-Deserializer.prototype._next = <span class="keyword">function</span>(size, waiting_for_header) {
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>Deserializer.prototype._next = <span class="keyword">function</span>(size) {
   <span class="keyword">this</span>._cursor = <span class="number">0</span>
   <span class="keyword">this</span>._buffer = <span class="keyword">new</span> Buffer(size)
-  <span class="keyword">this</span>._waiting_for_header = waiting_for_header
-}
+  <span class="keyword">this</span>._waiting_for_header = !<span class="keyword">this</span>._waiting_for_header
+}</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-8">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-8">&#182;</a>
+              </div>
+              <p>Parsing an incoming buffer is an iterative process because it can hold multiple frames if it&#39;s
+large enough. A <code>cursor</code> is used to track the progress in parsing the incoming <code>chunk</code>.</p>
 
-Deserializer.prototype._transform = <span class="function"><span class="keyword">function</span> <span class="title">_transform</span><span class="params">(chunk, encoding, done)</span> {</span>
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>Deserializer.prototype._transform = <span class="function"><span class="keyword">function</span> <span class="title">_transform</span><span class="params">(chunk, encoding, done)</span> {</span>
   <span class="keyword">var</span> cursor = <span class="number">0</span>
 
-  <span class="keyword">while</span>(cursor &lt; chunk.length) {
-    <span class="keyword">var</span> to_copy = Math.min(chunk.length - cursor, <span class="keyword">this</span>._buffer.length - <span class="keyword">this</span>._cursor)
+  <span class="keyword">while</span>(cursor &lt; chunk.length) {</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-9">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-9">&#182;</a>
+              </div>
+              <p>The content of an incoming buffer is first copied to <code>_buffer</code>. If it can&#39;t hold the full
+chunk, then only a part of it is copied.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    <span class="keyword">var</span> to_copy = Math.min(chunk.length - cursor, <span class="keyword">this</span>._buffer.length - <span class="keyword">this</span>._cursor)
     chunk.copy(<span class="keyword">this</span>._buffer, <span class="keyword">this</span>._cursor, cursor, cursor + to_copy)
     <span class="keyword">this</span>._cursor += to_copy
-    cursor += to_copy
+    cursor += to_copy</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-10">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-10">&#182;</a>
+              </div>
+              <p>When <code>_buffer</code> is full, it&#39;s content gets parsed either as header or payload depending on
+the actual state.</p>
 
-    <span class="keyword">if</span> (<span class="keyword">this</span>._cursor === <span class="keyword">this</span>._buffer.length) {
-      <span class="keyword">if</span> (<span class="keyword">this</span>._waiting_for_header) {
-        <span class="keyword">this</span>._header = Deserializer.commonHeader(<span class="keyword">this</span>._buffer)
-        <span class="keyword">this</span>._next(<span class="keyword">this</span>._header.length, <span class="literal">false</span>)
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    <span class="keyword">if</span> (<span class="keyword">this</span>._cursor === <span class="keyword">this</span>._buffer.length) {
+      <span class="keyword">if</span> (<span class="keyword">this</span>._waiting_for_header) {</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-11">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-11">&#182;</a>
+              </div>
+              <p>If it&#39;s header then the parsed data is stored in a temporary variable and then the
+deserializer waits for the specified length payload.</p>
 
-      } <span class="keyword">else</span> {
-        <span class="keyword">var</span> frame = Deserializer[<span class="keyword">this</span>._header.type](<span class="keyword">this</span>._buffer)
-        frame.type = <span class="keyword">this</span>._header.type
-        frame.flags = <span class="keyword">this</span>._header.flags
-        frame.stream = <span class="keyword">this</span>._header.stream
-        <span class="keyword">this</span>.push(frame)
-        <span class="keyword">this</span>._next(<span class="number">8</span>, <span class="literal">true</span>)
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>        <span class="keyword">this</span>._header = Deserializer.commonHeader(<span class="keyword">this</span>._buffer)
+        <span class="keyword">this</span>._next(<span class="keyword">this</span>._header.length)
+
+      } <span class="keyword">else</span> {</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-12">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-12">&#182;</a>
+              </div>
+              <p>If it&#39;s payload then the the frame object is assembled and then gets pushed out.
+Unknown frame types are ignored.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>        <span class="keyword">if</span> (<span class="keyword">this</span>._header.type) {
+          <span class="keyword">var</span> frame = Deserializer[<span class="keyword">this</span>._header.type](<span class="keyword">this</span>._buffer)
+          frame.type = <span class="keyword">this</span>._header.type
+          frame.flags = <span class="keyword">this</span>._header.flags
+          frame.stream = <span class="keyword">this</span>._header.stream
+          <span class="keyword">this</span>.push(frame)
+        }
+        <span class="keyword">this</span>._next(<span class="number">8</span>)
       }
     }
   }
@@ -146,11 +257,11 @@ Deserializer.prototype._transform = <span class="function"><span class="keyword"
         </li>
         
         
-        <li id="section-6">
+        <li id="section-13">
             <div class="annotation">
               
               <div class="pilwrap for-h2">
-                <a class="pilcrow" href="#section-6">&#182;</a>
+                <a class="pilcrow" href="#section-13">&#182;</a>
               </div>
               <h2><a href="http://http2.github.io/http2-spec/#FrameHeader">Frame Header</a></h2>
 
@@ -159,11 +270,11 @@ Deserializer.prototype._transform = <span class="function"><span class="keyword"
         </li>
         
         
-        <li id="section-7">
+        <li id="section-14">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-7">&#182;</a>
+                <a class="pilcrow" href="#section-14">&#182;</a>
               </div>
               <p>HTTP/2.0 frames share a common base format consisting of an 8-byte header followed by 0 to 65535
 bytes of data.</p>
@@ -176,6 +287,31 @@ bytes of data.</p>
 +-+-------------------------------------------------------------+
 |                     Frame Data (0...)                       ...
 +---------------------------------------------------------------+</code></pre>
+<p>The fields of the frame header are defined as:</p>
+<ul>
+<li><p>Length:
+The length of the frame data expressed as an unsigned 16-bit integer. The 8 bytes of the frame
+header are not included in this value.</p>
+</li>
+<li><p>Type:
+The 8-bit type of the frame. The frame type determines how the remainder of the frame header
+and data are interpreted. Implementations MUST ignore unsupported and unrecognized frame types.</p>
+</li>
+<li><p>Flags:
+An 8-bit field reserved for frame-type specific boolean flags.</p>
+<p>Flags are assigned semantics specific to the indicated frame type. Flags that have no defined
+semantics for a particular frame type MUST be ignored, and MUST be left unset (0) when sending.</p>
+</li>
+<li><p>R:
+A reserved 1-bit field. The semantics of this bit are undefined and the bit MUST remain unset
+(0) when sending and MUST be ignored when receiving.</p>
+</li>
+<li><p>Stream Identifier:
+A 31-bit stream identifier (see Section 3.4.1). A value 0 is reserved for frames that are
+associated with the connection as a whole as opposed to an individual stream.</p>
+</li>
+</ul>
+<p>The structure and content of the remaining frame data is dependent entirely on the frame type.</p>
 
             </div>
             
@@ -231,11 +367,24 @@ Deserializer.commonHeader = function readCommonHeader(buffer) {
         </li>
         
         
-        <li id="section-8">
+        <li id="section-15">
+            <div class="annotation">
+              
+              <div class="pilwrap for-h1">
+                <a class="pilcrow" href="#section-15">&#182;</a>
+              </div>
+              <h1>Frame types</h1>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-16">
             <div class="annotation">
               
               <div class="pilwrap for-h2">
-                <a class="pilcrow" href="#section-8">&#182;</a>
+                <a class="pilcrow" href="#section-16">&#182;</a>
               </div>
               <h2><a href="http://http2.github.io/http2-spec/#DataFrames">DATA Frames</a></h2>
 
@@ -244,11 +393,11 @@ Deserializer.commonHeader = function readCommonHeader(buffer) {
         </li>
         
         
-        <li id="section-9">
+        <li id="section-17">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-9">&#182;</a>
+                <a class="pilcrow" href="#section-17">&#182;</a>
               </div>
               <p>DATA frames (type=0x0) convey arbitrary, variable-length sequences of octets associated with a
 stream.</p>
@@ -271,11 +420,11 @@ Deserializer[<span class="string">'DATA'</span>] = <span class="function"><span 
         </li>
         
         
-        <li id="section-10">
+        <li id="section-18">
             <div class="annotation">
               
               <div class="pilwrap for-h2">
-                <a class="pilcrow" href="#section-10">&#182;</a>
+                <a class="pilcrow" href="#section-18">&#182;</a>
               </div>
               <h2><a href="http://http2.github.io/http2-spec/#HEADERS">HEADERS+PRIORITY</a></h2>
 
@@ -284,11 +433,11 @@ Deserializer[<span class="string">'DATA'</span>] = <span class="function"><span 
         </li>
         
         
-        <li id="section-11">
+        <li id="section-19">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-11">&#182;</a>
+                <a class="pilcrow" href="#section-19">&#182;</a>
               </div>
               <p>The HEADERS+PRIORITY frame (type=0x1) allows the sender to set header fields and stream priority
 at the same time.</p>
@@ -303,11 +452,11 @@ frame_flags[<span class="string">'HEADERS+PRIORITY'</span>] = [<span class="stri
         </li>
         
         
-        <li id="section-12">
+        <li id="section-20">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-12">&#182;</a>
+                <a class="pilcrow" href="#section-20">&#182;</a>
               </div>
               <pre><code> 0                   1                   2                   3
  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
@@ -338,11 +487,11 @@ Deserializer[<span class="string">'HEADERS+PRIORITY'</span>] = <span class="func
         </li>
         
         
-        <li id="section-13">
+        <li id="section-21">
             <div class="annotation">
               
               <div class="pilwrap for-h2">
-                <a class="pilcrow" href="#section-13">&#182;</a>
+                <a class="pilcrow" href="#section-21">&#182;</a>
               </div>
               <h2><a href="http://http2.github.io/http2-spec/#PRIORITY">PRIORITY</a></h2>
 
@@ -351,11 +500,11 @@ Deserializer[<span class="string">'HEADERS+PRIORITY'</span>] = <span class="func
         </li>
         
         
-        <li id="section-14">
+        <li id="section-22">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-14">&#182;</a>
+                <a class="pilcrow" href="#section-22">&#182;</a>
               </div>
               <p>The PRIORITY frame (type=0x2) specifies the sender-advised priority of a stream.</p>
 <p>The PRIORITY frame does not define any flags.</p>
@@ -369,11 +518,11 @@ frame_flags[<span class="string">'PRIORITY'</span>] = []</pre></div></div>
         </li>
         
         
-        <li id="section-15">
+        <li id="section-23">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-15">&#182;</a>
+                <a class="pilcrow" href="#section-23">&#182;</a>
               </div>
               <pre><code> 0                   1                   2                   3
  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
@@ -399,11 +548,11 @@ Deserializer[<span class="string">'PRIORITY'</span>] = <span class="function"><s
         </li>
         
         
-        <li id="section-16">
+        <li id="section-24">
             <div class="annotation">
               
               <div class="pilwrap for-h2">
-                <a class="pilcrow" href="#section-16">&#182;</a>
+                <a class="pilcrow" href="#section-24">&#182;</a>
               </div>
               <h2><a href="http://http2.github.io/http2-spec/#RST_STREAM">RST_STREAM</a></h2>
 
@@ -412,11 +561,11 @@ Deserializer[<span class="string">'PRIORITY'</span>] = <span class="function"><s
         </li>
         
         
-        <li id="section-17">
+        <li id="section-25">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-17">&#182;</a>
+                <a class="pilcrow" href="#section-25">&#182;</a>
               </div>
               <p>The RST_STREAM frame (type=0x3) allows for abnormal termination of a stream.</p>
 <p>No type-flags are defined.</p>
@@ -430,11 +579,11 @@ frame_flags[<span class="string">'RST_STREAM'</span>] = []</pre></div></div>
         </li>
         
         
-        <li id="section-18">
+        <li id="section-26">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-18">&#182;</a>
+                <a class="pilcrow" href="#section-26">&#182;</a>
               </div>
               <pre><code> 0                   1                   2                   3
  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
@@ -461,11 +610,11 @@ Deserializer[<span class="string">'RST_STREAM'</span>] = <span class="function">
         </li>
         
         
-        <li id="section-19">
+        <li id="section-27">
             <div class="annotation">
               
               <div class="pilwrap for-h2">
-                <a class="pilcrow" href="#section-19">&#182;</a>
+                <a class="pilcrow" href="#section-27">&#182;</a>
               </div>
               <h2><a href="http://http2.github.io/http2-spec/#SETTINGS">SETTINGS</a></h2>
 
@@ -474,11 +623,11 @@ Deserializer[<span class="string">'RST_STREAM'</span>] = <span class="function">
         </li>
         
         
-        <li id="section-20">
+        <li id="section-28">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-20">&#182;</a>
+                <a class="pilcrow" href="#section-28">&#182;</a>
               </div>
               <p>The SETTINGS frame (type=0x4) conveys configuration parameters that affect how endpoints
 communicate.</p>
@@ -498,11 +647,11 @@ frame_flags[<span class="string">'SETTINGS'</span>] = [<span class="string">'CLE
         </li>
         
         
-        <li id="section-21">
+        <li id="section-29">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-21">&#182;</a>
+                <a class="pilcrow" href="#section-29">&#182;</a>
               </div>
               <p>The payload of a SETTINGS frame consists of zero or more settings. Each setting consists of an
 8-bit reserved field, an unsigned 24-bit setting identifier, and an unsigned 32-bit value.</p>
@@ -559,11 +708,11 @@ Deserializer[<span class="string">'SETTINGS'</span>] = <span class="function"><s
         </li>
         
         
-        <li id="section-22">
+        <li id="section-30">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-22">&#182;</a>
+                <a class="pilcrow" href="#section-30">&#182;</a>
               </div>
               <p>The following settings are defined:</p>
 
@@ -574,11 +723,11 @@ Deserializer[<span class="string">'SETTINGS'</span>] = <span class="function"><s
         </li>
         
         
-        <li id="section-23">
+        <li id="section-31">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-23">&#182;</a>
+                <a class="pilcrow" href="#section-31">&#182;</a>
               </div>
               <ul>
 <li>SETTINGS_MAX_CONCURRENT_STREAMS (4):
@@ -592,11 +741,11 @@ indicates the maximum number of concurrent streams that the sender will allow.</
         </li>
         
         
-        <li id="section-24">
+        <li id="section-32">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-24">&#182;</a>
+                <a class="pilcrow" href="#section-32">&#182;</a>
               </div>
               <ul>
 <li>SETTINGS_INITIAL_WINDOW_SIZE (7):
@@ -610,11 +759,11 @@ indicates the sender&#39;s initial stream window size (in bytes) for new streams
         </li>
         
         
-        <li id="section-25">
+        <li id="section-33">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-25">&#182;</a>
+                <a class="pilcrow" href="#section-33">&#182;</a>
               </div>
               <ul>
 <li>SETTINGS_FLOW_CONTROL_OPTIONS (10):
@@ -630,11 +779,11 @@ bits are reserved.</li>
         </li>
         
         
-        <li id="section-26">
+        <li id="section-34">
             <div class="annotation">
               
               <div class="pilwrap for-h2">
-                <a class="pilcrow" href="#section-26">&#182;</a>
+                <a class="pilcrow" href="#section-34">&#182;</a>
               </div>
               <h2><a href="http://http2.github.io/http2-spec/#PUSH_PROMISE">PUSH_PROMISE</a></h2>
 
@@ -643,11 +792,11 @@ bits are reserved.</li>
         </li>
         
         
-        <li id="section-27">
+        <li id="section-35">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-27">&#182;</a>
+                <a class="pilcrow" href="#section-35">&#182;</a>
               </div>
               <p>The PUSH_PROMISE frame (type=0x5) is used to notify the peer endpoint in advance of streams the
 sender intends to initiate.</p>
@@ -662,11 +811,11 @@ frame_flags[<span class="string">'PUSH_PROMISE'</span>] = [<span class="string">
         </li>
         
         
-        <li id="section-28">
+        <li id="section-36">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-28">&#182;</a>
+                <a class="pilcrow" href="#section-36">&#182;</a>
               </div>
               <pre><code> 0                   1                   2                   3
  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
@@ -698,11 +847,11 @@ Deserializer[<span class="string">'PUSH_PROMISE'</span>] = <span class="function
         </li>
         
         
-        <li id="section-29">
+        <li id="section-37">
             <div class="annotation">
               
               <div class="pilwrap for-h2">
-                <a class="pilcrow" href="#section-29">&#182;</a>
+                <a class="pilcrow" href="#section-37">&#182;</a>
               </div>
               <h2><a href="http://http2.github.io/http2-spec/#PING">PING</a></h2>
 
@@ -711,11 +860,11 @@ Deserializer[<span class="string">'PUSH_PROMISE'</span>] = <span class="function
         </li>
         
         
-        <li id="section-30">
+        <li id="section-38">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-30">&#182;</a>
+                <a class="pilcrow" href="#section-38">&#182;</a>
               </div>
               <p>The PING frame (type=0x6) is a mechanism for measuring a minimal round-trip time from the
 sender, as well as determining whether an idle connection is still functional.</p>
@@ -734,11 +883,11 @@ frame_flags[<span class="string">'PING'</span>] = [<span class="string">'PONG'</
         </li>
         
         
-        <li id="section-31">
+        <li id="section-39">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-31">&#182;</a>
+                <a class="pilcrow" href="#section-39">&#182;</a>
               </div>
               <p>In addition to the frame header, PING frames MUST contain 8 additional octets of opaque data.</p>
 
@@ -759,11 +908,11 @@ Deserializer[<span class="string">'PING'</span>] = <span class="function"><span 
         </li>
         
         
-        <li id="section-32">
+        <li id="section-40">
             <div class="annotation">
               
               <div class="pilwrap for-h2">
-                <a class="pilcrow" href="#section-32">&#182;</a>
+                <a class="pilcrow" href="#section-40">&#182;</a>
               </div>
               <h2><a href="http://http2.github.io/http2-spec/#GOAWAY">GOAWAY</a></h2>
 
@@ -772,11 +921,11 @@ Deserializer[<span class="string">'PING'</span>] = <span class="function"><span 
         </li>
         
         
-        <li id="section-33">
+        <li id="section-41">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-33">&#182;</a>
+                <a class="pilcrow" href="#section-41">&#182;</a>
               </div>
               <p>The GOAWAY frame (type=0x7) informs the remote peer to stop creating streams on this connection.</p>
 <p>The GOAWAY frame does not define any type-specific flags.</p>
@@ -790,11 +939,11 @@ frame_flags[<span class="string">'GOAWAY'</span>] = []</pre></div></div>
         </li>
         
         
-        <li id="section-34">
+        <li id="section-42">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-34">&#182;</a>
+                <a class="pilcrow" href="#section-42">&#182;</a>
               </div>
               <pre><code> 0                   1                   2                   3
  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
@@ -828,11 +977,11 @@ Deserializer[<span class="string">'GOAWAY'</span>] = <span class="function"><spa
         </li>
         
         
-        <li id="section-35">
+        <li id="section-43">
             <div class="annotation">
               
               <div class="pilwrap for-h2">
-                <a class="pilcrow" href="#section-35">&#182;</a>
+                <a class="pilcrow" href="#section-43">&#182;</a>
               </div>
               <h2><a href="http://http2.github.io/http2-spec/#HEADERS">HEADERS</a></h2>
 
@@ -841,11 +990,11 @@ Deserializer[<span class="string">'GOAWAY'</span>] = <span class="function"><spa
         </li>
         
         
-        <li id="section-36">
+        <li id="section-44">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-36">&#182;</a>
+                <a class="pilcrow" href="#section-44">&#182;</a>
               </div>
               <p>The HEADERS frame (type=0x8) provides header fields for a stream.</p>
 <p>Additional type-specific flags for the HEADERS frame are:</p>
@@ -864,11 +1013,11 @@ frame_flags[<span class="string">'HEADERS'</span>] = [<span class="string">'CONT
         </li>
         
         
-        <li id="section-37">
+        <li id="section-45">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-37">&#182;</a>
+                <a class="pilcrow" href="#section-45">&#182;</a>
               </div>
               <p>The payload of a HEADERS frame contains a Headers Block (Section 3.7).</p>
 
@@ -885,11 +1034,11 @@ Deserializer[<span class="string">'HEADERS'</span>] = <span class="function"><sp
         </li>
         
         
-        <li id="section-38">
+        <li id="section-46">
             <div class="annotation">
               
               <div class="pilwrap for-h2">
-                <a class="pilcrow" href="#section-38">&#182;</a>
+                <a class="pilcrow" href="#section-46">&#182;</a>
               </div>
               <h2><a href="http://http2.github.io/http2-spec/#WINDOW_UPDATE">WINDOW_UPDATE</a></h2>
 
@@ -898,11 +1047,11 @@ Deserializer[<span class="string">'HEADERS'</span>] = <span class="function"><sp
         </li>
         
         
-        <li id="section-39">
+        <li id="section-47">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-39">&#182;</a>
+                <a class="pilcrow" href="#section-47">&#182;</a>
               </div>
               <p>The WINDOW_UPDATE frame (type=0x9) is used to implement flow control.</p>
 <p>The following additional flags are defined for the WINDOW_UPDATE frame:</p>
@@ -921,11 +1070,11 @@ frame_flags[<span class="string">'WINDOW_UPDATE'</span>] = [<span class="string"
         </li>
         
         
-        <li id="section-40">
+        <li id="section-48">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-40">&#182;</a>
+                <a class="pilcrow" href="#section-48">&#182;</a>
               </div>
               <p>The payload of a WINDOW_UPDATE frame is a 32-bit value indicating the additional number of bytes
 that the sender can transmit in addition to the existing flow control window. The legal range
@@ -949,11 +1098,11 @@ Deserializer[<span class="string">'WINDOW_UPDATE'</span>] = <span class="functio
         </li>
         
         
-        <li id="section-41">
+        <li id="section-49">
             <div class="annotation">
               
               <div class="pilwrap for-h2">
-                <a class="pilcrow" href="#section-41">&#182;</a>
+                <a class="pilcrow" href="#section-49">&#182;</a>
               </div>
               <h2>Common Flags</h2>
 
@@ -962,11 +1111,11 @@ Deserializer[<span class="string">'WINDOW_UPDATE'</span>] = <span class="functio
         </li>
         
         
-        <li id="section-42">
+        <li id="section-50">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-42">&#182;</a>
+                <a class="pilcrow" href="#section-50">&#182;</a>
               </div>
               <p>The least significant bit (0x1) - the FINAL bit - is defined for all frame types as an indication
 that this frame is the last the endpoint will send for the identified stream.</p>
@@ -978,11 +1127,11 @@ that this frame is the last the endpoint will send for the identified stream.</p
         </li>
         
         
-        <li id="section-43">
+        <li id="section-51">
             <div class="annotation">
               
               <div class="pilwrap for-h2">
-                <a class="pilcrow" href="#section-43">&#182;</a>
+                <a class="pilcrow" href="#section-51">&#182;</a>
               </div>
               <h2><a href="http://http2.github.io/http2-spec/#ErrorCodes">Error Codes</a></h2>
 
@@ -991,11 +1140,11 @@ that this frame is the last the endpoint will send for the identified stream.</p
         </li>
         
         
-        <li id="section-44">
+        <li id="section-52">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-44">&#182;</a>
+                <a class="pilcrow" href="#section-52">&#182;</a>
               </div>
               
             </div>
