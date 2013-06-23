@@ -6,7 +6,7 @@ An HTTP/2 server implementation for node.js, developed as a [Google Summer of Co
 Status
 ======
 
-I write weekly status updates [on my blog](http://gabor.molnar.es/blog/categories/google-summer-of-code/). Short version: framing layer 70% ready.
+I post weekly status updates [on my blog](http://gabor.molnar.es/blog/categories/google-summer-of-code/). Short version: framing layer 70% ready.
 
 Installation
 ============
