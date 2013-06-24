@@ -6,21 +6,20 @@ var framer = require('../lib/framer')
 
 var frame_types = {
   'DATA': ['data'],
-  'HEADERS+PRIORITY': ['priority', 'data'],
+  'HEADERS': ['priority', 'data'],
   'PRIORITY': ['priority'],
   'RST_STREAM': ['error'],
   'SETTINGS': ['settings'],
   'PUSH_PROMISE': ['promised_stream', 'data'],
   'PING': ['data'],
   'GOAWAY': ['last_stream', 'error'],
-  'HEADERS': ['data'],
   'WINDOW_UPDATE': ['window_size']
 }
 
 var test_frames = [{
   frame: {
     type: 'DATA',
-    flags: { 'FINAL': false },
+    flags: { END_STREAM: false, RESERVED: false },
     stream: 10,
     length: 4,
 
@@ -28,41 +27,56 @@ var test_frames = [{
   },
   // length + type + flags + stream +   content
   buffer: new Buffer('0004' + '00' + '00' + '0000000A' +   '12345678', 'hex')
+
 }, {
   frame: {
-    type: 'HEADERS+PRIORITY',
-    flags: { 'FINAL': false, 'CONTINUES': false },
+    type: 'HEADERS',
+    flags: { END_STREAM: false, RESERVED: false, END_HEADERS: false, PRIORITY: false },
+    stream: 15,
+    length: 4,
+
+    data: new Buffer('12345678', 'hex')
+  },
+  buffer: new Buffer('0004' + '01' + '00' + '0000000F' +   '12345678', 'hex')
+
+}, {
+  frame: {
+    type: 'HEADERS',
+    flags: { END_STREAM: false, RESERVED: false, END_HEADERS: false, PRIORITY: true },
     stream: 15,
     length: 8,
 
     priority: 3,
     data: new Buffer('12345678', 'hex')
   },
-  buffer: new Buffer('0008' + '01' + '00' + '0000000F' +   '00000003' + '12345678', 'hex')
+  buffer: new Buffer('0008' + '01' + '08' + '0000000F' +   '00000003' + '12345678', 'hex')
+
 }, {
   frame: {
     type: 'PRIORITY',
-    flags: { 'FINAL': false },
+    flags: { },
     stream: 10,
     length: 4,
 
     priority: 3
   },
   buffer: new Buffer('0004' + '02' + '00' + '0000000A' +   '00000003', 'hex')
+
 }, {
   frame: {
     type: 'RST_STREAM',
-    flags: { 'FINAL': false },
+    flags: { },
     stream: 10,
     length: 4,
 
     error: 'INTERNAL_ERROR'
   },
   buffer: new Buffer('0004' + '03' + '00' + '0000000A' +   '00000002', 'hex')
+
 }, {
   frame: {
     type: 'SETTINGS',
-    flags: { 'FINAL': false, 'CLEAR_PERSISTED': false },
+    flags: { },
     stream: 10,
     length: 24,
 
@@ -75,10 +89,11 @@ var test_frames = [{
   buffer: new Buffer('0018' + '04' + '00' + '0000000A' +   '00' + '000004' + '01234567' +
                                                            '00' + '000007' + '89ABCDEF' +
                                                            '00' + '00000A' + '00000001', 'hex')
+
 }, {
   frame: {
     type: 'PUSH_PROMISE',
-    flags: { 'FINAL': false, 'CONTINUES': false },
+    flags: { END_PUSH_PROMISE: false },
     stream: 15,
     length: 8,
 
@@ -86,20 +101,22 @@ var test_frames = [{
     data: new Buffer('12345678', 'hex')
   },
   buffer: new Buffer('0008' + '05' + '00' + '0000000F' +   '00000003' + '12345678', 'hex')
+
 }, {
   frame: {
     type: 'PING',
-    flags: { 'FINAL': false, 'PONG': false },
+    flags: { PONG: false },
     stream: 15,
     length: 8,
 
     data: new Buffer('1234567887654321', 'hex')
   },
   buffer: new Buffer('0008' + '06' + '00' + '0000000F' +   '1234567887654321', 'hex')
+
 }, {
   frame: {
     type: 'GOAWAY',
-    flags: { 'FINAL': false },
+    flags: { },
     stream: 10,
     length: 8,
 
@@ -107,20 +124,11 @@ var test_frames = [{
     error: 'PROTOCOL_ERROR'
   },
   buffer: new Buffer('0008' + '07' + '00' + '0000000A' +   '12345678' + '00000001', 'hex')
-}, {
-  frame: {
-    type: 'HEADERS',
-    flags: { 'FINAL': false, 'CONTINUES': false },
-    stream: 10,
-    length: 4,
 
-    data: new Buffer('12345678', 'hex')
-  },
-  buffer: new Buffer('0004' + '08' + '00' + '0000000A' +   '12345678', 'hex')
 }, {
   frame: {
     type: 'WINDOW_UPDATE',
-    flags: { 'FINAL': false, 'END_FLOW_CONTROL': false },
+    flags: { END_FLOW_CONTROL: false },
     stream: 10,
     length: 4,
 
