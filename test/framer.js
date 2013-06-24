@@ -5,15 +5,15 @@ var framer = require('../lib/framer')
   , Deserializer = framer.Deserializer
 
 var frame_types = {
-  'DATA': ['data'],
-  'HEADERS': ['priority', 'data'],
-  'PRIORITY': ['priority'],
-  'RST_STREAM': ['error'],
-  'SETTINGS': ['settings'],
-  'PUSH_PROMISE': ['promised_stream', 'data'],
-  'PING': ['data'],
-  'GOAWAY': ['last_stream', 'error'],
-  'WINDOW_UPDATE': ['window_size']
+  DATA:          ['data'],
+  HEADERS:       ['priority', 'data'],
+  PRIORITY:      ['priority'],
+  RST_STREAM:    ['error'],
+  SETTINGS:      ['settings'],
+  PUSH_PROMISE:  ['promised_stream', 'data'],
+  PING:          ['data'],
+  GOAWAY:        ['last_stream', 'error'],
+  WINDOW_UPDATE: ['window_size']
 }
 
 var test_frames = [{
@@ -180,7 +180,7 @@ describe('Framer', function() {
     Object.keys(frame_types).forEach(function(type) {
       var tests = test_frames.filter(function(test) { return test.frame.type === type })
       var frame_shape = '{ ' + frame_types[type].join(', ') + ' }'
-      describe('static method [\'' + type + '\'](' + frame_shape + ', buffer_array)', function() {
+      describe('static method .' + type + '(' + frame_shape + ', buffer_array)', function() {
         it('should push buffers to the array that make up a ' + type + ' type payload', function() {
           for (var i = 0; i < tests.length; i++) {
             var test = tests[i]
@@ -225,7 +225,7 @@ describe('Framer', function() {
     Object.keys(frame_types).forEach(function(type) {
       var tests = test_frames.filter(function(test) { return test.frame.type === type })
       var frame_shape = '{ ' + frame_types[type].join(', ') + ' }'
-      describe('static method [\'' + type + '\'](payload_buffer, frame)', function() {
+      describe('static method .' + type + '(payload_buffer, frame)', function() {
         it('should augment the frame object with these properties: ' + frame_shape, function() {
           for (var i = 0; i < tests.length; i++) {
             var test = tests[i]
