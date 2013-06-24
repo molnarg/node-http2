@@ -130,20 +130,22 @@ var test_frames = [{
 }]
 
 // Concatenate two buffer into a new buffer
-function concat(buffer1, buffer2) {
-  var concatenated = new Buffer(buffer1.length + buffer2.length)
-  buffer1.copy(concatenated)
-  buffer2.copy(concatenated, buffer1.length)
+function concat(buffers) {
+  var size = 0
+  for (var i = 0; i < buffers.length; i++) size += buffers[i].length
+
+  var concatenated = new Buffer(size)
+  for (var cursor = 0, j = 0; j < buffers.length; cursor += buffers[j].length, j++) {
+    buffers[j].copy(concatenated, cursor)
+  }
+
   return concatenated
 }
 
 // Concatenate an array of buffers and then cut them into random size buffers
 function shuffle_buffers(buffers) {
-  var concatenated = new Buffer(0)
-  for (var i = 0; i < buffers.length; i++) concatenated = concat(concatenated, buffers[i])
+  var concatenated = concat(buffers), output = [], written = 0
 
-  var output = []
-  var written = 0
   while (written < concatenated.length) {
     var chunk_size = Math.min(concatenated.length - written, Math.ceil(Math.random()*20))
     output.push(concatenated.slice(written, written + chunk_size))
@@ -155,11 +157,14 @@ function shuffle_buffers(buffers) {
 
 describe('Framer', function() {
   describe('Serializer', function() {
-    describe('static method .commonHeader({ length, type, flags, stream })', function() {
-      it('should return the appropriate 8 byte header buffer', function() {
+    describe('static method .commonHeader({ type, flags, stream }, buffer_array)', function() {
+      it('should add the appropriate 8 byte header buffer in front of the others', function() {
         for (var i = 0; i < test_frames.length; i++) {
           var test = test_frames[i]
-          expect(Serializer.commonHeader(test.frame)).to.deep.equal(test.buffer.slice(0,8))
+            , buffers = [test.buffer.slice(8)]
+            , header_buffer = test.buffer.slice(0,8)
+          Serializer.commonHeader(test.frame, buffers)
+          expect(buffers[0]).to.deep.equal(header_buffer)
         }
       })
     })
@@ -167,11 +172,13 @@ describe('Framer', function() {
     Object.keys(frame_types).forEach(function(type) {
       var tests = test_frames.filter(function(test) { return test.frame.type === type })
       var frame_shape = '{ ' + frame_types[type].join(', ') + ' }'
-      describe('static method [\'' + type + '\'](' + frame_shape + ')', function() {
-        it('should return a ' + type + ' type payload buffer', function() {
+      describe('static method [\'' + type + '\'](' + frame_shape + ', buffer_array)', function() {
+        it('should push buffers to the array that make up a ' + type + ' type payload', function() {
           for (var i = 0; i < tests.length; i++) {
             var test = tests[i]
-            expect(Serializer[type](test.frame)).to.deep.equal(test.buffer.slice(8))
+              , buffers = []
+            Serializer[type](test.frame, buffers)
+            expect(concat(buffers)).to.deep.equal(test.buffer.slice(8))
           }
         })
       })
@@ -184,7 +191,7 @@ describe('Framer', function() {
           var test = test_frames[i]
           stream.write(test.frame)
           var chunk, buffer = new Buffer(0)
-          while (chunk = stream.read()) buffer = concat(buffer, chunk)
+          while (chunk = stream.read()) buffer = concat([buffer, chunk])
           expect(buffer).to.be.deep.equal(test.buffer)
         }
       })
@@ -192,11 +199,12 @@ describe('Framer', function() {
   })
 
   describe('Deserializer', function() {
-    describe('static method .commonHeader(header_buffer)', function() {
-      it('should return the appropriate header object', function() {
+    describe('static method .commonHeader(header_buffer, frame)', function() {
+      it('should augment the frame object with these properties: { length, type, flags, stream })', function() {
         for (var i = 0; i < test_frames.length; i++) {
-          var test = test_frames[i]
-          expect(Deserializer.commonHeader(test.buffer.slice(0,8))).to.deep.equal({
+          var test = test_frames[i], frame = {}
+          Deserializer.commonHeader(test.buffer.slice(0,8), frame)
+          expect(frame).to.deep.equal({
             length: test.frame.length,
             type:   test.frame.type,
             flags:  test.frame.flags,
@@ -209,16 +217,18 @@ describe('Framer', function() {
     Object.keys(frame_types).forEach(function(type) {
       var tests = test_frames.filter(function(test) { return test.frame.type === type })
       var frame_shape = '{ ' + frame_types[type].join(', ') + ' }'
-      describe('static method [\'' + type + '\'](payload_buffer)', function() {
-        it('should return the parsed frame object with these properties: ' + frame_shape, function() {
+      describe('static method [\'' + type + '\'](payload_buffer, frame)', function() {
+        it('should augment the frame object with these properties: ' + frame_shape, function() {
           for (var i = 0; i < tests.length; i++) {
             var test = tests[i]
-            var parsed = Deserializer[type](test.buffer.slice(8))
-            parsed.length = test.frame.length
-            parsed.type =   test.frame.type
-            parsed.flags =  test.frame.flags
-            parsed.stream = test.frame.stream
-            expect(parsed).to.deep.equal(test.frame)
+            var frame = {
+              length: test.frame.length,
+              type:   test.frame.type,
+              flags:  test.frame.flags,
+              stream: test.frame.stream
+            }
+            Deserializer[type](test.buffer.slice(8), frame)
+            expect(frame).to.deep.equal(test.frame)
           }
         })
       })
@@ -235,32 +245,6 @@ describe('Framer', function() {
           var parsed_frame = stream.read()
           parsed_frame.length = test_frames[j].frame.length
           expect(parsed_frame).to.be.deep.equal(test_frames[j].frame)
-        }
-      })
-    })
-  })
-
-  describe('invariant', function() {
-    describe('header === Deserializer.commonHeader(Serializer.commonHeader(header))', function() {
-      it('should always be true for well formed header objects', function() {
-        for (var i = 0; i < test_frames.length; i++) {
-          var frame = test_frames[i].frame
-          var header = {
-            length: frame.length,
-            type:   frame.type,
-            flags:  frame.flags,
-            stream: frame.stream
-          }
-          expect(Deserializer.commonHeader(Serializer.commonHeader(header))).to.deep.equal(header)
-        }
-      })
-    })
-
-    describe('buffer === Serializer.commonHeader(Deserializer.commonHeader(buffer))', function() {
-      it('should always be true for well formed header buffers', function() {
-        for (var i = 0; i < test_frames.length; i++) {
-          var buffer = test_frames[i].buffer.slice(0,8)
-          expect(Serializer.commonHeader(Deserializer.commonHeader(buffer))).to.deep.equal(buffer)
         }
       })
     })
