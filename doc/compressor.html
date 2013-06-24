@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+  <title>compressor.js</title>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <meta name="viewport" content="width=device-width, target-densitydpi=160dpi, initial-scale=1.0; maximum-scale=1.0; user-scalable=0;">
+  <link rel="stylesheet" media="all" href="docco.css" />
+</head>
+<body>
+  <div id="container">
+    <div id="background"></div>
+    
+      <ul id="jump_to">
+        <li>
+          <a class="large" href="javascript:void(0);">Jump To &hellip;</a>
+          <a class="small" href="javascript:void(0);">+</a>
+          <div id="jump_wrapper">
+          <div id="jump_page">
+            
+              
+              <a class="source" href="compressor.html">
+                compressor.js
+              </a>
+            
+              
+              <a class="source" href="connection.html">
+                connection.js
+              </a>
+            
+              
+              <a class="source" href="framer.html">
+                framer.js
+              </a>
+            
+          </div>
+        </li>
+      </ul>
+    
+    <ul class="sections">
+        
+          <li id="title">
+              <div class="annotation">
+                  <h1>compressor.js</h1>
+              </div>
+          </li>
+        
+        
+        
+        <li id="section-1">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-1">&#182;</a>
+              </div>
+              
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>exports.Compressor = Compressor
+exports.Decompressor = Decompressor
+
+<span class="function"><span class="keyword">function</span> <span class="title">Compressor</span><span class="params">()</span> {</span>
+
+}
+
+Compressor.prototype.compress = <span class="function"><span class="keyword">function</span> <span class="title">compress</span><span class="params">(headers)</span> {</span>
+
+}
+
+<span class="function"><span class="keyword">function</span> <span class="title">Decompressor</span><span class="params">()</span> {</span>
+
+}
+Decompressor.prototype.decompress = <span class="function"><span class="keyword">function</span> <span class="title">decompress</span><span class="params">(buffer)</span> {</span>
+
+}</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-2">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-2">&#182;</a>
+              </div>
+              <p>The algorithm to represent an integer I is as follows:</p>
+<ol>
+<li>If I &lt; 2^N - 1, encode I on N bits</li>
+<li>Else, encode 2^N - 1 on N bits and do the following steps:<ol>
+<li>Set I to (I - (2^N - 1)) and Q to 1</li>
+<li>While Q &gt; 0<ol>
+<li>Compute Q and R, quotient and remainder of I divided by 2^7</li>
+<li>If Q is strictly greater than 0, write one 1 bit; otherwise, write one 0 bit</li>
+<li>Encode R on the next 7 bits</li>
+<li>I = Q</li>
+</ol>
+</li>
+</ol>
+</li>
+</ol>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>Compressor.integer = <span class="function"><span class="keyword">function</span> <span class="title">writeInteger</span><span class="params">(I, N)</span> {</span>
+  <span class="keyword">var</span> limit = Math.pow(<span class="number">2</span>,N) - <span class="number">1</span>
+  <span class="keyword">if</span> (I &lt; limit) <span class="keyword">return</span> [I]
+
+  <span class="keyword">var</span> bytes = [limit]
+  I -= limit
+
+  <span class="keyword">var</span> Q = <span class="number">1</span>, R
+  <span class="keyword">while</span> (Q &gt; <span class="number">0</span>) {
+    Q = Math.floor(I / <span class="number">128</span>)
+    R = I % <span class="number">128</span>
+
+    <span class="keyword">if</span> (Q &gt; <span class="number">0</span>) R += <span class="number">128</span>
+    bytes.push(R)
+
+    I = Q
+  }
+
+  <span class="keyword">return</span> bytes
+}</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-3">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-3">&#182;</a>
+              </div>
+              <p>The inverse algorithm:</p>
+<ol>
+<li>If the lower N bits of the first byte is not all-one, then return the number coded
+on the lower N bits</li>
+<li>Else the number is encoded on more than one byte, so do the following steps:<ol>
+<li>Set I to 2^N - 1 and M to 0</li>
+<li>While returning with I<ol>
+<li>Let B be the next byte</li>
+<li>Read out the lower 7 bits of B and multiply it with 2^M</li>
+<li>Increase I with this number</li>
+<li>Increase M by 7</li>
+<li>Return I if the most significant bit of B is 0</li>
+</ol>
+</li>
+</ol>
+</li>
+</ol>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>Decompressor.integer = <span class="function"><span class="keyword">function</span> <span class="title">readInteger</span><span class="params">(bytes, N)</span> {</span>
+  <span class="keyword">var</span> I, cursor = <span class="number">0</span>, limit = Math.pow(<span class="number">2</span>,N) - <span class="number">1</span>
+
+  <span class="keyword">if</span> ((bytes[<span class="number">0</span>] &amp; limit) &lt; limit) {
+    I = bytes[<span class="number">0</span>]
+
+  } <span class="keyword">else</span> {
+    I = limit
+    <span class="keyword">var</span> M = <span class="number">0</span>
+    <span class="keyword">do</span> {
+      cursor += <span class="number">1</span>
+      I += (bytes[cursor] &amp; <span class="number">127</span>) &lt;<span class="xml"><span class="tag">&lt; <span class="attribute">M</span>
+      <span class="attribute">M</span> += <span class="attribute">7</span>
+    } <span class="attribute">while</span> (<span class="attribute">bytes</span>[<span class="attribute">cursor</span>] &amp; <span class="attribute">128</span>)
+  }
+
+  <span class="attribute">return</span> {
+    <span class="attribute">value:</span> <span class="attribute">I</span>,
+    <span class="attribute">length:</span> <span class="attribute">cursor</span> + <span class="attribute">1</span>
+  }
+}
+
+</span></pre></div></div>
+            
+        </li>
+        
+    </ul>
+  </div>
+</body>
+</html>

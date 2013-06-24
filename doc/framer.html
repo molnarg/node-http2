@@ -11,6 +11,32 @@
   <div id="container">
     <div id="background"></div>
     
+      <ul id="jump_to">
+        <li>
+          <a class="large" href="javascript:void(0);">Jump To &hellip;</a>
+          <a class="small" href="javascript:void(0);">+</a>
+          <div id="jump_wrapper">
+          <div id="jump_page">
+            
+              
+              <a class="source" href="compressor.html">
+                compressor.js
+              </a>
+            
+              
+              <a class="source" href="connection.html">
+                connection.js
+              </a>
+            
+              
+              <a class="source" href="framer.html">
+                framer.js
+              </a>
+            
+          </div>
+        </li>
+      </ul>
+    
     <ul class="sections">
         
           <li id="title">
@@ -488,12 +514,11 @@ frame_flags.HEADERS = [<span class="string">'END_STREAM'</span>, <span class="st
               <pre><code> 0                   1                   2                   3
  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|X|                   Priority (31)                             |
+|X|               (Optional) Priority (31)                      |
 +-+-------------------------------------------------------------+
 |                    Header Block (*)                         ...
 +---------------------------------------------------------------+</code></pre>
-<p>The HEADERS+PRIORITY frame is identical to the HEADERS frame, preceded by a
-single reserved bit and a 31-bit priority.</p>
+<p>The payload of a HEADERS frame contains a Headers Block</p>
 
             </div>
             
