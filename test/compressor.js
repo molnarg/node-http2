@@ -9,9 +9,17 @@ var test_integers = [{
   I: 10,
   buffer: new Buffer([10])
 }, {
+  N: 0,
+  I: 10,
+  buffer: new Buffer([10])
+}, {
   N: 5,
   I: 1337,
   buffer: new Buffer([31, 128 + 26, 10])
+}, {
+  N: 0,
+  I: 1337,
+  buffer: new Buffer([128 + 57, 10])
 }]
 
 // Concatenate buffers into a new buffer
