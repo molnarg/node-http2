@@ -1,8 +1,8 @@
-var expect = require('chai').expect
+var expect = require('chai').expect;
 
 var framer = require('../lib/framer')
   , Serializer = framer.Serializer
-  , Deserializer = framer.Deserializer
+  , Deserializer = framer.Deserializer;
 
 var frame_types = {
   DATA:          ['data'],
@@ -14,7 +14,7 @@ var frame_types = {
   PING:          ['data'],
   GOAWAY:        ['last_stream', 'error'],
   WINDOW_UPDATE: ['window_size']
-}
+};
 
 var test_frames = [{
   frame: {
@@ -135,32 +135,34 @@ var test_frames = [{
     window_size: 0x12345678
   },
   buffer: new Buffer('0004' + '09' + '00' + '0000000A' +   '12345678', 'hex')
-}]
+}];
 
 // Concatenate two buffer into a new buffer
 function concat(buffers) {
-  var size = 0
-  for (var i = 0; i < buffers.length; i++) size += buffers[i].length
-
-  var concatenated = new Buffer(size)
-  for (var cursor = 0, j = 0; j < buffers.length; cursor += buffers[j].length, j++) {
-    buffers[j].copy(concatenated, cursor)
+  var size = 0;
+  for (var i = 0; i < buffers.length; i++) {
+    size += buffers[i].length;
   }
 
-  return concatenated
+  var concatenated = new Buffer(size);
+  for (var cursor = 0, j = 0; j < buffers.length; cursor += buffers[j].length, j++) {
+    buffers[j].copy(concatenated, cursor);
+  }
+
+  return concatenated;
 }
 
 // Concatenate an array of buffers and then cut them into random size buffers
 function shuffle_buffers(buffers) {
-  var concatenated = concat(buffers), output = [], written = 0
+  var concatenated = concat(buffers), output = [], written = 0;
 
   while (written < concatenated.length) {
-    var chunk_size = Math.min(concatenated.length - written, Math.ceil(Math.random()*20))
-    output.push(concatenated.slice(written, written + chunk_size))
-    written += chunk_size
+    var chunk_size = Math.min(concatenated.length - written, Math.ceil(Math.random()*20));
+    output.push(concatenated.slice(written, written + chunk_size));
+    written += chunk_size;
   }
 
-  return output
+  return output;
 }
 
 describe('Framer', function() {
@@ -170,91 +172,93 @@ describe('Framer', function() {
         for (var i = 0; i < test_frames.length; i++) {
           var test = test_frames[i]
             , buffers = [test.buffer.slice(8)]
-            , header_buffer = test.buffer.slice(0,8)
-          Serializer.commonHeader(test.frame, buffers)
-          expect(buffers[0]).to.deep.equal(header_buffer)
+            , header_buffer = test.buffer.slice(0,8);
+          Serializer.commonHeader(test.frame, buffers);
+          expect(buffers[0]).to.deep.equal(header_buffer);
         }
-      })
-    })
+      });
+    });
 
     Object.keys(frame_types).forEach(function(type) {
-      var tests = test_frames.filter(function(test) { return test.frame.type === type })
-      var frame_shape = '{ ' + frame_types[type].join(', ') + ' }'
+      var tests = test_frames.filter(function(test) { return test.frame.type === type });
+      var frame_shape = '{ ' + frame_types[type].join(', ') + ' }';
       describe('static method .' + type + '(' + frame_shape + ', buffer_array)', function() {
         it('should push buffers to the array that make up a ' + type + ' type payload', function() {
           for (var i = 0; i < tests.length; i++) {
             var test = tests[i]
-              , buffers = []
-            Serializer[type](test.frame, buffers)
-            expect(concat(buffers)).to.deep.equal(test.buffer.slice(8))
+              , buffers = [];
+            Serializer[type](test.frame, buffers);
+            expect(concat(buffers)).to.deep.equal(test.buffer.slice(8));
           }
-        })
-      })
-    })
+        });
+      });
+    });
 
     describe('transform stream', function() {
       it('should transform frame objects to appropriate buffers', function() {
-        var stream = new Serializer()
+        var stream = new Serializer();
         for (var i = 0; i < test_frames.length; i++) {
-          var test = test_frames[i]
-          stream.write(test.frame)
-          var chunk, buffer = new Buffer(0)
-          while (chunk = stream.read()) buffer = concat([buffer, chunk])
-          expect(buffer).to.be.deep.equal(test.buffer)
+          var test = test_frames[i];
+          stream.write(test.frame);
+          var chunk, buffer = new Buffer(0);
+          while (chunk = stream.read()) {
+            buffer = concat([buffer, chunk]);
+          }
+          expect(buffer).to.be.deep.equal(test.buffer);
         }
-      })
-    })
-  })
+      });
+    });
+  });
 
   describe('Deserializer', function() {
     describe('static method .commonHeader(header_buffer, frame)', function() {
       it('should augment the frame object with these properties: { length, type, flags, stream })', function() {
         for (var i = 0; i < test_frames.length; i++) {
-          var test = test_frames[i], frame = {}
-          Deserializer.commonHeader(test.buffer.slice(0,8), frame)
+          var test = test_frames[i], frame = {};
+          Deserializer.commonHeader(test.buffer.slice(0,8), frame);
           expect(frame).to.deep.equal({
             length: test.frame.length,
             type:   test.frame.type,
             flags:  test.frame.flags,
             stream: test.frame.stream
-          })
+          });
         }
-      })
-    })
+      });
+    });
 
     Object.keys(frame_types).forEach(function(type) {
-      var tests = test_frames.filter(function(test) { return test.frame.type === type })
-      var frame_shape = '{ ' + frame_types[type].join(', ') + ' }'
+      var tests = test_frames.filter(function(test) { return test.frame.type === type });
+      var frame_shape = '{ ' + frame_types[type].join(', ') + ' }';
       describe('static method .' + type + '(payload_buffer, frame)', function() {
         it('should augment the frame object with these properties: ' + frame_shape, function() {
           for (var i = 0; i < tests.length; i++) {
-            var test = tests[i]
+            var test = tests[i];
             var frame = {
               length: test.frame.length,
               type:   test.frame.type,
               flags:  test.frame.flags,
               stream: test.frame.stream
-            }
-            Deserializer[type](test.buffer.slice(8), frame)
-            expect(frame).to.deep.equal(test.frame)
+            };
+            Deserializer[type](test.buffer.slice(8), frame);
+            expect(frame).to.deep.equal(test.frame);
           }
-        })
-      })
-    })
+        });
+      });
+    });
 
     describe('transform stream', function() {
       it('should transform buffers to appropriate frame object', function() {
-        var stream = new Deserializer()
+        var stream = new Deserializer();
 
         shuffle_buffers(test_frames.map(function(test) { return test.buffer }))
-          .forEach(stream.write.bind(stream))
+          .forEach(stream.write.bind(stream));
 
         for (var j = 0; j < test_frames.length; j++) {
-          var parsed_frame = stream.read()
-          parsed_frame.length = test_frames[j].frame.length
-          expect(parsed_frame).to.be.deep.equal(test_frames[j].frame)
+          var parsed_frame = stream.read();
+          parsed_frame.length = test_frames[j].frame.length;
+          expect(parsed_frame).to.be.deep.equal(test_frames[j].frame);
         }
-      })
-    })
-  })
-})
+      });
+    });
+  });
+});
