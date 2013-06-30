@@ -97,62 +97,64 @@ function concat(buffers) {
   return concatenated;
 }
 
-describe('Compressor', function() {
-  describe('static function integer(I, N)', function() {
-    it('should return an array of buffers that represent the N-prefix coded I value', function() {
-      for (var i = 0; i < test_integers.length; i++) {
-        var test = test_integers[i];
-        expect(concat(Compressor.integer(test.I, test.N))).to.deep.equal(test.buffer);
-      }
+describe('compressor.js', function() {
+  describe('Compressor', function() {
+    describe('static function integer(I, N)', function() {
+      it('should return an array of buffers that represent the N-prefix coded I value', function() {
+        for (var i = 0; i < test_integers.length; i++) {
+          var test = test_integers[i];
+          expect(concat(Compressor.integer(test.I, test.N))).to.deep.equal(test.buffer);
+        }
+      });
+    });
+    describe('static function string(stringbuffer)', function() {
+      it('should return an array of buffers that represent the encoded form of the string buffer', function() {
+        for (var i = 0; i < test_strings.length; i++) {
+          var test = test_strings[i];
+          expect(concat(Compressor.string(test.string))).to.deep.equal(test.buffer);
+        }
+      });
+    });
+    describe('static function header({ name, value, indexing, substitution })', function() {
+      it('should return an array of buffers that represent the encoded form of the header', function() {
+        for (var i = 0; i < test_headers.length; i++) {
+          var test = test_headers[i];
+          expect(concat(Compressor.header(test.header))).to.deep.equal(test.buffer);
+        }
+      });
     });
   });
-  describe('static function string(stringbuffer)', function() {
-    it('should return an array of buffers that represent the encoded form of the string buffer', function() {
-      for (var i = 0; i < test_strings.length; i++) {
-        var test = test_strings[i];
-        expect(concat(Compressor.string(test.string))).to.deep.equal(test.buffer);
-      }
-    });
-  });
-  describe('static function header({ name, value, indexing, substitution })', function() {
-    it('should return an array of buffers that represent the encoded form of the header', function() {
-      for (var i = 0; i < test_headers.length; i++) {
-        var test = test_headers[i];
-        expect(concat(Compressor.header(test.header))).to.deep.equal(test.buffer);
-      }
-    });
-  });
-});
 
-describe('Decompressor', function() {
-  describe('static function integer(buffer, N)', function() {
-    it('should return the parsed N-prefix coded number and increase the cursor property of buffer', function() {
-      for (var i = 0; i < test_integers.length; i++) {
-        var test = test_integers[i];
-        test.buffer.cursor = 0;
-        expect(Decompressor.integer(test.buffer, test.N)).to.equal(test.I);
-        expect(test.buffer.cursor).to.equal(test.buffer.length);
-      }
+  describe('Decompressor', function() {
+    describe('static function integer(buffer, N)', function() {
+      it('should return the parsed N-prefix coded number and increase the cursor property of buffer', function() {
+        for (var i = 0; i < test_integers.length; i++) {
+          var test = test_integers[i];
+          test.buffer.cursor = 0;
+          expect(Decompressor.integer(test.buffer, test.N)).to.equal(test.I);
+          expect(test.buffer.cursor).to.equal(test.buffer.length);
+        }
+      });
     });
-  });
-  describe('static function string(buffer)', function() {
-    it('should return the parsed string buffer and increase the cursor property of buffer', function() {
-      for (var i = 0; i < test_strings.length; i++) {
-        var test = test_strings[i];
-        test.buffer.cursor = 0;
-        expect(Decompressor.string(test.buffer)).to.deep.equal(test.string);
-        expect(test.buffer.cursor).to.equal(test.buffer.length);
-      }
+    describe('static function string(buffer)', function() {
+      it('should return the parsed string buffer and increase the cursor property of buffer', function() {
+        for (var i = 0; i < test_strings.length; i++) {
+          var test = test_strings[i];
+          test.buffer.cursor = 0;
+          expect(Decompressor.string(test.buffer)).to.deep.equal(test.string);
+          expect(test.buffer.cursor).to.equal(test.buffer.length);
+        }
+      });
     });
-  });
-  describe('static function header(buffer)', function() {
-    it('should return the parsed header and increase the cursor property of buffer', function() {
-      for (var i = 0; i < test_headers.length; i++) {
-        var test = test_headers[i];
-        test.buffer.cursor = 0;
-        expect(Decompressor.header(test.buffer)).to.deep.equal(test.header);
-        expect(test.buffer.cursor).to.equal(test.buffer.length);
-      }
+    describe('static function header(buffer)', function() {
+      it('should return the parsed header and increase the cursor property of buffer', function() {
+        for (var i = 0; i < test_headers.length; i++) {
+          var test = test_headers[i];
+          test.buffer.cursor = 0;
+          expect(Decompressor.header(test.buffer)).to.deep.equal(test.header);
+          expect(test.buffer.cursor).to.equal(test.buffer.length);
+        }
+      });
     });
   });
 });

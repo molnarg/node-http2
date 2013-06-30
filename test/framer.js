@@ -165,7 +165,7 @@ function shuffle_buffers(buffers) {
   return output;
 }
 
-describe('Framer', function() {
+describe('framer.js', function() {
   describe('Serializer', function() {
     describe('static method .commonHeader({ type, flags, stream }, buffer_array)', function() {
       it('should add the appropriate 8 byte header buffer in front of the others', function() {
