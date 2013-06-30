@@ -56,29 +56,29 @@
               
             </div>
             
-            <div class="content"><div class='highlight'><pre>exports.Connection = Connection
+            <div class="content"><div class='highlight'><pre>exports.Connection = Connection;
 
 <span class="keyword">var</span> Serializer = require(<span class="string">'./framer'</span>).Serializer
   , Deserializer = require(<span class="string">'./framer'</span>).Deserializer
   , Compressor = require(<span class="string">'./compressor'</span>).Compressor
-  , EventEmitter = require(<span class="string">'events'</span>).EventEmitter
+  , EventEmitter = require(<span class="string">'events'</span>).EventEmitter;
 
 <span class="function"><span class="keyword">function</span> <span class="title">Connection</span><span class="params">(socket, role)</span> {</span>
-  <span class="keyword">this</span>.socket = socket
-  <span class="keyword">this</span>.role = role <span class="comment">// 'client' or 'server'</span>
-  <span class="keyword">this</span>.next_stream_id = (<span class="keyword">this</span>.role === <span class="string">'client'</span>) ? <span class="number">1</span> : <span class="number">2</span>
-  <span class="keyword">this</span>.serializer = <span class="keyword">new</span> Serializer()
-  <span class="keyword">this</span>.deserializer = <span class="keyword">new</span> Deserializer()
-  <span class="keyword">this</span>.compressor = <span class="keyword">new</span> Compressor()
+  <span class="keyword">this</span>.socket = socket;
+  <span class="keyword">this</span>.role = role; <span class="comment">// 'client' or 'server'</span>
+  <span class="keyword">this</span>.next_stream_id = (<span class="keyword">this</span>.role === <span class="string">'client'</span>) ? <span class="number">1</span> : <span class="number">2</span>;
+  <span class="keyword">this</span>.serializer = <span class="keyword">new</span> Serializer();
+  <span class="keyword">this</span>.deserializer = <span class="keyword">new</span> Deserializer();
+  <span class="keyword">this</span>.compressor = <span class="keyword">new</span> Compressor();
 
-  <span class="keyword">this</span>.serializer.pipe(<span class="keyword">this</span>.socket).pipe(<span class="keyword">this</span>.deserializer)
+  <span class="keyword">this</span>.serializer.pipe(<span class="keyword">this</span>.socket).pipe(<span class="keyword">this</span>.deserializer);
 }
-Connection.prototype = Object.create(EventEmitter.prototype, { constructor: { value: Connection } })
+Connection.prototype = Object.create(EventEmitter.prototype, { constructor: { value: Connection } });
 
 Connection.prototype.createStream = <span class="function"><span class="keyword">function</span> <span class="title">createStream</span><span class="params">()</span> {</span>
-  <span class="keyword">var</span> id = <span class="keyword">this</span>.next_stream_id
-  <span class="keyword">this</span>.next_stream_id += <span class="number">2</span>
-}</pre></div></div>
+  <span class="keyword">var</span> id = <span class="keyword">this</span>.next_stream_id;
+  <span class="keyword">this</span>.next_stream_id += <span class="number">2</span>;
+};</pre></div></div>
             
         </li>
         
