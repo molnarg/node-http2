@@ -1,12 +1,12 @@
 /*-------------- node-http2 customizations --------------------*/
 
 ul.sections > li > div.annotation {
-    min-width: 34.5em !important;
-    max-width: 34.5em !important;
+    min-width: 35em !important;
+    max-width: 35em !important;
 }
 
 #background {
-    width: 34.5em !important;
+    width: 35em !important;
 }
 
 /*--------------------- Typography ----------------------------*/

@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+  <title>connection.js</title>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <meta name="viewport" content="width=device-width, target-densitydpi=160dpi, initial-scale=1.0; maximum-scale=1.0; user-scalable=0;">
+  <link rel="stylesheet" media="all" href="docco.css" />
+</head>
+<body>
+  <div id="container">
+    <div id="background"></div>
+    
+      <ul id="jump_to">
+        <li>
+          <a class="large" href="javascript:void(0);">Jump To &hellip;</a>
+          <a class="small" href="javascript:void(0);">+</a>
+          <div id="jump_wrapper">
+          <div id="jump_page">
+            
+              
+              <a class="source" href="compressor.html">
+                compressor.js
+              </a>
+            
+              
+              <a class="source" href="connection.html">
+                connection.js
+              </a>
+            
+              
+              <a class="source" href="framer.html">
+                framer.js
+              </a>
+            
+          </div>
+        </li>
+      </ul>
+    
+    <ul class="sections">
+        
+          <li id="title">
+              <div class="annotation">
+                  <h1>connection.js</h1>
+              </div>
+          </li>
+        
+        
+        
+        <li id="section-1">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-1">&#182;</a>
+              </div>
+              
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>exports.Connection = Connection;
+
+<span class="keyword">var</span> Serializer = require(<span class="string">'./framer'</span>).Serializer
+  , Deserializer = require(<span class="string">'./framer'</span>).Deserializer
+  , Compressor = require(<span class="string">'./compressor'</span>).Compressor
+  , EventEmitter = require(<span class="string">'events'</span>).EventEmitter;
+
+<span class="function"><span class="keyword">function</span> <span class="title">Connection</span><span class="params">(socket, role)</span> {</span>
+  <span class="keyword">this</span>.socket = socket;
+  <span class="keyword">this</span>.role = role; <span class="comment">// 'client' or 'server'</span>
+  <span class="keyword">this</span>.next_stream_id = (<span class="keyword">this</span>.role === <span class="string">'client'</span>) ? <span class="number">1</span> : <span class="number">2</span>;
+  <span class="keyword">this</span>.serializer = <span class="keyword">new</span> Serializer();
+  <span class="keyword">this</span>.deserializer = <span class="keyword">new</span> Deserializer();
+  <span class="keyword">this</span>.compressor = <span class="keyword">new</span> Compressor();
+
+  <span class="keyword">this</span>.serializer.pipe(<span class="keyword">this</span>.socket).pipe(<span class="keyword">this</span>.deserializer);
+}
+Connection.prototype = Object.create(EventEmitter.prototype, { constructor: { value: Connection } });
+
+Connection.prototype.createStream = <span class="function"><span class="keyword">function</span> <span class="title">createStream</span><span class="params">()</span> {</span>
+  <span class="keyword">var</span> id = <span class="keyword">this</span>.next_stream_id;
+  <span class="keyword">this</span>.next_stream_id += <span class="number">2</span>;
+};</pre></div></div>
+            
+        </li>
+        
+    </ul>
+  </div>
+</body>
+</html>
