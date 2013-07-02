@@ -1,6 +1,7 @@
 var expect = require('chai').expect;
 
 var compressor = require('../lib/compressor')
+  , CompressionContext = compressor.CompressionContext
   , Compressor = compressor.Compressor
   , Decompressor = compressor.Decompressor;
 
@@ -98,6 +99,19 @@ function concat(buffers) {
 }
 
 describe('compressor.js', function() {
+  describe('CompressionContext', function() {
+    describe('static method .equal([name1, value1], [name2, value2])', function() {
+      var equal = CompressionContext.equal;
+      it('decides if the two headers are considered equal', function() {
+        expect(equal(['name', 'value'], ['name', 'value'])).to.be.equal(true);
+        expect(equal(['name', 'value'], ['nAmE', 'value'])).to.be.equal(true);
+        expect(equal(['NaMe', 'value'], ['nAmE', 'value'])).to.be.equal(true);
+        expect(equal(['name', 'VaLuE'], ['name', 'value'])).to.be.equal(false);
+        expect(equal(['NaMe', 'VaLuE'], ['name', 'value'])).to.be.equal(false);
+      });
+    });
+  });
+
   describe('Compressor', function() {
     describe('static method .integer(I, N)', function() {
       it('should return an array of buffers that represent the N-prefix coded I value', function() {
