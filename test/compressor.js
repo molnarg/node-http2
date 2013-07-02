@@ -99,7 +99,7 @@ function concat(buffers) {
 
 describe('compressor.js', function() {
   describe('Compressor', function() {
-    describe('static function integer(I, N)', function() {
+    describe('static method .integer(I, N)', function() {
       it('should return an array of buffers that represent the N-prefix coded I value', function() {
         for (var i = 0; i < test_integers.length; i++) {
           var test = test_integers[i];
@@ -107,7 +107,7 @@ describe('compressor.js', function() {
         }
       });
     });
-    describe('static function string(stringbuffer)', function() {
+    describe('static method .string(stringbuffer)', function() {
       it('should return an array of buffers that represent the encoded form of the string buffer', function() {
         for (var i = 0; i < test_strings.length; i++) {
           var test = test_strings[i];
@@ -115,7 +115,7 @@ describe('compressor.js', function() {
         }
       });
     });
-    describe('static function header({ name, value, indexing, substitution })', function() {
+    describe('static method .header({ name, value, indexing, substitution })', function() {
       it('should return an array of buffers that represent the encoded form of the header', function() {
         for (var i = 0; i < test_headers.length; i++) {
           var test = test_headers[i];
@@ -126,7 +126,7 @@ describe('compressor.js', function() {
   });
 
   describe('Decompressor', function() {
-    describe('static function integer(buffer, N)', function() {
+    describe('static method .integer(buffer, N)', function() {
       it('should return the parsed N-prefix coded number and increase the cursor property of buffer', function() {
         for (var i = 0; i < test_integers.length; i++) {
           var test = test_integers[i];
@@ -136,7 +136,7 @@ describe('compressor.js', function() {
         }
       });
     });
-    describe('static function string(buffer)', function() {
+    describe('static method .string(buffer)', function() {
       it('should return the parsed string buffer and increase the cursor property of buffer', function() {
         for (var i = 0; i < test_strings.length; i++) {
           var test = test_strings[i];
@@ -146,7 +146,7 @@ describe('compressor.js', function() {
         }
       });
     });
-    describe('static function header(buffer)', function() {
+    describe('static method .header(buffer)', function() {
       it('should return the parsed header and increase the cursor property of buffer', function() {
         for (var i = 0; i < test_headers.length; i++) {
           var test = test_headers[i];
