@@ -1,4 +1,5 @@
-var expect = require('chai').expect;
+var expect = require('chai').expect
+  , concat = require('../lib/utils').concat;
 
 var compressor = require('../lib/compressor')
   , CompressionContext = compressor.CompressionContext
@@ -82,21 +83,6 @@ var test_headers = [{
   },
   buffer: new Buffer('5F0A' + '067365636F6E64', 'hex')
 }];
-
-// Concatenate buffers into a new buffer
-function concat(buffers) {
-  var size = 0;
-  for (var i = 0; i < buffers.length; i++) {
-    size += buffers[i].length;
-  }
-
-  var concatenated = new Buffer(size);
-  for (var cursor = 0, j = 0; j < buffers.length; cursor += buffers[j].length, j++) {
-    buffers[j].copy(concatenated, cursor);
-  }
-
-  return concatenated;
-}
 
 describe('compressor.js', function() {
   describe('CompressionContext', function() {

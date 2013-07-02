@@ -1,4 +1,5 @@
-var expect = require('chai').expect;
+var expect = require('chai').expect
+  , concat = require('../lib/utils').concat;
 
 var framer = require('../lib/framer')
   , Serializer = framer.Serializer
@@ -136,21 +137,6 @@ var test_frames = [{
   },
   buffer: new Buffer('0004' + '09' + '00' + '0000000A' +   '12345678', 'hex')
 }];
-
-// Concatenate two buffer into a new buffer
-function concat(buffers) {
-  var size = 0;
-  for (var i = 0; i < buffers.length; i++) {
-    size += buffers[i].length;
-  }
-
-  var concatenated = new Buffer(size);
-  for (var cursor = 0, j = 0; j < buffers.length; cursor += buffers[j].length, j++) {
-    buffers[j].copy(concatenated, cursor);
-  }
-
-  return concatenated;
-}
 
 // Concatenate an array of buffers and then cut them into random size buffers
 function shuffle_buffers(buffers) {
