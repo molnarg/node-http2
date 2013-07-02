@@ -33,6 +33,11 @@
                 framer.js
               </a>
             
+              
+              <a class="source" href="utils.html">
+                utils.js
+              </a>
+            
           </div>
         </li>
       </ul>
@@ -56,16 +61,12 @@
               
             </div>
             
-            <div class="content"><div class='highlight'><pre>exports.Compressor = Compressor;
-exports.Decompressor = Decompressor;
+            <div class="content"><div class='highlight'><pre><span class="keyword">var</span> Transform = require(<span class="string">'stream'</span>).Transform
+  , concat = require(<span class="string">'../lib/utils'</span>).concat;
+
 exports.CompressionContext = CompressionContext;
-
-<span class="function"><span class="keyword">function</span> <span class="title">Compressor</span><span class="params">(request)</span> {</span>
-  <span class="keyword">var</span> initial_table = request ? CompressionContext.initialRequestTable : CompressionContext.initialResponseTable
-  <span class="keyword">this</span>._context = <span class="keyword">new</span> CompressionContext(initial_table)
-}
-
-Compressor.prototype.compress = <span class="function"><span class="keyword">function</span> <span class="title">compress</span><span class="params">(headers)</span> {</span></pre></div></div>
+exports.Decompressor = Decompressor;
+exports.Compressor = Compressor;</pre></div></div>
             
         </li>
         
@@ -73,24 +74,12 @@ Compressor.prototype.compress = <span class="function"><span class="keyword">fun
         <li id="section-2">
             <div class="annotation">
               
-              <div class="pilwrap ">
+              <div class="pilwrap for-h1">
                 <a class="pilcrow" href="#section-2">&#182;</a>
               </div>
-              <p>{ name: value, ... } -&gt; [[name, value], ... ]</p>
+              <h1>Compression Context</h1>
 
             </div>
-            
-            <div class="content"><div class='highlight'><pre>  <span class="keyword">var</span> pairs = [];
-  <span class="keyword">for</span> (<span class="keyword">var</span> name <span class="keyword">in</span> headers) {
-    <span class="keyword">var</span> value = headers[name]
-    <span class="keyword">if</span> (value <span class="keyword">instanceof</span> Array) {
-      <span class="keyword">for</span> (i = <span class="number">0</span>; i&lt; value.length; i++) {
-        pairs.push([name, value[i]]);
-      }
-    } <span class="keyword">else</span> {
-      pairs.push([name, value]);
-    }
-  }</pre></div></div>
             
         </li>
         
@@ -101,11 +90,23 @@ Compressor.prototype.compress = <span class="function"><span class="keyword">fun
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-3">&#182;</a>
               </div>
-              <p>Diff encoding</p>
+              <p>A <code>CompressionContext</code> consists of the following tables:</p>
+<ul>
+<li>Header Table (<code>this._table</code>) that is limited in size (<code>this._limit</code>)</li>
+<li>Reference Set (<code>this._reference</code>)</li>
+<li>Working Set (<code>this._working</code>)</li>
+</ul>
+<p>There are only two methods that modifies the state of the tables: <code>reinitialize()</code> and
+<code>execute(command)</code>.</p>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>  <span class="keyword">var</span> entries = <span class="keyword">this</span>._context.encode(pairs);</pre></div></div>
+            <div class="content"><div class='highlight'><pre><span class="function"><span class="keyword">function</span> <span class="title">CompressionContext</span><span class="params">(table, limit)</span> {</span>
+  <span class="keyword">this</span>._table = table ? table.slice() : [];
+  <span class="keyword">this</span>._limit = limit || <span class="number">4096</span>;
+  <span class="keyword">this</span>._reference = [];
+  <span class="keyword">this</span>._working = [];
+}</pre></div></div>
             
         </li>
         
@@ -116,23 +117,14 @@ Compressor.prototype.compress = <span class="function"><span class="keyword">fun
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-4">&#182;</a>
               </div>
-              <p>Serialization</p>
+              <p>The <code>equal(pair1, pair2)</code> static method decides if two headers are considered equal. Name
+comparison is case insensitive while value comparison is case sensitive.</p>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>  <span class="keyword">var</span> buffers = [];
-  <span class="keyword">for</span> (<span class="keyword">var</span> i = <span class="number">0</span>; i &lt; entries.length; i++) {
-    buffers.push(Compressor.header(entries[i]));
-  }
-
-  <span class="keyword">return</span> Array.prototype.concat.apply([], buffers);
-};
-
-<span class="function"><span class="keyword">function</span> <span class="title">Decompressor</span><span class="params">()</span> {</span>
-  <span class="keyword">var</span> initial_table = request ? CompressionContext.initialRequestTable : CompressionContext.initialResponseTable
-  <span class="keyword">this</span>._context = <span class="keyword">new</span> CompressionContext(initial_table)
-}
-Decompressor.prototype.decompress = <span class="function"><span class="keyword">function</span> <span class="title">decompress</span><span class="params">(buffer)</span> {</span></pre></div></div>
+            <div class="content"><div class='highlight'><pre>CompressionContext.equal = <span class="keyword">function</span>(pair1, pair2) {
+  <span class="keyword">return</span> (pair1[<span class="number">0</span>].toLowerCase() === pair2[<span class="number">0</span>].toLowerCase()) &amp;&amp; (pair1[<span class="number">1</span>] === pair2[<span class="number">1</span>]);
+};</pre></div></div>
             
         </li>
         
@@ -143,15 +135,15 @@ Decompressor.prototype.decompress = <span class="function"><span class="keyword"
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-5">&#182;</a>
               </div>
-              <p>Deserialization</p>
+              <p><code>getWorkingSet()</code> returns the current working set as an array of <code>[name, value]</code> pairs.</p>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>  <span class="keyword">var</span> entries = [];
-  buffer.cursor = <span class="number">0</span>;
-  <span class="keyword">while</span> (buffer.cursor &lt; buffer.length) {
-    entries.push(Decompressor.header(buffer));
-  }</pre></div></div>
+            <div class="content"><div class='highlight'><pre>CompressionContext.prototype.getWorkingSet = <span class="function"><span class="keyword">function</span> <span class="title">getWorkingSet</span><span class="params">()</span> {</span>
+  <span class="keyword">return</span> <span class="keyword">this</span>._working.map(<span class="keyword">function</span>(entry) {
+    <span class="keyword">return</span> entry.pair;
+  });
+};</pre></div></div>
             
         </li>
         
@@ -162,11 +154,12 @@ Decompressor.prototype.decompress = <span class="function"><span class="keyword"
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-6">&#182;</a>
               </div>
-              <p>Diff decoding</p>
+              <p><code>reinitialize()</code> must be called between parsing/generating header blocks.</p>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>  <span class="keyword">var</span> pairs = <span class="keyword">this</span>._context.decode(entries);</pre></div></div>
+            <div class="content"><div class='highlight'><pre>CompressionContext.prototype.reinitialize = <span class="function"><span class="keyword">function</span> <span class="title">reinitialize</span><span class="params">()</span> {</span>
+  <span class="keyword">var</span> self = <span class="keyword">this</span>;</pre></div></div>
             
         </li>
         
@@ -177,7 +170,370 @@ Decompressor.prototype.decompress = <span class="function"><span class="keyword"
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-7">&#182;</a>
               </div>
-              <p>[[name, value], ... ] -&gt; { name: value, ... }</p>
+              <ul>
+<li>It first executes the steps needed to <em>end the processing of the previous block</em>.
+The new reference set of headers is computed by removing from the working set all the headers
+that are not present in the header table.</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">this</span>._reference = <span class="keyword">this</span>._working.filter(<span class="keyword">function</span>(entry) {
+    <span class="keyword">return</span> self._table.indexOf(entry.pair) !== -<span class="number">1</span>
+  }).map(<span class="keyword">function</span>(entry) {
+    <span class="keyword">return</span> entry.pair;
+  });</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-8">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-8">&#182;</a>
+              </div>
+              <ul>
+<li>Then <em>prepares the processing of the next block</em>.
+The reference set of headers is interpreted into the working set of headers: for each header
+in the reference set, an entry is added to the working set, containing the header name, its
+value, and its current index in the header table.</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">this</span>._working = <span class="keyword">this</span>._reference.map(<span class="keyword">function</span>(pair) {
+    <span class="keyword">var</span> index = self._table.indexOf(pair);
+    <span class="keyword">return</span> { index: index, pair: pair };
+  });
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-9">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-9">&#182;</a>
+              </div>
+              <p><code>execute(command)</code> executes the given command (header representation): updates the Header Table
+and the Working Set.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>CompressionContext.prototype.execute = <span class="function"><span class="keyword">function</span> <span class="title">execute</span><span class="params">(command)</span> {</span>
+  <span class="keyword">var</span> index, pair;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-10">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-10">&#182;</a>
+              </div>
+              <ul>
+<li>For an indexed representation, it checks whether the index is present in the working set.
+If true, the corresponding entry is removed from the working set. If several entries correspond
+to this encoded index, all these entries are removed from the working set. If the index is not
+present in the working set, it is used to retrieve the corresponding header from the Header
+Table, and a new entry is added to the working set representing this header.</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">if</span> (<span class="keyword">typeof</span> command.value === <span class="string">'number'</span>) {
+    index = command.value;
+    <span class="keyword">var</span> filtered = <span class="keyword">this</span>._working.filter(<span class="keyword">function</span>(entry) {
+      <span class="keyword">return</span> entry.index !== index;
+    });
+    <span class="keyword">if</span> (filtered.length === <span class="keyword">this</span>._working.length) {
+      pair = <span class="keyword">this</span>._table[index];
+      <span class="keyword">this</span>._working.push({ index: index, pair: pair });
+    } <span class="keyword">else</span> {
+      <span class="keyword">this</span>._working = filtered;
+    }
+  }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-11">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-11">&#182;</a>
+              </div>
+              <ul>
+<li>For a literal representation, a new entry is added to the working set representing this
+header. If the literal representation specifies that the header is to be indexed, the header is
+added accordingly to the header table, and its index is included in the entry in the working
+set. Otherwise, the entry in the working set contains an undefined index.</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">else</span> {
+    <span class="keyword">if</span> (<span class="keyword">typeof</span> command.name === <span class="string">'number'</span>) {
+      pair = [<span class="keyword">this</span>._table[command.name][<span class="number">0</span>], command.value];
+    } <span class="keyword">else</span> {
+      pair = [command.name, command.value];
+    }
+
+    <span class="keyword">if</span> (command.indexing) {
+      <span class="keyword">if</span> (<span class="string">'substitution'</span> <span class="keyword">in</span> command) {
+        <span class="keyword">this</span>._table.splice(command.substitution, <span class="number">1</span>, pair);
+      } <span class="keyword">else</span> {
+        <span class="keyword">this</span>._table.push(pair);
+      }
+      <span class="keyword">this</span>._enforceSizeBound();           <span class="comment">// TODO: The order of these two</span>
+      index = <span class="keyword">this</span>._table.indexOf(pair);  <span class="comment">// TODO: operation is not well defined!</span>
+    }
+
+    <span class="keyword">this</span>._working.push({ index: index, pair: pair });
+  }
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-12">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-12">&#182;</a>
+              </div>
+              <p><code>generateAddCommand</code> tries to find a compact header representation (command) for the given
+<code>[name, value]</code> pair that causes the decoder to add the given pair to the Working Set.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>CompressionContext.prototype.generateAddCommand = <span class="keyword">function</span>(pair) {
+  <span class="keyword">return</span> {
+    name: pair[<span class="number">0</span>],
+    value: pair[<span class="number">1</span>]
+  }
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-13">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-13">&#182;</a>
+              </div>
+              <p><code>generateRemoveCommand</code> generates a header representation (command) that causes the decoder to
+drop the given pair from the Working Set.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>CompressionContext.prototype.generateRemoveCommand = <span class="keyword">function</span>(pair) {
+  <span class="keyword">for</span> (<span class="keyword">var</span> i = <span class="number">0</span>; i &lt; <span class="keyword">this</span>._working.length; i++) {
+    <span class="keyword">var</span> entry = <span class="keyword">this</span>._working[i];</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-14">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-14">&#182;</a>
+              </div>
+              <ul>
+<li>if the given header is in the Working Set, then this is always an Indexed Representation.</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    <span class="keyword">if</span> (entry.pair === pair) {
+      <span class="keyword">return</span> {
+        name: entry.index,
+        value: entry.index
+      };
+    }
+  }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-15">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-15">&#182;</a>
+              </div>
+              <ul>
+<li>if the given pair is not in the Working Set, it returns <code>undefined</code></li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">return</span> <span class="literal">undefined</span>;
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-16">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-16">&#182;</a>
+              </div>
+              <p>The header table size can be bounded so as to limit the memory requirements.
+The <code>_enforceSizeBound()</code> private method drops the entries that are over the limit
+(<code>this._limit</code>).</p>
+<p>The header table size is defined as the sum of the size of each entry of the table. The size
+of an entry is the sum of the length in bytes of its name, of value&#39;s length in bytes and of
+32 bytes (for accounting for the entry structure overhead).</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>CompressionContext.prototype._enforceSizeBound = <span class="keyword">function</span>() {
+  <span class="keyword">var</span> table = <span class="keyword">this</span>._table;
+  <span class="keyword">var</span> size = <span class="number">0</span>;
+  <span class="keyword">for</span> (<span class="keyword">var</span> i = <span class="number">0</span>; i &lt; table.length; i++) {
+    <span class="keyword">if</span> (table[i].size === <span class="literal">undefined</span>) {
+      table[i].size = <span class="keyword">new</span> Buffer(table[i][<span class="number">0</span>] + table[i][<span class="number">1</span>], <span class="string">'utf8'</span>).length + <span class="number">32</span>;
+    }
+    size += table[i].size;
+  }
+  <span class="keyword">while</span> (size &gt; <span class="keyword">this</span>._limit) {
+    <span class="keyword">var</span> dropped = table.shift();
+    size -= dropped.size;
+  }
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-17">
+            <div class="annotation">
+              
+              <div class="pilwrap for-h1">
+                <a class="pilcrow" href="#section-17">&#182;</a>
+              </div>
+              <h1><a href="http://tools.ietf.org/html/draft-ietf-httpbis-header-compression-00#section-3.4">Decompression process</a></h1>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-18">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-18">&#182;</a>
+              </div>
+              <p>The decompression process is always done by a <code>Decompressor</code> object.</p>
+<p>The compression related mutable state is stored in a contained <code>CompressionContext</code> object.
+The initial value of it&#39;s Header Table depends on which side of the connection is it on.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="function"><span class="keyword">function</span> <span class="title">Decompressor</span><span class="params">(request)</span> {</span>
+  <span class="keyword">var</span> initial_table = request ? CompressionContext.initialRequestTable
+                              : CompressionContext.initialResponseTable;
+  <span class="keyword">this</span>._context = <span class="keyword">new</span> CompressionContext(initial_table);
+
+  <span class="keyword">this</span>._initializeStream();
+}
+Decompressor.prototype = Object.create(Transform.prototype, { constructor: { value: Decompressor } });</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-19">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-19">&#182;</a>
+              </div>
+              <p>The <code>decompress</code> function takes a buffer, and returns the decoded header set.</p>
+<p>According to the spec, to ensure a correct decoding of a set of headers, the following steps or
+equivalent ones MUST be executed by the decoder.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>Decompressor.prototype.decompress = <span class="function"><span class="keyword">function</span> <span class="title">decompress</span><span class="params">(buffer)</span> {</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-20">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-20">&#182;</a>
+              </div>
+              <ul>
+<li>First, upon starting the decoding of a new set of headers, the reference set of headers is
+interpreted into the working set of headers</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">this</span>._context.reinitialize()</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-21">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-21">&#182;</a>
+              </div>
+              <ul>
+<li>Then, the header representations are processed in their order of occurrence in the frame.
+The decoding process of the header representations are defined in the <code>execute(command)</code>
+method of the <code>CompressionContext</code> class.</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  buffer.cursor = <span class="number">0</span>;
+  <span class="keyword">while</span> (buffer.cursor &lt; buffer.length) {
+    <span class="keyword">this</span>._context.execute(Decompressor.header(buffer));
+  }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-22">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-22">&#182;</a>
+              </div>
+              <ul>
+<li>When all the header representations have been processed, the working set contains all the
+headers of the set of headers.</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">var</span> pairs = <span class="keyword">this</span>._context.getWorkingSet()</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-23">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-23">&#182;</a>
+              </div>
+              <ul>
+<li>The working set entries are <code>[name, value]</code> pairs. As a last step, these are converted to the
+usual header set format used in node.js: <code>{ name1: value1, name2: [value2, value3], ... }</code></li>
+</ul>
 
             </div>
             
@@ -195,297 +551,188 @@ Decompressor.prototype.decompress = <span class="function"><span class="keyword"
       headers[name] = value;
     }
   }
-
   <span class="keyword">return</span> headers;
 };</pre></div></div>
             
         </li>
         
         
-        <li id="section-8">
+        <li id="section-24">
             <div class="annotation">
               
               <div class="pilwrap for-h1">
-                <a class="pilcrow" href="#section-8">&#182;</a>
+                <a class="pilcrow" href="#section-24">&#182;</a>
               </div>
-              <h1><a href="http://tools.ietf.org/html/draft-ietf-httpbis-header-compression-00#section-3">Header Encoding</a></h1>
+              <h1>Compression process</h1>
 
             </div>
             
         </li>
         
         
-        <li id="section-9">
+        <li id="section-25">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-9">&#182;</a>
+                <a class="pilcrow" href="#section-25">&#182;</a>
               </div>
-              
+              <p>The decompression process is always done by a <code>Compressor</code> object.</p>
+<p>The compression related mutable state is stored in a contained <code>CompressionContext</code> object.
+The initial value of it&#39;s Header Table depends on which side of the connection is it on.</p>
+
             </div>
             
-            <div class="content"><div class='highlight'><pre><span class="function"><span class="keyword">function</span> <span class="title">CompressionContext</span><span class="params">(table, limit)</span> {</span>
-  <span class="keyword">this</span>._table = table ? table.slice() : [];
-  <span class="keyword">this</span>._limit = limit || <span class="number">4096</span>;
-  <span class="keyword">this</span>._reference = []
-}</pre></div></div>
+            <div class="content"><div class='highlight'><pre><span class="function"><span class="keyword">function</span> <span class="title">Compressor</span><span class="params">(request)</span> {</span>
+  <span class="keyword">var</span> initial_table = request ? CompressionContext.initialRequestTable
+                              : CompressionContext.initialResponseTable;
+  <span class="keyword">this</span>._context = <span class="keyword">new</span> CompressionContext(initial_table);
+
+  <span class="keyword">this</span>._initializeStream();
+}
+Compressor.prototype = Object.create(Transform.prototype, { constructor: { value: Compressor } });</pre></div></div>
             
         </li>
         
         
-        <li id="section-10">
+        <li id="section-26">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-10">&#182;</a>
+                <a class="pilcrow" href="#section-26">&#182;</a>
               </div>
-              <p>To ensure a correct decoding of a set of headers, the following steps or equivalent ones MUST be
-executed by the decoder.</p>
+              <p>The <code>compress</code> function takes a header set and returns an array of buffers containing the
+encoded binary data.</p>
+<p>The inverse of the decoding process goes follows:</p>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>CompressionContext.prototype.decode = <span class="keyword">function</span>(diff) {</pre></div></div>
+            <div class="content"><div class='highlight'><pre>Compressor.prototype.compress = <span class="function"><span class="keyword">function</span> <span class="title">compress</span><span class="params">(headers)</span> {</span>
+  <span class="keyword">var</span> i;</pre></div></div>
             
         </li>
         
         
-        <li id="section-11">
+        <li id="section-27">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-11">&#182;</a>
+                <a class="pilcrow" href="#section-27">&#182;</a>
               </div>
-              <p>First, upon starting the decoding of a new set of headers, the reference set of headers is
-interpreted into the working set of headers: for each header in the reference set, an entry is
-added to the working set.</p>
+              <ul>
+<li>First, the usual node.js header set format (<code>{ name1: value1, name2: [value2, value3], ... }</code>)
+has to be converted to <code>[name, value]</code> pairs.</li>
+</ul>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>  <span class="keyword">var</span> table = <span class="keyword">this</span>._table
-    , working = <span class="keyword">this</span>._reference.slice();</pre></div></div>
-            
-        </li>
-        
-        
-        <li id="section-12">
-            <div class="annotation">
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-12">&#182;</a>
-              </div>
-              <p>Then, the header representations are processed in their order of occurrence in the frame.</p>
-
-            </div>
-            
-            <div class="content"><div class='highlight'><pre>  <span class="keyword">for</span> (<span class="keyword">var</span> i = <span class="number">0</span>; i &lt; diff.length; i++) {
-    <span class="keyword">var</span> entry = diff[i], pair;
-    <span class="keyword">if</span> (<span class="keyword">typeof</span> entry.value === <span class="string">'number'</span>) {</pre></div></div>
-            
-        </li>
-        
-        
-        <li id="section-13">
-            <div class="annotation">
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-13">&#182;</a>
-              </div>
-              <p>For an indexed representation, the decoder checks whether the index is present in the
-working set. If true, the corresponding entry is removed from the working set.  If several
-entries correspond to this encoded index, all these entries are removed from the working
-set. If the index is not present in the working set, it is used to retrieve the
-corresponding header from the header table, and a new entry is added to the working set
-representing this header.</p>
-
-            </div>
-            
-            <div class="content"><div class='highlight'><pre>      pair = table[entry.value];
-      <span class="keyword">var</span> working_index = working.indexOf(pair);
-      <span class="keyword">if</span> (working_index !== -<span class="number">1</span>) {
-        <span class="keyword">do</span> {
-          working.splice(working_index, <span class="number">1</span>);
-        } <span class="keyword">while</span> ((working_index = working.indexOf(pair)) !== -<span class="number">1</span>)
-      } <span class="keyword">else</span> {
-        working.push(pair);
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">var</span> pairs = [];
+  <span class="keyword">for</span> (<span class="keyword">var</span> name <span class="keyword">in</span> headers) {
+    <span class="keyword">var</span> value = headers[name];
+    <span class="keyword">if</span> (value <span class="keyword">instanceof</span> Array) {
+      <span class="keyword">for</span> (i = <span class="number">0</span>; i&lt; value.length; i++) {
+        pairs.push([name, value[i]]);
       }
-    } <span class="keyword">else</span> {</pre></div></div>
-            
-        </li>
-        
-        
-        <li id="section-14">
-            <div class="annotation">
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-14">&#182;</a>
-              </div>
-              <p>For a literal representation, a new entry is added to the working set representing this
-header. If the literal representation specifies that the header is to be indexed, the
-header is added accordingly to the header table.</p>
-
-            </div>
-            
-            <div class="content"><div class='highlight'><pre>      <span class="keyword">if</span> (<span class="keyword">typeof</span> entry.name === <span class="string">'number'</span>) {
-        pair = [table[entry.name][<span class="number">0</span>], entry.value];
-      } <span class="keyword">else</span> {
-        pair = [entry.name, entry.value];
-      }
-      working.push(pair);
-
-      <span class="keyword">if</span> (entry.indexing) {
-        <span class="keyword">if</span> (<span class="string">'substitution'</span> <span class="keyword">in</span> entry) {
-          table.splice(entry.substitution, <span class="number">1</span>, pair);
-        } <span class="keyword">else</span> {
-          table.push(pair);
-        }
-        <span class="keyword">this</span>._enforceSizeBound();
-      }
+    } <span class="keyword">else</span> {
+      pairs.push([name, value]);
     }
   }</pre></div></div>
             
         </li>
         
         
-        <li id="section-15">
+        <li id="section-28">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-15">&#182;</a>
+                <a class="pilcrow" href="#section-28">&#182;</a>
               </div>
-              <p>The new reference set of headers is computed by removing from the working set all the headers
-that are not present in the header table.</p>
+              <ul>
+<li>Before generating commands that make the working set equal to the generated pair set,
+the reference set and the working set has to be reinitialized.</li>
+</ul>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>  <span class="keyword">this</span>._reference = working.filter(<span class="keyword">function</span>(header) {
-    <span class="keyword">return</span> table.indexOf(header) !== -<span class="number">1</span>;
-  });</pre></div></div>
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">this</span>._context.reinitialize()
+  <span class="keyword">var</span> working = <span class="keyword">this</span>._context.getWorkingSet(), command, commands = []</pre></div></div>
             
         </li>
         
         
-        <li id="section-16">
+        <li id="section-29">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-16">&#182;</a>
+                <a class="pilcrow" href="#section-29">&#182;</a>
               </div>
-              <p>When all the header representations have been processed, the working set contains all the
-headers of the set of headers.</p>
+              <ul>
+<li>The first commands remove the unneeded headers from the working set.</li>
+</ul>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>  <span class="keyword">return</span> working;
-};
-
-CompressionContext.prototype.encode = <span class="keyword">function</span>(workingset) {
-  <span class="keyword">var</span> table = <span class="keyword">this</span>._table
-    , old_reference = <span class="keyword">this</span>._reference
-    , new_reference = []
-    , diff = [];
-
-  <span class="keyword">for</span> (<span class="keyword">var</span> i = <span class="number">0</span>; i &lt; workingset.length; i++) {
-    <span class="keyword">var</span> pair = workingset[i], fullmatch, namematch;
-    <span class="keyword">for</span> (<span class="keyword">var</span> j = <span class="number">0</span>; j &lt; table.length; i++) {
-      <span class="keyword">if</span> (table[j][<span class="number">0</span>] === pair[<span class="number">0</span>]) {
-        <span class="keyword">if</span> (table[j][<span class="number">1</span>] === pair[<span class="number">1</span>]) {
-          fullmatch = j;
-          pair = table[fullmatch];
-          <span class="keyword">break</span>;
-        } <span class="keyword">else</span> {
-          namematch = j;
-        }
-      }
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">for</span> (i = <span class="number">0</span>; i &lt; working.length; i++) {
+    <span class="keyword">if</span> (!pairs.some(CompressionContext.equal.bind(<span class="literal">null</span>, working[i]))) {
+      command = <span class="keyword">this</span>._context.generateRemoveCommand(working[i]);
+      <span class="keyword">this</span>._context.execute(command);
+      commands.push(command);
     }
-
-    <span class="keyword">if</span> (fullmatch !== <span class="literal">undefined</span> &amp;&amp; old_reference.indexOf(pair) === -<span class="number">1</span>) {
-      diff.push({
-        name: fullmatch,
-        value: fullmatch
-      });
-      new_reference.push(table[fullmatch]);
-
-    } <span class="keyword">else</span> <span class="keyword">if</span> (fullmatch === <span class="literal">undefined</span>) {
-      diff.push({
-        name: namematch !== <span class="literal">undefined</span> ? namematch : pair[<span class="number">0</span>],
-        value: pair[<span class="number">1</span>],
-        indexing: <span class="literal">true</span>
-      })
-      new_reference.push(pair);
-      table.push(pair);
-      <span class="keyword">this</span>._enforceSizeBound();
-    }
-  }
-
-  <span class="keyword">for</span> (<span class="keyword">var</span> k = <span class="number">0</span>; k &lt; old_reference.length; k++) {
-    <span class="keyword">var</span> reference_pair = old_reference[k];
-    <span class="keyword">if</span> (!(reference_pair <span class="keyword">in</span> new_reference)) {
-      <span class="keyword">var</span> unneeded_index = table.indexOf(reference_pair);
-      <span class="keyword">if</span> (unneeded_index !== -<span class="number">1</span>) {
-        diff.push({
-          name: unneeded_index,
-          value: unneeded_index
-        })
-      }
-    }
-  }
-
-  <span class="keyword">this</span>._reference = new_reference
-}</pre></div></div>
+  }</pre></div></div>
             
         </li>
         
         
-        <li id="section-17">
+        <li id="section-30">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-17">&#182;</a>
+                <a class="pilcrow" href="#section-30">&#182;</a>
               </div>
-              <p>The header table size can be bounded so as to limit the memory requirements.
-The _cut() method drops the entrys that are over the memory limit (<code>this._limit</code>)</p>
+              <ul>
+<li>Then the headers that are not present in the working set yet are added.</li>
+</ul>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>CompressionContext.prototype._enforceSizeBound = <span class="keyword">function</span>() {</pre></div></div>
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">for</span> (i = <span class="number">0</span>; i &lt; pairs.length; i++) {
+    <span class="keyword">if</span> (!working.some(CompressionContext.equal.bind(<span class="literal">null</span>, pairs[i]))) {
+      command = <span class="keyword">this</span>._context.generateAddCommand(pairs[i]);
+      <span class="keyword">this</span>._context.execute(command)
+      commands.push(command)
+    }
+  }</pre></div></div>
             
         </li>
         
         
-        <li id="section-18">
+        <li id="section-31">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-18">&#182;</a>
+                <a class="pilcrow" href="#section-31">&#182;</a>
               </div>
-              <p>The header table size is defined as the sum of the size of each entry of the table.  The size
-of an entry is the sum of the length in bytes of its name, of value&#39;s length in bytes and of
-32 bytes (for accounting for the entry structure overhead).</p>
+              <ul>
+<li>The last step is the serialization of the generated commands.</li>
+</ul>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>  <span class="keyword">var</span> table = <span class="keyword">this</span>._table;
-  <span class="keyword">var</span> size = <span class="number">0</span>;
-  <span class="keyword">for</span> (<span class="keyword">var</span> i = <span class="number">0</span>; i &lt; table.length; i++) {
-    <span class="keyword">if</span> (table[i].size === <span class="literal">undefined</span>) {
-      table[i].size = <span class="keyword">new</span> Buffer(table[i][<span class="number">0</span>] + table[i][<span class="number">1</span>], <span class="string">'utf8'</span>).length + <span class="number">32</span>;
-    }
-    size += table[i].size;
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">var</span> buffers = [];
+  <span class="keyword">for</span> (i = <span class="number">0</span>; i &lt; commands.length; i++) {
+    buffers.push(Compressor.header(commands[i]));
   }
-  <span class="keyword">while</span> (size &gt; <span class="keyword">this</span>._limit) {
-    <span class="keyword">var</span> dropped = table.shift();
-    size -= dropped.size;
-  }
+
+  <span class="keyword">return</span> Array.prototype.concat.apply([], buffers);
 };</pre></div></div>
             
         </li>
         
         
-        <li id="section-19">
+        <li id="section-32">
             <div class="annotation">
               
               <div class="pilwrap for-h1">
-                <a class="pilcrow" href="#section-19">&#182;</a>
+                <a class="pilcrow" href="#section-32">&#182;</a>
               </div>
               <h1><a href="http://tools.ietf.org/html/draft-ietf-httpbis-header-compression-00#section-4">Detailed Format</a></h1>
 
@@ -494,11 +741,11 @@ of an entry is the sum of the length in bytes of its name, of value&#39;s length
         </li>
         
         
-        <li id="section-20">
+        <li id="section-33">
             <div class="annotation">
               
               <div class="pilwrap for-h2">
-                <a class="pilcrow" href="#section-20">&#182;</a>
+                <a class="pilcrow" href="#section-33">&#182;</a>
               </div>
               <h2>Integer representation</h2>
 
@@ -507,11 +754,11 @@ of an entry is the sum of the length in bytes of its name, of value&#39;s length
         </li>
         
         
-        <li id="section-21">
+        <li id="section-34">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-21">&#182;</a>
+                <a class="pilcrow" href="#section-34">&#182;</a>
               </div>
               <p>The algorithm to represent an integer I is as follows:</p>
 <ol>
@@ -562,11 +809,11 @@ of an entry is the sum of the length in bytes of its name, of value&#39;s length
         </li>
         
         
-        <li id="section-22">
+        <li id="section-35">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-22">&#182;</a>
+                <a class="pilcrow" href="#section-35">&#182;</a>
               </div>
               <p>The inverse algorithm:</p>
 <ol>
@@ -613,11 +860,11 @@ of an entry is the sum of the length in bytes of its name, of value&#39;s length
         </li>
         
         
-        <li id="section-23">
+        <li id="section-36">
             <div class="annotation">
               
               <div class="pilwrap for-h2">
-                <a class="pilcrow" href="#section-23">&#182;</a>
+                <a class="pilcrow" href="#section-36">&#182;</a>
               </div>
               <h2>String literal representation</h2>
 
@@ -626,11 +873,11 @@ of an entry is the sum of the length in bytes of its name, of value&#39;s length
         </li>
         
         
-        <li id="section-24">
+        <li id="section-37">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-24">&#182;</a>
+                <a class="pilcrow" href="#section-37">&#182;</a>
               </div>
               <p>Literal <strong>strings</strong> can represent header names or header values.  They are encoded in two parts:</p>
 <ol>
@@ -657,11 +904,11 @@ Decompressor.string = <span class="function"><span class="keyword">function</spa
         </li>
         
         
-        <li id="section-25">
+        <li id="section-38">
             <div class="annotation">
               
               <div class="pilwrap for-h2">
-                <a class="pilcrow" href="#section-25">&#182;</a>
+                <a class="pilcrow" href="#section-38">&#182;</a>
               </div>
               <h2>Header represenations</h2>
 
@@ -670,11 +917,11 @@ Decompressor.string = <span class="function"><span class="keyword">function</spa
         </li>
         
         
-        <li id="section-26">
+        <li id="section-39">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-26">&#182;</a>
+                <a class="pilcrow" href="#section-39">&#182;</a>
               </div>
               <p>The <strong>JavaScript object representation</strong> of a header record:</p>
 <pre><code>{
@@ -790,11 +1037,105 @@ Decompressor.header = <span class="function"><span class="keyword">function</spa
         </li>
         
         
-        <li id="section-27">
+        <li id="section-40">
             <div class="annotation">
               
               <div class="pilwrap for-h1">
-                <a class="pilcrow" href="#section-27">&#182;</a>
+                <a class="pilcrow" href="#section-40">&#182;</a>
+              </div>
+              <h1>Wrapping in streams</h1>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-41">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-41">&#182;</a>
+              </div>
+              <p>This section describes the interaction between the compressor/decompressor and the HTTP/2
+protocol.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>Compressor.prototype._initializeStream = <span class="function"><span class="keyword">function</span> <span class="title">_initializeStream</span><span class="params">()</span> {</span>
+  Transform.call(<span class="keyword">this</span>, { objectMode: <span class="literal">true</span> });
+};
+
+Compressor.prototype._transform = <span class="function"><span class="keyword">function</span> <span class="title">_transform</span><span class="params">(frame, encoding, done)</span> {</span>
+  <span class="keyword">if</span> (frame.type === <span class="string">'HEADERS'</span> || frame.type === <span class="string">'PUSH_PROMISE'</span>) {
+    <span class="keyword">var</span> buffer = concat(<span class="keyword">this</span>.compress(frame.headers))
+      , cursor = <span class="number">0</span>;
+    <span class="keyword">do</span> {
+      <span class="keyword">var</span> chunk_size = Math.min(<span class="number">16383</span>, buffer.length)
+        , chunk = buffer.slice(cursor, cursor + chunk_size);
+      cursor += chunk_size;
+      <span class="keyword">var</span> end = frame.flags[<span class="string">'END_'</span> + frame.type] = (cursor === buffer.length);
+      <span class="keyword">this</span>.push({
+        type: frame.type,
+        flags: frame.flags,
+        stream: frame.stream,
+        priority: frame.priority,
+        data: chunk
+      });
+    } <span class="keyword">while</span> (!end)
+  }
+
+  done();
+};
+
+Decompressor.prototype._initializeStream = <span class="function"><span class="keyword">function</span> <span class="title">_initializeStream</span><span class="params">()</span> {</span>
+  Transform.call(<span class="keyword">this</span>, { objectMode: <span class="literal">true</span> });
+  <span class="keyword">this</span>._in_progress = <span class="literal">false</span>;
+  <span class="keyword">this</span>._frames = [];
+  <span class="keyword">this</span>._type = <span class="literal">undefined</span>;
+};
+
+Decompressor.prototype._transform = <span class="function"><span class="keyword">function</span> <span class="title">_transform</span><span class="params">(frame, encoding, done)</span> {</span>
+  <span class="keyword">if</span> (<span class="keyword">this</span>._in_progress) {
+    <span class="keyword">if</span> (frame.type !== <span class="keyword">this</span>._type) {
+      <span class="keyword">throw</span> <span class="keyword">new</span> Error(<span class="string">'A series of header frames must not be interleaved with other frames!'</span>);
+    }
+    <span class="keyword">this</span>._frames.push(frame);
+
+  } <span class="keyword">else</span> <span class="keyword">if</span> (frame.type === <span class="string">'HEADERS'</span> || frame.type === <span class="string">'PUSH_PROMISE'</span>) {
+    <span class="keyword">this</span>._in_progress = <span class="literal">true</span>;
+    <span class="keyword">this</span>._type = frame.type;
+    <span class="keyword">this</span>._frames.push(frame);
+
+  } <span class="keyword">else</span> {
+    <span class="keyword">this</span>.push(frame);
+  }
+
+  <span class="keyword">if</span> (<span class="keyword">this</span>._in_progress &amp;&amp; (frame.flags.END_HEADERS || frame.flags.END_PUSH_PROMISE)) {
+    <span class="keyword">var</span> buffer = concat(<span class="keyword">this</span>._frames.map(<span class="keyword">function</span>(frame) {
+      <span class="keyword">return</span> frame.data;
+    }));
+    <span class="keyword">var</span> headers = <span class="keyword">this</span>.decompress(buffer);
+    <span class="keyword">this</span>.push({
+      type: frame.type,
+      flags: frame.flags,
+      stream: frame.stream,
+      priority: frame.priority,
+      headers: headers
+    })
+    <span class="keyword">this</span>._in_progress = <span class="literal">false</span>;
+  }
+
+  done();
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-42">
+            <div class="annotation">
+              
+              <div class="pilwrap for-h1">
+                <a class="pilcrow" href="#section-42">&#182;</a>
               </div>
               <h1><a href="http://tools.ietf.org/html/draft-ietf-httpbis-header-compression-00#appendix-A">Initial header names</a></h1>
 
@@ -803,29 +1144,92 @@ Decompressor.header = <span class="function"><span class="keyword">function</spa
         </li>
         
         
-        <li id="section-28">
+        <li id="section-43">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-28">&#182;</a>
+                <a class="pilcrow" href="#section-43">&#182;</a>
               </div>
               
             </div>
             
             <div class="content"><div class='highlight'><pre>CompressionContext.initialRequestTable  = [
-  [<span class="string">':scheme'</span>, <span class="string">'http'</span>],
-  [<span class="string">':scheme'</span>, <span class="string">'https'</span>],
-  [<span class="string">':host'</span>],
-  [<span class="string">':path'</span>, <span class="string">'/'</span>],
-  [<span class="string">':method'</span>, <span class="string">'get'</span>]
+  [ <span class="string">':scheme'</span>                     , <span class="string">'http'</span>  ],
+  [ <span class="string">':scheme'</span>                     , <span class="string">'https'</span> ],
+  [ <span class="string">':host'</span>                       , <span class="string">''</span>      ],
+  [ <span class="string">':path'</span>                       , <span class="string">'/'</span>     ],
+  [ <span class="string">':method'</span>                     , <span class="string">'get'</span>   ],
+  [ <span class="string">'accept'</span>                      , <span class="string">''</span>      ],
+  [ <span class="string">'accept-charset'</span>              , <span class="string">''</span>      ],
+  [ <span class="string">'accept-encoding'</span>             , <span class="string">''</span>      ],
+  [ <span class="string">'accept-language'</span>             , <span class="string">''</span>      ],
+  [ <span class="string">'cookie'</span>                      , <span class="string">''</span>      ],
+  [ <span class="string">'if-modified-since'</span>           , <span class="string">''</span>      ],
+  [ <span class="string">'keep-alive'</span>                  , <span class="string">''</span>      ],
+  [ <span class="string">'user-agent'</span>                  , <span class="string">''</span>      ],
+  [ <span class="string">'proxy-connection'</span>            , <span class="string">''</span>      ],
+  [ <span class="string">'referer'</span>                     , <span class="string">''</span>      ],
+  [ <span class="string">'accept-datetime'</span>             , <span class="string">''</span>      ],
+  [ <span class="string">'authorization'</span>               , <span class="string">''</span>      ],
+  [ <span class="string">'allow'</span>                       , <span class="string">''</span>      ],
+  [ <span class="string">'cache-control'</span>               , <span class="string">''</span>      ],
+  [ <span class="string">'connection'</span>                  , <span class="string">''</span>      ],
+  [ <span class="string">'content-length'</span>              , <span class="string">''</span>      ],
+  [ <span class="string">'content-md5'</span>                 , <span class="string">''</span>      ],
+  [ <span class="string">'content-type'</span>                , <span class="string">''</span>      ],
+  [ <span class="string">'date'</span>                        , <span class="string">''</span>      ],
+  [ <span class="string">'expect'</span>                      , <span class="string">''</span>      ],
+  [ <span class="string">'from'</span>                        , <span class="string">''</span>      ],
+  [ <span class="string">'if-match'</span>                    , <span class="string">''</span>      ],
+  [ <span class="string">'if-none-match'</span>               , <span class="string">''</span>      ],
+  [ <span class="string">'if-range'</span>                    , <span class="string">''</span>      ],
+  [ <span class="string">'if-unmodified-since'</span>         , <span class="string">''</span>      ],
+  [ <span class="string">'max-forwards'</span>                , <span class="string">''</span>      ],
+  [ <span class="string">'pragma'</span>                      , <span class="string">''</span>      ],
+  [ <span class="string">'proxy-authorization'</span>         , <span class="string">''</span>      ],
+  [ <span class="string">'range'</span>                       , <span class="string">''</span>      ],
+  [ <span class="string">'te'</span>                          , <span class="string">''</span>      ],
+  [ <span class="string">'upgrade'</span>                     , <span class="string">''</span>      ],
+  [ <span class="string">'via'</span>                         , <span class="string">''</span>      ],
+  [ <span class="string">'warning'</span>                     , <span class="string">''</span>      ]
 ];
 
 CompressionContext.initialResponseTable = [
-  [<span class="string">':status'</span>, <span class="string">'200'</span>],
-  [<span class="string">'age'</span>],
-  [<span class="string">'cache-control'</span>],
-  [<span class="string">'content-length'</span>],
-  [<span class="string">'content-type'</span>]
+  [ <span class="string">':status'</span>                     , <span class="string">'200'</span>   ],
+  [ <span class="string">'age'</span>                         , <span class="string">''</span>      ],
+  [ <span class="string">'cache-control'</span>               , <span class="string">''</span>      ],
+  [ <span class="string">'content-length'</span>              , <span class="string">''</span>      ],
+  [ <span class="string">'content-type'</span>                , <span class="string">''</span>      ],
+  [ <span class="string">'date'</span>                        , <span class="string">''</span>      ],
+  [ <span class="string">'etag'</span>                        , <span class="string">''</span>      ],
+  [ <span class="string">'expires'</span>                     , <span class="string">''</span>      ],
+  [ <span class="string">'last-modified'</span>               , <span class="string">''</span>      ],
+  [ <span class="string">'server'</span>                      , <span class="string">''</span>      ],
+  [ <span class="string">'set-cookie'</span>                  , <span class="string">''</span>      ],
+  [ <span class="string">'vary'</span>                        , <span class="string">''</span>      ],
+  [ <span class="string">'via'</span>                         , <span class="string">''</span>      ],
+  [ <span class="string">'access-control-allow-origin'</span> , <span class="string">''</span>      ],
+  [ <span class="string">'accept-ranges'</span>               , <span class="string">''</span>      ],
+  [ <span class="string">'allow'</span>                       , <span class="string">''</span>      ],
+  [ <span class="string">'connection'</span>                  , <span class="string">''</span>      ],
+  [ <span class="string">'content-disposition'</span>         , <span class="string">''</span>      ],
+  [ <span class="string">'content-encoding'</span>            , <span class="string">''</span>      ],
+  [ <span class="string">'content-language'</span>            , <span class="string">''</span>      ],
+  [ <span class="string">'content-location'</span>            , <span class="string">''</span>      ],
+  [ <span class="string">'content-md5'</span>                 , <span class="string">''</span>      ],
+  [ <span class="string">'content-range'</span>               , <span class="string">''</span>      ],
+  [ <span class="string">'link'</span>                        , <span class="string">''</span>      ],
+  [ <span class="string">'location'</span>                    , <span class="string">''</span>      ],
+  [ <span class="string">'p3p'</span>                         , <span class="string">''</span>      ],
+  [ <span class="string">'pragma'</span>                      , <span class="string">''</span>      ],
+  [ <span class="string">'proxy-authenticate'</span>          , <span class="string">''</span>      ],
+  [ <span class="string">'refresh'</span>                     , <span class="string">''</span>      ],
+  [ <span class="string">'retry-after'</span>                 , <span class="string">''</span>      ],
+  [ <span class="string">'strict-transport-security'</span>   , <span class="string">''</span>      ],
+  [ <span class="string">'trailer'</span>                     , <span class="string">''</span>      ],
+  [ <span class="string">'transfer-encoding'</span>           , <span class="string">''</span>      ],
+  [ <span class="string">'warning'</span>                     , <span class="string">''</span>      ],
+  [ <span class="string">'www-authenticate'</span>            , <span class="string">''</span>      ]
 ];</pre></div></div>
             
         </li>
