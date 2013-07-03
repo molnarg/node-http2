@@ -83,6 +83,22 @@ var test_headers = [{
   buffer: new Buffer('5F0A' + '067365636F6E64', 'hex')
 }];
 
+var test_header_sets = [{
+  headers: {
+    ':path': '/my-example/index.html',
+    'user-agent': 'my-user-agent',
+    'x-my-header': 'first'
+  },
+  buffer: concat(test_headers.slice(0, 3).map(function(test) { return test.buffer; }))
+}, {
+  headers: {
+    ':path': '/my-example/resources/script.js',
+    'user-agent': 'my-user-agent',
+    'x-my-header': 'second'
+  },
+  buffer: concat(test_headers.slice(3).map(function(test) { return test.buffer; }))
+}];
+
 describe('compressor.js', function() {
   describe('CompressionContext', function() {
     describe('static method .equal([name1, value1], [name2, value2])', function() {
@@ -153,6 +169,15 @@ describe('compressor.js', function() {
           expect(Decompressor.header(test.buffer)).to.deep.equal(test.header);
           expect(test.buffer.cursor).to.equal(test.buffer.length);
         }
+      });
+    });
+    describe('method decompress(buffer)', function() {
+      it('should return the parsed header set in { name1: value1, name2: [value2, value3], ... } format', function() {
+        var decompressor = new Decompressor(true);
+        var header_set = test_header_sets[0];
+        expect(decompressor.decompress(header_set.buffer)).to.deep.equal(header_set.headers);
+        header_set = test_header_sets[1];
+        expect(decompressor.decompress(header_set.buffer)).to.deep.equal(header_set.headers);
       });
     });
   });
