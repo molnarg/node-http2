@@ -166,7 +166,7 @@ describe('framer.js', function() {
     });
 
     Object.keys(frame_types).forEach(function(type) {
-      var tests = test_frames.filter(function(test) { return test.frame.type === type });
+      var tests = test_frames.filter(function(test) { return test.frame.type === type; });
       var frame_shape = '{ ' + frame_types[type].join(', ') + ' }';
       describe('static method .' + type + '(' + frame_shape + ', buffer_array)', function() {
         it('should push buffers to the array that make up a ' + type + ' type payload', function() {
@@ -213,7 +213,7 @@ describe('framer.js', function() {
     });
 
     Object.keys(frame_types).forEach(function(type) {
-      var tests = test_frames.filter(function(test) { return test.frame.type === type });
+      var tests = test_frames.filter(function(test) { return test.frame.type === type; });
       var frame_shape = '{ ' + frame_types[type].join(', ') + ' }';
       describe('static method .' + type + '(payload_buffer, frame)', function() {
         it('should augment the frame object with these properties: ' + frame_shape, function() {
@@ -236,8 +236,8 @@ describe('framer.js', function() {
       it('should transform buffers to appropriate frame object', function() {
         var stream = new Deserializer();
 
-        shuffle_buffers(test_frames.map(function(test) { return test.buffer }))
-          .forEach(stream.write.bind(stream));
+        var shuffled = shuffle_buffers(test_frames.map(function(test) { return test.buffer; }));
+        shuffled.forEach(stream.write.bind(stream));
 
         for (var j = 0; j < test_frames.length; j++) {
           var parsed_frame = stream.read();
