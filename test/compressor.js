@@ -173,7 +173,7 @@ describe('compressor.js', function() {
     });
     describe('method decompress(buffer)', function() {
       it('should return the parsed header set in { name1: value1, name2: [value2, value3], ... } format', function() {
-        var decompressor = new Decompressor(true);
+        var decompressor = new Decompressor('REQUEST');
         var header_set = test_header_sets[0];
         expect(decompressor.decompress(header_set.buffer)).to.deep.equal(header_set.headers);
         header_set = test_header_sets[1];
@@ -185,8 +185,8 @@ describe('compressor.js', function() {
   describe('invariant', function() {
     describe('decompressor.decompress(compressor.compress(headerset)) === headerset', function() {
       it('should be true for any header set if the states are synchronized', function() {
-        var compressor = new Compressor(true);
-        var decompressor = new Decompressor(true);
+        var compressor = new Compressor('REQUEST');
+        var decompressor = new Decompressor('REQUEST');
         for (var i = 0; i < 10; i++) {
           var headers = test_header_sets[i%2].headers;
           var compressed = compressor.compress(headers);
