@@ -58,11 +58,19 @@
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-1">&#182;</a>
               </div>
-              
+              <p>HTTP/2 compression is implemented by two <a href="http://nodejs.org/api/stream.html#stream_class_stream_transform">Transform Stream</a> subclasses that operate in
+<a href="http://nodejs.org/api/stream.html#stream_new_stream_readable_options">object mode</a>: the Compressor and the Decompressor. These provide a layer between the
+<a href="framer.html">framer</a> and the <a href="connection.html">connection handling component</a> that
+generates/parses binary header data.</p>
+<p>Compression functionality is separated from the integration part. The latter is implemented in
+the last part of the file, while the larger part of the file is an implementation of the <a href="http://tools.ietf.org/html/draft-ietf-httpbis-header-compression-00">HTTP/2
+Header Compression</a> spec. Both Compressor and Decompressor store their compression related
+state in CompressionContext objects. It is always accessed using methods that guarantee that
+it remains in a valid state.</p>
+
             </div>
             
-            <div class="content"><div class='highlight'><pre><span class="keyword">var</span> Transform = require(<span class="string">'stream'</span>).Transform
-  , concat = require(<span class="string">'../lib/utils'</span>).concat;
+            <div class="content"><div class='highlight'><pre><span class="keyword">var</span> Transform = require(<span class="string">'stream'</span>).Transform;
 
 exports.CompressionContext = CompressionContext;
 exports.Decompressor = Decompressor;
@@ -96,14 +104,18 @@ exports.Compressor = Compressor;</pre></div></div>
 <li>Reference Set (<code>this._reference</code>)</li>
 <li>Working Set (<code>this._working</code>)</li>
 </ul>
+<p>Header Table and Reference Set entries are <code>[name, value]</code> pairs (where both are strings), while
+Working Set entries are objects with two properties: <code>index</code> (a number) and <code>pair</code> (a pair).</p>
 <p>There are only two methods that modifies the state of the tables: <code>reinitialize()</code> and
 <code>execute(command)</code>.</p>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre><span class="function"><span class="keyword">function</span> <span class="title">CompressionContext</span><span class="params">(table, limit)</span> {</span>
+            <div class="content"><div class='highlight'><pre><span class="keyword">var</span> DEFAULT_HEADER_TABLE_LIMIT = <span class="number">4096</span>;
+
+<span class="function"><span class="keyword">function</span> <span class="title">CompressionContext</span><span class="params">(table, limit)</span> {</span>
   <span class="keyword">this</span>._table = table ? table.slice() : [];
-  <span class="keyword">this</span>._limit = limit || <span class="number">4096</span>;
+  <span class="keyword">this</span>._limit = limit || DEFAULT_HEADER_TABLE_LIMIT;
   <span class="keyword">this</span>._reference = [];
   <span class="keyword">this</span>._working = [];
 }</pre></div></div>
@@ -179,7 +191,7 @@ that are not present in the header table.</li>
             </div>
             
             <div class="content"><div class='highlight'><pre>  <span class="keyword">this</span>._reference = <span class="keyword">this</span>._working.filter(<span class="keyword">function</span>(entry) {
-    <span class="keyword">return</span> self._table.indexOf(entry.pair) !== -<span class="number">1</span>
+    <span class="keyword">return</span> self._table.indexOf(entry.pair) !== -<span class="number">1</span>;
   }).map(<span class="keyword">function</span>(entry) {
     <span class="keyword">return</span> entry.pair;
   });</pre></div></div>
@@ -217,8 +229,23 @@ value, and its current index in the header table.</li>
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-9">&#182;</a>
               </div>
-              <p><code>execute(command)</code> executes the given command (header representation): updates the Header Table
-and the Working Set.</p>
+              <p><code>execute(command)</code> executes the given command (<a href="http://tools.ietf.org/html/draft-ietf-httpbis-header-compression-00#section-3.3">header representation</a>): updates the Header
+Table and the Working Set.</p>
+<p>The <em>JavaScript object representation</em> of a command:</p>
+<pre><code>{
+  name: String || Integer,  // string literal or index
+  value: String || Integer, // string literal or index
+  index: Integer            // -1       : no indexing
+                            // 0 - ...  : substitution indexing
+                            // Infinity : incremental indexing
+}</code></pre>
+<p>Examples:</p>
+<pre><code>Indexed:
+{ name: 2  , value: 2  , index: -1       }
+Literal:
+{ name: 2  , value: &#39;X&#39;, index: -1       } // without indexing
+{ name: 2  , value: &#39;Y&#39;, index: Infinity } // incremental indexing
+{ name: &#39;A&#39;, value: &#39;Z&#39;, index: 123      } // substitution indexing</code></pre>
 
             </div>
             
@@ -282,11 +309,11 @@ set. Otherwise, the entry in the working set contains an undefined index.</li>
       pair = [command.name, command.value];
     }
 
-    <span class="keyword">if</span> (command.indexing) {
-      <span class="keyword">if</span> (<span class="string">'substitution'</span> <span class="keyword">in</span> command) {
-        <span class="keyword">this</span>._table.splice(command.substitution, <span class="number">1</span>, pair);
-      } <span class="keyword">else</span> {
+    <span class="keyword">if</span> (command.index !== -<span class="number">1</span>) {
+      <span class="keyword">if</span> (command.index === <span class="literal">Infinity</span>) {
         <span class="keyword">this</span>._table.push(pair);
+      } <span class="keyword">else</span> {
+        <span class="keyword">this</span>._table.splice(command.index, <span class="number">1</span>, pair);
       }
       <span class="keyword">this</span>._enforceSizeBound();           <span class="comment">// TODO: The order of these two</span>
       index = <span class="keyword">this</span>._table.indexOf(pair);  <span class="comment">// TODO: operation is not well defined!</span>
@@ -305,16 +332,56 @@ set. Otherwise, the entry in the working set contains an undefined index.</li>
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-12">&#182;</a>
               </div>
-              <p><code>generateAddCommand</code> tries to find a compact header representation (command) for the given
+              <p><code>generateAddCommand</code> tries to find a compact command (header representation) for the given
 <code>[name, value]</code> pair that causes the decoder to add the given pair to the Working Set.</p>
 
             </div>
             
             <div class="content"><div class='highlight'><pre>CompressionContext.prototype.generateAddCommand = <span class="keyword">function</span>(pair) {
-  <span class="keyword">return</span> {
-    name: pair[<span class="number">0</span>],
-    value: pair[<span class="number">1</span>]
+  <span class="keyword">var</span> equal = CompressionContext.equal.bind(<span class="literal">null</span>, pair);
+  <span class="keyword">if</span> (<span class="keyword">this</span>.getWorkingSet().some(equal)) {
+    <span class="keyword">return</span> <span class="literal">undefined</span>;
   }
+
+  <span class="keyword">var</span> working = <span class="keyword">this</span>._working;
+  <span class="function"><span class="keyword">function</span> <span class="title">shadowed</span><span class="params">(index)</span> {</span>
+    <span class="keyword">return</span> working.some(<span class="keyword">function</span>(entry) {
+      <span class="keyword">return</span> entry.index === index;
+    });
+  }
+
+  <span class="keyword">var</span> full_match = <span class="keyword">this</span>._table.filter(equal);
+  <span class="keyword">if</span> (full_match.length !== <span class="number">0</span>) {
+    <span class="keyword">var</span> full_index = <span class="keyword">this</span>._table.indexOf(full_match[<span class="number">0</span>]);
+    <span class="keyword">if</span> (!shadowed(full_index)) {
+      <span class="keyword">return</span> {
+        name: full_index,
+        value: full_index,
+        index: -<span class="number">1</span>
+      };
+    }
+  }
+
+  <span class="keyword">var</span> name = pair[<span class="number">0</span>].toLowerCase();
+  <span class="keyword">var</span> name_match = <span class="keyword">this</span>._table.filter(<span class="keyword">function</span>(entry) {
+    <span class="keyword">return</span> entry[<span class="number">0</span>].toLowerCase() === name;
+  });
+  <span class="keyword">if</span> (name_match.length !== <span class="number">0</span>) {
+    <span class="keyword">var</span> name_index = <span class="keyword">this</span>._table.indexOf(name_match[<span class="number">0</span>]);
+    <span class="keyword">if</span> (!shadowed(name_index)) {
+      <span class="keyword">return</span> {
+        name: name_index,
+        value: pair[<span class="number">1</span>],
+        index: name_index
+      };
+    }
+  }
+
+  <span class="keyword">return</span> {
+    name: name,
+    value: pair[<span class="number">1</span>],
+    index: <span class="literal">Infinity</span>
+  };
 };</pre></div></div>
             
         </li>
@@ -326,7 +393,7 @@ set. Otherwise, the entry in the working set contains an undefined index.</li>
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-13">&#182;</a>
               </div>
-              <p><code>generateRemoveCommand</code> generates a header representation (command) that causes the decoder to
+              <p><code>generateRemoveCommand</code> generates a command (header representation) that causes the decoder to
 drop the given pair from the Working Set.</p>
 
             </div>
@@ -345,7 +412,7 @@ drop the given pair from the Working Set.</p>
                 <a class="pilcrow" href="#section-14">&#182;</a>
               </div>
               <ul>
-<li>if the given header is in the Working Set, then this is always an Indexed Representation.</li>
+<li>if the given header is in the Working Set, then the command is an Indexed Representation.</li>
 </ul>
 
             </div>
@@ -353,7 +420,8 @@ drop the given pair from the Working Set.</p>
             <div class="content"><div class='highlight'><pre>    <span class="keyword">if</span> (entry.pair === pair) {
       <span class="keyword">return</span> {
         name: entry.index,
-        value: entry.index
+        value: entry.index,
+        index: -<span class="number">1</span>
       };
     }
   }</pre></div></div>
@@ -437,9 +505,9 @@ The initial value of it&#39;s Header Table depends on which side of the connecti
 
             </div>
             
-            <div class="content"><div class='highlight'><pre><span class="function"><span class="keyword">function</span> <span class="title">Decompressor</span><span class="params">(request)</span> {</span>
-  <span class="keyword">var</span> initial_table = request ? CompressionContext.initialRequestTable
-                              : CompressionContext.initialResponseTable;
+            <div class="content"><div class='highlight'><pre><span class="function"><span class="keyword">function</span> <span class="title">Decompressor</span><span class="params">(type)</span> {</span>
+  <span class="keyword">var</span> initial_table = (type === <span class="string">'REQUEST'</span>) ? CompressionContext.initialRequestTable
+                                           : CompressionContext.initialResponseTable;
   <span class="keyword">this</span>._context = <span class="keyword">new</span> CompressionContext(initial_table);
 
   <span class="keyword">this</span>._initializeStream();
@@ -455,7 +523,7 @@ Decompressor.prototype = Object.create(Transform.prototype, { constructor: { val
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-19">&#182;</a>
               </div>
-              <p>The <code>decompress</code> function takes a buffer, and returns the decoded header set.</p>
+              <p>The <code>decompress</code> method takes a buffer, and returns the decoded header set.</p>
 <p>According to the spec, to ensure a correct decoding of a set of headers, the following steps or
 equivalent ones MUST be executed by the decoder.</p>
 
@@ -479,7 +547,7 @@ interpreted into the working set of headers</li>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>  <span class="keyword">this</span>._context.reinitialize()</pre></div></div>
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">this</span>._context.reinitialize();</pre></div></div>
             
         </li>
         
@@ -519,7 +587,7 @@ headers of the set of headers.</li>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>  <span class="keyword">var</span> pairs = <span class="keyword">this</span>._context.getWorkingSet()</pre></div></div>
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">var</span> pairs = <span class="keyword">this</span>._context.getWorkingSet();</pre></div></div>
             
         </li>
         
@@ -537,10 +605,10 @@ usual header set format used in node.js: <code>{ name1: value1, name2: [value2, 
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>  <span class="keyword">var</span> headers = {}
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">var</span> headers = {};
   <span class="keyword">for</span> (<span class="keyword">var</span> i = <span class="number">0</span>; i &lt; pairs.length; i++) {
-    <span class="keyword">var</span> name = pairs[i][<span class="number">0</span>]
-      , value = pairs[i][<span class="number">1</span>];
+    <span class="keyword">var</span> name = pairs[i][<span class="number">0</span>];
+    <span class="keyword">var</span> value = pairs[i][<span class="number">1</span>];
     <span class="keyword">if</span> (name <span class="keyword">in</span> headers) {
       <span class="keyword">if</span> (headers[name] <span class="keyword">instanceof</span> Array) {
         headers[name].push(value);
@@ -582,14 +650,16 @@ The initial value of it&#39;s Header Table depends on which side of the connecti
 
             </div>
             
-            <div class="content"><div class='highlight'><pre><span class="function"><span class="keyword">function</span> <span class="title">Compressor</span><span class="params">(request)</span> {</span>
-  <span class="keyword">var</span> initial_table = request ? CompressionContext.initialRequestTable
-                              : CompressionContext.initialResponseTable;
+            <div class="content"><div class='highlight'><pre><span class="function"><span class="keyword">function</span> <span class="title">Compressor</span><span class="params">(type)</span> {</span>
+  <span class="keyword">var</span> initial_table = (type === <span class="string">'REQUEST'</span>) ? CompressionContext.initialRequestTable
+                                           : CompressionContext.initialResponseTable;
   <span class="keyword">this</span>._context = <span class="keyword">new</span> CompressionContext(initial_table);
 
   <span class="keyword">this</span>._initializeStream();
 }
-Compressor.prototype = Object.create(Transform.prototype, { constructor: { value: Compressor } });</pre></div></div>
+Compressor.prototype = Object.create(Transform.prototype, { constructor: { value: Compressor } });
+
+<span class="keyword">var</span> concat = require(<span class="string">'../lib/utils'</span>).concat;</pre></div></div>
             
         </li>
         
@@ -600,7 +670,7 @@ Compressor.prototype = Object.create(Transform.prototype, { constructor: { value
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-26">&#182;</a>
               </div>
-              <p>The <code>compress</code> function takes a header set and returns an array of buffers containing the
+              <p>The <code>compress</code> method takes a header set and returns an array of buffers containing the
 encoded binary data.</p>
 <p>The inverse of the decoding process goes follows:</p>
 
@@ -653,8 +723,8 @@ the reference set and the working set has to be reinitialized.</li>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>  <span class="keyword">this</span>._context.reinitialize()
-  <span class="keyword">var</span> working = <span class="keyword">this</span>._context.getWorkingSet(), command, commands = []</pre></div></div>
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">this</span>._context.reinitialize();
+  <span class="keyword">var</span> working = <span class="keyword">this</span>._context.getWorkingSet(), command, commands = [];</pre></div></div>
             
         </li>
         
@@ -697,8 +767,8 @@ the reference set and the working set has to be reinitialized.</li>
             <div class="content"><div class='highlight'><pre>  <span class="keyword">for</span> (i = <span class="number">0</span>; i &lt; pairs.length; i++) {
     <span class="keyword">if</span> (!working.some(CompressionContext.equal.bind(<span class="literal">null</span>, pairs[i]))) {
       command = <span class="keyword">this</span>._context.generateAddCommand(pairs[i]);
-      <span class="keyword">this</span>._context.execute(command)
-      commands.push(command)
+      <span class="keyword">this</span>._context.execute(command);
+      commands.push(command);
     }
   }</pre></div></div>
             
@@ -722,7 +792,7 @@ the reference set and the working set has to be reinitialized.</li>
     buffers.push(Compressor.header(commands[i]));
   }
 
-  <span class="keyword">return</span> Array.prototype.concat.apply([], buffers);
+  <span class="keyword">return</span> concat(Array.prototype.concat.apply([], buffers)); <span class="comment">// [[buffers]] -&gt; [buffers] -&gt; buffer</span>
 };</pre></div></div>
             
         </li>
@@ -836,9 +906,9 @@ the reference set and the working set has to be reinitialized.</li>
             </div>
             
             <div class="content"><div class='highlight'><pre>Decompressor.integer = <span class="function"><span class="keyword">function</span> <span class="title">readInteger</span><span class="params">(buffer, N)</span> {</span>
-  <span class="keyword">var</span> I, limit = Math.pow(<span class="number">2</span>,N) - <span class="number">1</span>
+  <span class="keyword">var</span> limit = Math.pow(<span class="number">2</span>,N) - <span class="number">1</span>;
 
-  I = buffer[buffer.cursor] &amp; limit;
+  <span class="keyword">var</span> I = buffer[buffer.cursor] &amp; limit;
   <span class="keyword">if</span> (N !== <span class="number">0</span>) {
     buffer.cursor += <span class="number">1</span>;
   }
@@ -849,7 +919,7 @@ the reference set and the working set has to be reinitialized.</li>
       I += (buffer[buffer.cursor] &amp; <span class="number">127</span>) &lt;<span class="xml"><span class="tag">&lt; <span class="attribute">M</span>;
       <span class="attribute">M</span> += <span class="attribute">7</span>;
       <span class="attribute">buffer.cursor</span> += <span class="attribute">1</span>;
-    } <span class="attribute">while</span> (<span class="attribute">buffer</span>[<span class="attribute">buffer.cursor</span> <span class="attribute">-</span> <span class="attribute">1</span>] &amp; <span class="attribute">128</span>)
+    } <span class="attribute">while</span> (<span class="attribute">buffer</span>[<span class="attribute">buffer.cursor</span> <span class="attribute">-</span> <span class="attribute">1</span>] &amp; <span class="attribute">128</span>);
   }
 
   <span class="attribute">return</span> <span class="attribute">I</span>;
@@ -889,17 +959,18 @@ than 128, it is represented as one byte.</li>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>Compressor.string = <span class="function"><span class="keyword">function</span> <span class="title">writeString</span><span class="params">(stringbuffer)</span> {</span>
-  <span class="keyword">var</span> encoded_length = Compressor.integer(stringbuffer.length, <span class="number">0</span>);
-  <span class="keyword">return</span> encoded_length.concat(stringbuffer);
+            <div class="content"><div class='highlight'><pre>Compressor.string = <span class="function"><span class="keyword">function</span> <span class="title">writeString</span><span class="params">(str)</span> {</span>
+  <span class="keyword">var</span> encoded_string = <span class="keyword">new</span> Buffer(str, <span class="string">'utf8'</span>);
+  <span class="keyword">var</span> encoded_length = Compressor.integer(encoded_string.length, <span class="number">0</span>);
+  <span class="keyword">return</span> encoded_length.concat(encoded_string);
 };
 
 Decompressor.string = <span class="function"><span class="keyword">function</span> <span class="title">readString</span><span class="params">(buffer)</span> {</span>
-  <span class="keyword">var</span> length = Decompressor.integer(buffer, <span class="number">0</span>)
-    , stringbuffer = buffer.slice(buffer.cursor, buffer.cursor + length);
+  <span class="keyword">var</span> length = Decompressor.integer(buffer, <span class="number">0</span>);
+  <span class="keyword">var</span> str = buffer.toString(<span class="string">'utf8'</span>, buffer.cursor, buffer.cursor + length);
   buffer.cursor += length;
-  <span class="keyword">return</span> stringbuffer;
-}</pre></div></div>
+  <span class="keyword">return</span> str;
+};</pre></div></div>
             
         </li>
         
@@ -910,7 +981,7 @@ Decompressor.string = <span class="function"><span class="keyword">function</spa
               <div class="pilwrap for-h2">
                 <a class="pilcrow" href="#section-38">&#182;</a>
               </div>
-              <h2>Header represenations</h2>
+              <h2><a href="http://tools.ietf.org/html/draft-ietf-httpbis-header-compression-00#section-4.3">Header represenations</a></h2>
 
             </div>
             
@@ -923,18 +994,8 @@ Decompressor.string = <span class="function"><span class="keyword">function</spa
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-39">&#182;</a>
               </div>
-              <p>The <strong>JavaScript object representation</strong> of a header record:</p>
-<pre><code>{
-  name: String || Number,   // literal or index
-  value: String || Number,  // literal or index
-  indexing: Boolean,        // with or without indexing
-  substitution: Number      // substitution index
-}</code></pre>
-<p>Not all possible header objects are valid. Constraints:</p>
-<ul>
-<li>if <code>value</code> is an index, <code>name</code> should be the same index and indexed representation is used</li>
-<li>if <code>substitution</code> is used, indexing should be set to true</li>
-</ul>
+              <p>The JavaScript object representation is described near the
+<code>CompressionContext.prototype.execute()</code> method definition.</p>
 <p><strong>All binary header representations</strong> start with a prefix signaling the representation type and
 an index represented using prefix coded integers:</p>
 <pre><code>  0   1   2   3   4   5   6   7
@@ -965,67 +1026,81 @@ always represented as a string.</p>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>Compressor.header = <span class="function"><span class="keyword">function</span> <span class="title">writeString</span><span class="params">(header)</span> {</span>
-  <span class="keyword">var</span> buffers = [];
+            <div class="content"><div class='highlight'><pre><span class="keyword">var</span> representations = {
+  indexed             : { prefix: <span class="number">7</span>, pattern: <span class="number">0x80</span> },
+  literal             : { prefix: <span class="number">5</span>, pattern: <span class="number">0x60</span> },
+  literal_incremental : { prefix: <span class="number">5</span>, pattern: <span class="number">0x40</span> },
+  literal_substitution: { prefix: <span class="number">6</span>, pattern: <span class="number">0x00</span> }
+};
+
+Compressor.header = <span class="function"><span class="keyword">function</span> <span class="title">writeString</span><span class="params">(header)</span> {</span>
+  <span class="keyword">var</span> representation, buffers = [];
 
   <span class="keyword">if</span> (<span class="keyword">typeof</span> header.value === <span class="string">'number'</span>) {
-    buffers.push(Compressor.integer(header.value, <span class="number">7</span>));
-    buffers[<span class="number">0</span>][<span class="number">0</span>][<span class="number">0</span>] |= <span class="number">128</span>;
+    representation = representations.indexed;
+  } <span class="keyword">else</span> <span class="keyword">if</span> (header.index === -<span class="number">1</span>) {
+    representation = representations.literal;
+  } <span class="keyword">else</span> <span class="keyword">if</span> (header.index === <span class="literal">Infinity</span>) {
+    representation = representations.literal_incremental;
+  } <span class="keyword">else</span> {
+    representation = representations.literal_substitution;
+  }
+
+  <span class="keyword">if</span> (representation === representations.indexed) {
+    buffers.push(Compressor.integer(header.value, representation.prefix));
 
   } <span class="keyword">else</span> {
-    <span class="keyword">var</span> substitution = (<span class="string">'substitution'</span> <span class="keyword">in</span> header);
-    <span class="keyword">var</span> prefix = substitution ? <span class="number">6</span> : <span class="number">5</span>;
     <span class="keyword">if</span> (<span class="keyword">typeof</span> header.name === <span class="string">'number'</span>) {
-      buffers.push(Compressor.integer(header.name + <span class="number">1</span>, prefix));
+      buffers.push(Compressor.integer(header.name + <span class="number">1</span>, representation.prefix));
     } <span class="keyword">else</span> {
-      buffers.push(Compressor.integer(<span class="number">0</span>, prefix));
+      buffers.push(Compressor.integer(<span class="number">0</span>, representation.prefix));
       buffers.push(Compressor.string(header.name));
     }
 
-    <span class="keyword">if</span> (!substitution) {
-      buffers[<span class="number">0</span>][<span class="number">0</span>][<span class="number">0</span>] |= <span class="number">64</span>;
-      <span class="keyword">if</span> (!header.indexing) {
-        buffers[<span class="number">0</span>][<span class="number">0</span>][<span class="number">0</span>] |= <span class="number">32</span>;
-      }
-    }
-
-    <span class="keyword">if</span> (substitution) {
-      buffers.push(Compressor.integer(header.substitution, <span class="number">0</span>));
+    <span class="keyword">if</span> (representation === representations.literal_substitution) {
+      buffers.push(Compressor.integer(header.index, <span class="number">0</span>));
     }
 
     buffers.push(Compressor.string(header.value));
   }
 
+  buffers[<span class="number">0</span>][<span class="number">0</span>][<span class="number">0</span>] |= representation.pattern;
+
   <span class="keyword">return</span> Array.prototype.concat.apply([], buffers); <span class="comment">// array of arrays of buffers -&gt; array of buffers</span>
-}
+};
 
 Decompressor.header = <span class="function"><span class="keyword">function</span> <span class="title">readString</span><span class="params">(buffer)</span> {</span>
-  <span class="keyword">var</span> header = {};
+  <span class="keyword">var</span> representation, header = {};
 
-  <span class="keyword">if</span> (buffer[<span class="number">0</span>] &amp; <span class="number">128</span>) {
-    <span class="keyword">var</span> index = Decompressor.integer(buffer, <span class="number">7</span>);
-    header.indexing = <span class="literal">false</span>;
-    header.name = index;
-    header.value = index;
+  <span class="keyword">var</span> first_byte = buffer[buffer.cursor];
+  <span class="keyword">if</span> (first_byte &amp; <span class="number">0x80</span>) {
+    representation = representations.indexed;
+  } <span class="keyword">else</span> <span class="keyword">if</span> (first_byte &amp; <span class="number">0x40</span>) {
+    <span class="keyword">if</span> (first_byte &amp; <span class="number">0x20</span>) {
+      representation = representations.literal;
+    } <span class="keyword">else</span> {
+      representation = representations.literal_incremental;
+    }
+  } <span class="keyword">else</span> {
+    representation = representations.literal_substitution;
+  }
+
+  <span class="keyword">if</span> (representation === representations.indexed) {
+    header.value = header.name = Decompressor.integer(buffer, representation.prefix);
+    header.index = -<span class="number">1</span>;
 
   } <span class="keyword">else</span> {
-    <span class="keyword">var</span> prefix, substitution;
-    <span class="keyword">if</span> (buffer[<span class="number">0</span>] &amp; <span class="number">64</span>) {
-      header.indexing = !(buffer[<span class="number">0</span>] &amp; <span class="number">32</span>);
-      prefix = <span class="number">5</span>;
-    } <span class="keyword">else</span> {
-      header.indexing = <span class="literal">true</span>;
-      substitution = <span class="literal">true</span>;
-      prefix = <span class="number">6</span>;
-    }
-
-    header.name = Decompressor.integer(buffer, prefix) - <span class="number">1</span>;
+    header.name = Decompressor.integer(buffer, representation.prefix) - <span class="number">1</span>;
     <span class="keyword">if</span> (header.name === -<span class="number">1</span>) {
       header.name = Decompressor.string(buffer);
     }
 
-    <span class="keyword">if</span> (substitution) {
-      header.substitution = Decompressor.integer(buffer, <span class="number">0</span>);
+    <span class="keyword">if</span> (representation === representations.literal_substitution) {
+      header.index = Decompressor.integer(buffer, <span class="number">0</span>);
+    } <span class="keyword">else</span> <span class="keyword">if</span> (representation === representations.literal_incremental) {
+      header.index = <span class="literal">Infinity</span>;
+    } <span class="keyword">else</span> {
+      header.index = -<span class="number">1</span>;
     }
 
     header.value = Decompressor.string(buffer);
@@ -1043,7 +1118,7 @@ Decompressor.header = <span class="function"><span class="keyword">function</spa
               <div class="pilwrap for-h1">
                 <a class="pilcrow" href="#section-40">&#182;</a>
               </div>
-              <h1>Wrapping in streams</h1>
+              <h1>The compression layer</h1>
 
             </div>
             
@@ -1056,8 +1131,37 @@ Decompressor.header = <span class="function"><span class="keyword">function</spa
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-41">&#182;</a>
               </div>
-              <p>This section describes the interaction between the compressor/decompressor and the HTTP/2
-protocol.</p>
+              <p>This section describes the interaction between the compressor/decompressor and the rest of the
+HTTP/2 implementation. The Compressor and the Decompressor makes up a layer between the
+<a href="framer.html">framer</a> and the <a href="connection.html">connection handling component</a>. They let most
+frames pass through, except HEADERS and PUSH_PROMISE frames. They convert the frames between
+these two representations:</p>
+<pre><code>{                                   {
+ type: &#39;HEADERS&#39;,                    type: &#39;HEADERS&#39;,
+ flags: {},                          flags: {},
+ stream: 1,               &lt;===&gt;      stream: 1,
+ headers: {                          data: Buffer
+  N1: &#39;V1&#39;,                         }
+  N2: [&#39;V1&#39;, &#39;V2&#39;, ...],
+  // ...
+ }
+}</code></pre>
+<p>There are possibly several binary frame that belong to a single non-binary frame.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="keyword">var</span> MAX_HTTP_PAYLOAD_SIZE = <span class="number">16383</span>;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-42">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-42">&#182;</a>
+              </div>
+              <p>The Compressor transform stream is basically stateless.</p>
 
             </div>
             
@@ -1065,52 +1169,246 @@ protocol.</p>
   Transform.call(<span class="keyword">this</span>, { objectMode: <span class="literal">true</span> });
 };
 
-Compressor.prototype._transform = <span class="function"><span class="keyword">function</span> <span class="title">_transform</span><span class="params">(frame, encoding, done)</span> {</span>
-  <span class="keyword">if</span> (frame.type === <span class="string">'HEADERS'</span> || frame.type === <span class="string">'PUSH_PROMISE'</span>) {
-    <span class="keyword">var</span> buffer = concat(<span class="keyword">this</span>.compress(frame.headers))
-      , cursor = <span class="number">0</span>;
+Compressor.prototype._transform = <span class="function"><span class="keyword">function</span> <span class="title">_transform</span><span class="params">(frame, encoding, done)</span> {</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-43">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-43">&#182;</a>
+              </div>
+              <p>When it receives a HEADERS or PUSH_PROMISE frame</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">if</span> (frame.type === <span class="string">'HEADERS'</span> || frame.type === <span class="string">'PUSH_PROMISE'</span>) {</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-44">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-44">&#182;</a>
+              </div>
+              <ul>
+<li>it generates a header block using the compress method</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    <span class="keyword">var</span> buffer = <span class="keyword">this</span>.compress(frame.headers);</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-45">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-45">&#182;</a>
+              </div>
+              <ul>
+<li>splits the header block into <code>chunk</code>s that are not larger than <code>MAX_HTTP_PAYLOAD_SIZE</code></li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    <span class="keyword">var</span> cursor = <span class="number">0</span>;
     <span class="keyword">do</span> {
-      <span class="keyword">var</span> chunk_size = Math.min(<span class="number">16383</span>, buffer.length)
-        , chunk = buffer.slice(cursor, cursor + chunk_size);
-      cursor += chunk_size;
-      <span class="keyword">var</span> end = frame.flags[<span class="string">'END_'</span> + frame.type] = (cursor === buffer.length);
-      <span class="keyword">this</span>.push({
+      <span class="keyword">var</span> chunk_size = Math.min(MAX_HTTP_PAYLOAD_SIZE, buffer.length);
+      <span class="keyword">var</span> chunk = buffer.slice(cursor, cursor + chunk_size);
+      cursor += chunk_size;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-46">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-46">&#182;</a>
+              </div>
+              <ul>
+<li>for each <code>chunk</code>, it generates a <code>chunk_frame</code> that is identical to the original, except
+the <code>data</code> property which holds the given chunk</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>      <span class="keyword">var</span> chunk_frame = {
         type: frame.type,
         flags: frame.flags,
         stream: frame.stream,
         priority: frame.priority,
         data: chunk
-      });
-    } <span class="keyword">while</span> (!end)
+      };</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-47">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-47">&#182;</a>
+              </div>
+              <ul>
+<li>sets the END_HEADERS or END_PUSH_STREAM flag to true if it&#39;s the last chunk</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>      chunk_frame.flags[<span class="string">'END_'</span> + frame.type] = (cursor === buffer.length);</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-48">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-48">&#182;</a>
+              </div>
+              <ul>
+<li>and pushes out the <code>chunk_frame</code></li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>      <span class="keyword">this</span>.push(chunk_frame);
+
+    } <span class="keyword">while</span> (!end);
   }
 
   done();
-};
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-49">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-49">&#182;</a>
+              </div>
+              <p>The Decompressor is a stateful transform stream, since it has to collect multiple frames first,
+and the decoding comes after unifying the payload of those frames.</p>
+<p>If there&#39;s a frame in progress, <code>this._in_progress</code> is <code>true</code>. The frames are collected in
+<code>this._frames</code>, and the type of the frame and the stream identifier is stored in <code>this._type</code>
+and <code>this._stream</code> respectively.</p>
 
-Decompressor.prototype._initializeStream = <span class="function"><span class="keyword">function</span> <span class="title">_initializeStream</span><span class="params">()</span> {</span>
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>Decompressor.prototype._initializeStream = <span class="function"><span class="keyword">function</span> <span class="title">_initializeStream</span><span class="params">()</span> {</span>
   Transform.call(<span class="keyword">this</span>, { objectMode: <span class="literal">true</span> });
   <span class="keyword">this</span>._in_progress = <span class="literal">false</span>;
-  <span class="keyword">this</span>._frames = [];
   <span class="keyword">this</span>._type = <span class="literal">undefined</span>;
-};
+  <span class="keyword">this</span>._stream = <span class="literal">undefined</span>;
+  <span class="keyword">this</span>._frames = <span class="literal">undefined</span>;
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-50">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-50">&#182;</a>
+              </div>
+              <p>When a <code>frame</code> arrives</p>
 
-Decompressor.prototype._transform = <span class="function"><span class="keyword">function</span> <span class="title">_transform</span><span class="params">(frame, encoding, done)</span> {</span>
-  <span class="keyword">if</span> (<span class="keyword">this</span>._in_progress) {
-    <span class="keyword">if</span> (frame.type !== <span class="keyword">this</span>._type) {
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>Decompressor.prototype._transform = <span class="function"><span class="keyword">function</span> <span class="title">_transform</span><span class="params">(frame, encoding, done)</span> {</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-51">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-51">&#182;</a>
+              </div>
+              <ul>
+<li>and the collection process is already <code>_in_progress</code>, the frame is simply stored, except if
+it&#39;s an illegal frame</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">if</span> (<span class="keyword">this</span>._in_progress) {
+    <span class="keyword">if</span> (frame.type !== <span class="keyword">this</span>._type || frame.stream !== <span class="keyword">this</span>._stream) {
       <span class="keyword">throw</span> <span class="keyword">new</span> Error(<span class="string">'A series of header frames must not be interleaved with other frames!'</span>);
     }
     <span class="keyword">this</span>._frames.push(frame);
+  }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-52">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-52">&#182;</a>
+              </div>
+              <ul>
+<li>and the collection process is not <code>_in_progress</code>, but the new frame&#39;s type is HEADERS or
+PUSH_PROMISE, a new collection process begins</li>
+</ul>
 
-  } <span class="keyword">else</span> <span class="keyword">if</span> (frame.type === <span class="string">'HEADERS'</span> || frame.type === <span class="string">'PUSH_PROMISE'</span>) {
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">else</span> <span class="keyword">if</span> (frame.type === <span class="string">'HEADERS'</span> || frame.type === <span class="string">'PUSH_PROMISE'</span>) {
     <span class="keyword">this</span>._in_progress = <span class="literal">true</span>;
     <span class="keyword">this</span>._type = frame.type;
-    <span class="keyword">this</span>._frames.push(frame);
+    <span class="keyword">this</span>._stream = frame.stream;
+    <span class="keyword">this</span>._frames = [frame];
+  }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-53">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-53">&#182;</a>
+              </div>
+              <ul>
+<li>otherwise, the frame is forwarded without taking any action</li>
+</ul>
 
-  } <span class="keyword">else</span> {
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">else</span> {
     <span class="keyword">this</span>.push(frame);
-  }
+  }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-54">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-54">&#182;</a>
+              </div>
+              <p>When the frame signals that it&#39;s the last in the series, the header block chunks are
+concatenated, the headers are decompressed, and a new frame gets pushed out with the
+decompressed headers.</p>
 
-  <span class="keyword">if</span> (<span class="keyword">this</span>._in_progress &amp;&amp; (frame.flags.END_HEADERS || frame.flags.END_PUSH_PROMISE)) {
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">if</span> (<span class="keyword">this</span>._in_progress &amp;&amp; (frame.flags.END_HEADERS || frame.flags.END_PUSH_PROMISE)) {
     <span class="keyword">var</span> buffer = concat(<span class="keyword">this</span>._frames.map(<span class="keyword">function</span>(frame) {
       <span class="keyword">return</span> frame.data;
     }));
@@ -1121,7 +1419,7 @@ Decompressor.prototype._transform = <span class="function"><span class="keyword"
       stream: frame.stream,
       priority: frame.priority,
       headers: headers
-    })
+    });
     <span class="keyword">this</span>._in_progress = <span class="literal">false</span>;
   }
 
@@ -1131,11 +1429,11 @@ Decompressor.prototype._transform = <span class="function"><span class="keyword"
         </li>
         
         
-        <li id="section-42">
+        <li id="section-55">
             <div class="annotation">
               
               <div class="pilwrap for-h1">
-                <a class="pilcrow" href="#section-42">&#182;</a>
+                <a class="pilcrow" href="#section-55">&#182;</a>
               </div>
               <h1><a href="http://tools.ietf.org/html/draft-ietf-httpbis-header-compression-00#appendix-A">Initial header names</a></h1>
 
@@ -1144,11 +1442,11 @@ Decompressor.prototype._transform = <span class="function"><span class="keyword"
         </li>
         
         
-        <li id="section-43">
+        <li id="section-56">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-43">&#182;</a>
+                <a class="pilcrow" href="#section-56">&#182;</a>
               </div>
               
             </div>

@@ -169,9 +169,9 @@ object  header properties        payload properties</code></pre>
             
             <div class="content"><div class='highlight'><pre><span class="function"><span class="keyword">function</span> <span class="title">Deserializer</span><span class="params">()</span> {</span>
   Transform.call(<span class="keyword">this</span>, { objectMode: <span class="literal">true</span> });
-  <span class="keyword">this</span>._next(<span class="number">8</span>);
+  <span class="keyword">this</span>._next(COMMON_HEADER_SIZE);
 }
-Deserializer.prototype = Object.create(Transform.prototype, { constructor: { value: Deserializer } })</pre></div></div>
+Deserializer.prototype = Object.create(Transform.prototype, { constructor: { value: Deserializer } });</pre></div></div>
             
         </li>
         
@@ -294,7 +294,7 @@ Unknown frame types are ignored.</p>
             <span class="keyword">this</span>.emit(<span class="string">'error'</span>, error);
           }
         }
-        <span class="keyword">this</span>._next(<span class="number">8</span>);
+        <span class="keyword">this</span>._next(COMMON_HEADER_SIZE);
       }
     }
   }
@@ -326,6 +326,8 @@ Unknown frame types are ignored.</p>
               </div>
               <p>HTTP/2.0 frames share a common base format consisting of an 8-byte header followed by 0 to 65535
 bytes of data.</p>
+<p>Additional size limits can be set by specific application uses. HTTP limits the frame size to
+16,383 octets. This limitation is enforced on the connection layer.</p>
 <pre><code> 0                   1                   2                   3
  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -363,16 +365,21 @@ associated with the connection as a whole as opposed to an individual stream.</p
 
             </div>
             
-            <div class="content"><div class='highlight'><pre><span class="keyword">var</span> frame_types = [];
+            <div class="content"><div class='highlight'><pre><span class="keyword">var</span> COMMON_HEADER_SIZE = <span class="number">8</span>;
+<span class="keyword">var</span> MAX_PAYLOAD_SIZE = <span class="number">65535</span>;
+
+<span class="keyword">var</span> frame_types = [];
 
 <span class="keyword">var</span> frame_flags = {};
 
 Serializer.commonHeader = <span class="function"><span class="keyword">function</span> <span class="title">writeCommonHeader</span><span class="params">(frame, buffers)</span> {</span>
-  <span class="keyword">var</span> header_buffer = <span class="keyword">new</span> Buffer(<span class="number">8</span>);
+  <span class="keyword">var</span> header_buffer = <span class="keyword">new</span> Buffer(COMMON_HEADER_SIZE);
 
   <span class="keyword">var</span> size = <span class="number">0</span>;
-  <span class="keyword">for</span> (<span class="keyword">var</span> i = <span class="number">0</span>; i &lt; buffers.length; i++) size += buffers[i].length;
-  <span class="keyword">if</span> (size &gt; <span class="number">65535</span>) {
+  <span class="keyword">for</span> (<span class="keyword">var</span> i = <span class="number">0</span>; i &lt; buffers.length; i++) {
+    size += buffers[i].length;
+  }
+  <span class="keyword">if</span> (size &gt; MAX_PAYLOAD_SIZE) {
     <span class="keyword">throw</span> <span class="keyword">new</span> Error(<span class="string">'Too large frame: '</span> + size + <span class="string">' bytes'</span>);
   }
   header_buffer.writeUInt16BE(size, <span class="number">0</span>);
@@ -747,7 +754,7 @@ one.</p>
     }
   });
   <span class="keyword">if</span> (settings_left.length !== <span class="number">0</span>) {
-    <span class="keyword">throw</span> <span class="keyword">new</span> Error(<span class="string">'Unknown settings: '</span> + settings_left.join(<span class="string">', '</span>))
+    <span class="keyword">throw</span> <span class="keyword">new</span> Error(<span class="string">'Unknown settings: '</span> + settings_left.join(<span class="string">', '</span>));
   }
 
   <span class="keyword">var</span> buffer = <span class="keyword">new</span> Buffer(settings.length * <span class="number">8</span>);
@@ -974,14 +981,14 @@ frame_flags.PING = [<span class="string">'PONG'</span>];</pre></div></div>
     <span class="keyword">throw</span> <span class="keyword">new</span> Error(<span class="string">'PING frames must carry an 8 byte payload.'</span>);
   }
   buffers.push(frame.data);
-}
+};
 
 Deserializer.PING = <span class="function"><span class="keyword">function</span> <span class="title">readPing</span><span class="params">(buffer, frame)</span> {</span>
   <span class="keyword">if</span> (buffer.length !== <span class="number">8</span>) {
     <span class="keyword">throw</span> <span class="keyword">new</span> Error(<span class="string">'Invalid size PING frame.'</span>);
   }
   frame.data = buffer;
-}</pre></div></div>
+};</pre></div></div>
             
         </li>
         
