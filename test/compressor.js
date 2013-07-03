@@ -36,50 +36,49 @@ var test_headers = [{
   header: {
     name: 3,
     value: '/my-example/index.html',
-    indexing: true
+    index: Infinity
   },
   buffer: new Buffer('44' + '162F6D792D6578616D706C652F696E6465782E68746D6C', 'hex')
 }, {
   header: {
     name: 12,
     value: 'my-user-agent',
-    indexing: true
+    index: Infinity
   },
   buffer: new Buffer('4D' + '0D6D792D757365722D6167656E74', 'hex')
 }, {
   header: {
     name: 'x-my-header',
     value: 'first',
-    indexing: true
+    index: Infinity
   },
   buffer: new Buffer('40' + '0B782D6D792D686561646572' + '056669727374', 'hex')
 }, {
   header: {
     name: 38,
     value: 38,
-    indexing: false
+    index: -1
   },
   buffer: new Buffer('A6', 'hex')
 }, {
   header: {
     name: 40,
     value: 40,
-    indexing: false
+    index: -1
   },
   buffer: new Buffer('A8', 'hex')
 }, {
   header: {
     name: 3,
     value: '/my-example/resources/script.js',
-    indexing: true,
-    substitution: 38
+    index: 38
   },
   buffer: new Buffer('0426' + '1F2F6D792D6578616D706C652F7265736F75726365732F7363726970742E6A73', 'hex')
 }, {
   header: {
     name: 40,
     value: 'second',
-    indexing: true
+    index: Infinity
   },
   buffer: new Buffer('5F0A' + '067365636F6E64', 'hex')
 }];
