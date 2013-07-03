@@ -181,4 +181,22 @@ describe('compressor.js', function() {
       });
     });
   });
+
+  describe('invariant', function() {
+    describe('decompressor.decompress(compressor.compress(headerset)) === headerset', function() {
+      it('should be true for any header set if the states are synchronized', function() {
+        var compressor = new Compressor(true);
+        var decompressor = new Decompressor(true);
+        for (var i = 0; i < 10; i++) {
+          var headers = test_header_sets[i%2].headers;
+          var compressed = compressor.compress(headers);
+          var decompressed = decompressor.decompress(compressed);
+          expect(headers).to.deep.equal(decompressed);
+          expect(compressor._table).to.deep.equal(decompressor._table);
+          expect(compressor._reference).to.deep.equal(decompressor._reference);
+          expect(compressor._working).to.deep.equal(compressor._working);
+        }
+      });
+    });
+  });
 });
