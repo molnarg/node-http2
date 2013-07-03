@@ -1,9 +1,9 @@
-var expect = require('chai').expect
-  , concat = require('../lib/utils').concat;
+var expect = require('chai').expect;
+var concat = require('../lib/utils').concat;
 
-var framer = require('../lib/framer')
-  , Serializer = framer.Serializer
-  , Deserializer = framer.Deserializer;
+var framer = require('../lib/framer');
+var Serializer = framer.Serializer;
+var Deserializer = framer.Deserializer;
 
 var frame_types = {
   DATA:          ['data'],
@@ -156,9 +156,9 @@ describe('framer.js', function() {
     describe('static method .commonHeader({ type, flags, stream }, buffer_array)', function() {
       it('should add the appropriate 8 byte header buffer in front of the others', function() {
         for (var i = 0; i < test_frames.length; i++) {
-          var test = test_frames[i]
-            , buffers = [test.buffer.slice(8)]
-            , header_buffer = test.buffer.slice(0,8);
+          var test = test_frames[i];
+          var buffers = [test.buffer.slice(8)];
+          var header_buffer = test.buffer.slice(0,8);
           Serializer.commonHeader(test.frame, buffers);
           expect(buffers[0]).to.deep.equal(header_buffer);
         }
@@ -171,8 +171,8 @@ describe('framer.js', function() {
       describe('static method .' + type + '(' + frame_shape + ', buffer_array)', function() {
         it('should push buffers to the array that make up a ' + type + ' type payload', function() {
           for (var i = 0; i < tests.length; i++) {
-            var test = tests[i]
-              , buffers = [];
+            var test = tests[i];
+            var buffers = [];
             Serializer[type](test.frame, buffers);
             expect(concat(buffers)).to.deep.equal(test.buffer.slice(8));
           }

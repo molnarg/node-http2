@@ -1,10 +1,10 @@
-var expect = require('chai').expect
-  , concat = require('../lib/utils').concat;
+var expect = require('chai').expect;
+var concat = require('../lib/utils').concat;
 
-var compressor = require('../lib/compressor')
-  , CompressionContext = compressor.CompressionContext
-  , Compressor = compressor.Compressor
-  , Decompressor = compressor.Decompressor;
+var compressor = require('../lib/compressor');
+var CompressionContext = compressor.CompressionContext;
+var Compressor = compressor.Compressor;
+var Decompressor = compressor.Decompressor;
 
 var test_integers = [{
   N: 5,
