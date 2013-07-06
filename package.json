@@ -9,7 +9,8 @@
   "devDependencies": {
     "chai": "*",
     "mocha": "*",
-    "docco": "*"
+    "docco": "*",
+    "bunyan": "*"
   },
   "scripts": {
     "test": "mocha --reporter spec",
