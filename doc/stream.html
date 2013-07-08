@@ -79,14 +79,14 @@ exports.Stream = Stream;
 
   Duplex.call(<span class="keyword">this</span>);
 
-  <span class="keyword">this</span>._upstream = <span class="keyword">new</span> Duplex();
-  <span class="keyword">this</span>._read = <span class="keyword">this</span>._upstream._read = <span class="function"><span class="keyword">function</span> <span class="title">noop</span><span class="params">()</span> {</span>};
-  <span class="keyword">this</span>._upstream._write = <span class="keyword">function</span>(frame, encoding, done) {
+  <span class="keyword">this</span>.upstream = <span class="keyword">new</span> Duplex();
+  <span class="keyword">this</span>._read = <span class="keyword">this</span>.upstream._read = <span class="function"><span class="keyword">function</span> <span class="title">noop</span><span class="params">()</span> {</span>};
+  <span class="keyword">this</span>.upstream._write = <span class="keyword">function</span>(frame, encoding, done) {
     self.emit(<span class="string">'receiving'</span>, frame);
     done();
   };
 
-  <span class="keyword">this</span>.log = log || require(<span class="string">'./utils'</span>).nolog;
+  <span class="keyword">this</span>._log = log || require(<span class="string">'./utils'</span>).nolog;
 
   <span class="keyword">this</span>._initializeState();
 
@@ -121,7 +121,7 @@ Stream.prototype = Object.create(EventEmitter.prototype, { constructor: { value:
             </div>
             
             <div class="content"><div class='highlight'><pre>Stream.prototype._send = <span class="function"><span class="keyword">function</span> <span class="title">_send</span><span class="params">(frame)</span> {</span>
-  <span class="keyword">this</span>._upstream.push(frame);
+  <span class="keyword">this</span>.upstream.push(frame);
   <span class="keyword">this</span>.emit(<span class="string">'sending'</span>, frame);
 };
 
@@ -212,7 +212,7 @@ Stream.prototype.reset = <span class="function"><span class="keyword">function</
 
 Stream.prototype._setState = <span class="function"><span class="keyword">function</span> <span class="title">transition</span><span class="params">(state)</span> {</span>
   <span class="keyword">if</span> (<span class="keyword">this</span>.state !== state) {
-    <span class="keyword">this</span>.log.debug({ state: state }, <span class="string">'State transition'</span>);
+    <span class="keyword">this</span>._log.debug({ state: state }, <span class="string">'State transition'</span>);
     <span class="keyword">this</span>.emit(<span class="string">'state'</span>, state);
     <span class="keyword">this</span>.state = state;
   }
@@ -461,10 +461,10 @@ can be used to close any of those streams.</li>
             
             <div class="content"><div class='highlight'><pre>  <span class="keyword">if</span> (error) {
     <span class="keyword">if</span> (sending) {
-      <span class="keyword">this</span>.log.error({ frame: frame, state: <span class="keyword">this</span>.state }, <span class="string">'Stream error: sending illegal frame.'</span>);
+      <span class="keyword">this</span>._log.error({ frame: frame, state: <span class="keyword">this</span>.state }, <span class="string">'Stream error: sending illegal frame.'</span>);
       <span class="keyword">throw</span> <span class="keyword">new</span> Error(<span class="string">'Sending illegal frame ('</span> + frame.type + <span class="string">') in '</span> + <span class="keyword">this</span>.state + <span class="string">' state.'</span>);
     } <span class="keyword">else</span> {
-      <span class="keyword">this</span>.log.error({ frame: frame, state: <span class="keyword">this</span>.state }, <span class="string">'Stream error: received illegal frame.'</span>);
+      <span class="keyword">this</span>._log.error({ frame: frame, state: <span class="keyword">this</span>.state }, <span class="string">'Stream error: received illegal frame.'</span>);
       <span class="keyword">this</span>.emit(<span class="string">'error'</span>, <span class="string">'PROTOCOL_ERROR'</span>);
     }
   }

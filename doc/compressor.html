@@ -512,7 +512,7 @@ The initial value of it&#39;s Header Table depends on which side of the connecti
             </div>
             
             <div class="content"><div class='highlight'><pre><span class="function"><span class="keyword">function</span> <span class="title">Decompressor</span><span class="params">(type, log)</span> {</span>
-  <span class="keyword">this</span>.log = log || utils.nolog;
+  <span class="keyword">this</span>._log = log || utils.nolog;
 
   <span class="keyword">var</span> initial_table = (type === <span class="string">'REQUEST'</span>) ? CompressionContext.initialRequestTable
                                            : CompressionContext.initialResponseTable;
@@ -538,7 +538,7 @@ equivalent ones MUST be executed by the decoder.</p>
             </div>
             
             <div class="content"><div class='highlight'><pre>Decompressor.prototype.decompress = <span class="function"><span class="keyword">function</span> <span class="title">decompress</span><span class="params">(buffer)</span> {</span>
-  <span class="keyword">this</span>.log.trace({ buffer: buffer }, <span class="string">'Starting header decompression'</span>);</pre></div></div>
+  <span class="keyword">this</span>._log.trace({ buffer: buffer }, <span class="string">'Starting header decompression'</span>);</pre></div></div>
             
         </li>
         
@@ -628,7 +628,7 @@ usual header set format used in node.js: <code>{ name1: value1, name2: [value2, 
       headers[name] = value;
     }
   }
-  <span class="keyword">this</span>.log.debug({ headers: headers }, <span class="string">'Header decompression is done'</span>);
+  <span class="keyword">this</span>._log.debug({ headers: headers }, <span class="string">'Header decompression is done'</span>);
   <span class="keyword">return</span> headers;
 };</pre></div></div>
             
@@ -661,7 +661,7 @@ The initial value of it&#39;s Header Table depends on which side of the connecti
             </div>
             
             <div class="content"><div class='highlight'><pre><span class="function"><span class="keyword">function</span> <span class="title">Compressor</span><span class="params">(type, log)</span> {</span>
-  <span class="keyword">this</span>.log = log || utils.nolog;
+  <span class="keyword">this</span>._log = log || utils.nolog;
 
   <span class="keyword">var</span> initial_table = (type === <span class="string">'REQUEST'</span>) ? CompressionContext.initialRequestTable
                                            : CompressionContext.initialResponseTable;
@@ -687,7 +687,7 @@ encoded binary data.</p>
             </div>
             
             <div class="content"><div class='highlight'><pre>Compressor.prototype.compress = <span class="function"><span class="keyword">function</span> <span class="title">compress</span><span class="params">(headers)</span> {</span>
-  <span class="keyword">this</span>.log.debug({ headers: headers }, <span class="string">'Starting header compression'</span>);
+  <span class="keyword">this</span>._log.debug({ headers: headers }, <span class="string">'Starting header compression'</span>);
   <span class="keyword">var</span> i;</pre></div></div>
             
         </li>
@@ -805,7 +805,7 @@ the reference set and the working set has to be reinitialized.</li>
 
   <span class="keyword">var</span> buffer = utils.concat(Array.prototype.concat.apply([], buffers)); <span class="comment">// [[bufs]] -&gt; [bufs] -&gt; buf</span>
 
-  <span class="keyword">this</span>.log.trace({ buffer: buffer }, <span class="string">'Header compression is done'</span>);
+  <span class="keyword">this</span>._log.trace({ buffer: buffer }, <span class="string">'Header compression is done'</span>);
   <span class="keyword">return</span> buffer;
 };</pre></div></div>
             
