@@ -34,6 +34,11 @@
               </a>
             
               
+              <a class="source" href="stream.html">
+                stream.js
+              </a>
+            
+              
               <a class="source" href="utils.html">
                 utils.js
               </a>
@@ -61,14 +66,19 @@
               
             </div>
             
-            <div class="content"><div class='highlight'><pre>exports.Connection = Connection;
+            <div class="content"><div class='highlight'><pre><span class="keyword">var</span> EventEmitter = require(<span class="string">'events'</span>).EventEmitter;
+<span class="keyword">var</span> DuplexStream = require(<span class="string">'stream'</span>).DuplexStream;
 
-<span class="keyword">var</span> Serializer = require(<span class="string">'./framer'</span>).Serializer
-  , Deserializer = require(<span class="string">'./framer'</span>).Deserializer
-  , Compressor = require(<span class="string">'./compressor'</span>).Compressor
-  , EventEmitter = require(<span class="string">'events'</span>).EventEmitter;
+<span class="keyword">var</span> Serializer = require(<span class="string">'./framer'</span>).Serializer;
+<span class="keyword">var</span> Deserializer = require(<span class="string">'./framer'</span>).Deserializer;
+<span class="keyword">var</span> Compressor = require(<span class="string">'./compressor'</span>).Compressor;
+<span class="keyword">var</span> Stream = require(<span class="string">'./stream'</span>).Stream;
+
+exports.Connection = Connection;
 
 <span class="function"><span class="keyword">function</span> <span class="title">Connection</span><span class="params">(socket, role)</span> {</span>
+  DuplexStream.call(<span class="keyword">this</span>, { objectMode: <span class="literal">true</span> });
+
   <span class="keyword">this</span>.socket = socket;
   <span class="keyword">this</span>.role = role; <span class="comment">// 'client' or 'server'</span>
   <span class="keyword">this</span>.next_stream_id = (<span class="keyword">this</span>.role === <span class="string">'client'</span>) ? <span class="number">1</span> : <span class="number">2</span>;
@@ -78,11 +88,19 @@
 
   <span class="keyword">this</span>.serializer.pipe(<span class="keyword">this</span>.socket).pipe(<span class="keyword">this</span>.deserializer);
 }
-Connection.prototype = Object.create(EventEmitter.prototype, { constructor: { value: Connection } });
+Connection.prototype = Object.create(DuplexStream.prototype, { constructor: { value: Connection } });
 
 Connection.prototype.createStream = <span class="function"><span class="keyword">function</span> <span class="title">createStream</span><span class="params">()</span> {</span>
   <span class="keyword">var</span> id = <span class="keyword">this</span>.next_stream_id;
   <span class="keyword">this</span>.next_stream_id += <span class="number">2</span>;
+};
+
+Connection.prototype._read = <span class="function"><span class="keyword">function</span> <span class="title">read</span><span class="params">()</span> {</span>
+
+};
+
+Connection.prototype._write = <span class="function"><span class="keyword">function</span> <span class="title">write</span><span class="params">(chunk, encoding, callback)</span> {</span>
+
 };</pre></div></div>
             
         </li>

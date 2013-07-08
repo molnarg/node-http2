@@ -34,6 +34,11 @@
               </a>
             
               
+              <a class="source" href="stream.html">
+                stream.js
+              </a>
+            
+              
               <a class="source" href="utils.html">
                 utils.js
               </a>
@@ -74,6 +79,74 @@
   }
 
   <span class="keyword">return</span> concatenated;
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-2">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-2">&#182;</a>
+              </div>
+              <p>Cut <code>buffer</code> into chunks not larger than <code>size</code></p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>exports.cut = <span class="function"><span class="keyword">function</span> <span class="title">cut</span><span class="params">(buffer, size)</span> {</span>
+  <span class="keyword">var</span> chunks = [];
+  <span class="keyword">var</span> cursor = <span class="number">0</span>;
+  <span class="keyword">do</span> {
+    <span class="keyword">var</span> chunk_size = Math.min(size, buffer.length - cursor);
+    chunks.push(buffer.slice(cursor, cursor + chunk_size));
+    cursor += chunk_size;
+  } <span class="keyword">while</span>(cursor &lt; buffer.length);
+  <span class="keyword">return</span> chunks;
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-3">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-3">&#182;</a>
+              </div>
+              <p>Clone an object</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>exports.clone = <span class="function"><span class="keyword">function</span> <span class="title">clone</span><span class="params">(object)</span> {</span>
+  <span class="keyword">var</span> clone = {};
+  <span class="keyword">for</span> (<span class="keyword">var</span> key <span class="keyword">in</span> object) {
+    clone[key] = object[key];
+  }
+  <span class="keyword">return</span> object;
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-4">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-4">&#182;</a>
+              </div>
+              <p>No-op dummy logger</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="function"><span class="keyword">function</span> <span class="title">noop</span><span class="params">()</span> {</span>}
+exports.nolog = {
+  fatal: noop,
+  error: noop,
+  warn: noop,
+  info: noop,
+  debug: noop,
+  trace: noop
 };</pre></div></div>
             
         </li>
