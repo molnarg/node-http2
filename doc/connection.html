@@ -34,6 +34,16 @@
               </a>
             
               
+              <a class="source" href="http.html">
+                http.js
+              </a>
+            
+              
+              <a class="source" href="https.html">
+                https.js
+              </a>
+            
+              
               <a class="source" href="stream.html">
                 stream.js
               </a>
@@ -66,29 +76,40 @@
               
             </div>
             
-            <div class="content"><div class='highlight'><pre><span class="keyword">var</span> EventEmitter = require(<span class="string">'events'</span>).EventEmitter;
-<span class="keyword">var</span> DuplexStream = require(<span class="string">'stream'</span>).DuplexStream;
+            <div class="content"><div class='highlight'><pre><span class="keyword">var</span> Duplex = require(<span class="string">'stream'</span>).Duplex;
 
 <span class="keyword">var</span> Serializer = require(<span class="string">'./framer'</span>).Serializer;
 <span class="keyword">var</span> Deserializer = require(<span class="string">'./framer'</span>).Deserializer;
 <span class="keyword">var</span> Compressor = require(<span class="string">'./compressor'</span>).Compressor;
-<span class="keyword">var</span> Stream = require(<span class="string">'./stream'</span>).Stream;
 
-exports.Connection = Connection;
+exports.Connection = Connection;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-2">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-2">&#182;</a>
+              </div>
+              <p><code>initialRequest</code> and <code>initialResponse</code> are optional</p>
 
-<span class="function"><span class="keyword">function</span> <span class="title">Connection</span><span class="params">(socket, role)</span> {</span>
-  DuplexStream.call(<span class="keyword">this</span>, { objectMode: <span class="literal">true</span> });
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="function"><span class="keyword">function</span> <span class="title">Connection</span><span class="params">(role, socket, settings, initialRequest, initialResponse)</span> {</span>
+  Duplex.call(<span class="keyword">this</span>, { objectMode: <span class="literal">true</span> });
 
   <span class="keyword">this</span>.socket = socket;
   <span class="keyword">this</span>.role = role; <span class="comment">// 'client' or 'server'</span>
-  <span class="keyword">this</span>.next_stream_id = (<span class="keyword">this</span>.role === <span class="string">'client'</span>) ? <span class="number">1</span> : <span class="number">2</span>;
+  <span class="keyword">this</span>.next_stream_id = (<span class="keyword">this</span>.role === <span class="string">'CLIENT'</span>) ? <span class="number">1</span> : <span class="number">2</span>;
   <span class="keyword">this</span>.serializer = <span class="keyword">new</span> Serializer();
   <span class="keyword">this</span>.deserializer = <span class="keyword">new</span> Deserializer();
   <span class="keyword">this</span>.compressor = <span class="keyword">new</span> Compressor();
 
   <span class="keyword">this</span>.serializer.pipe(<span class="keyword">this</span>.socket).pipe(<span class="keyword">this</span>.deserializer);
 }
-Connection.prototype = Object.create(DuplexStream.prototype, { constructor: { value: Connection } });
+Connection.prototype = Object.create(Duplex.prototype, { constructor: { value: Connection } });
 
 Connection.prototype.createStream = <span class="function"><span class="keyword">function</span> <span class="title">createStream</span><span class="params">()</span> {</span>
   <span class="keyword">var</span> id = <span class="keyword">this</span>.next_stream_id;
@@ -96,11 +117,9 @@ Connection.prototype.createStream = <span class="function"><span class="keyword"
 };
 
 Connection.prototype._read = <span class="function"><span class="keyword">function</span> <span class="title">read</span><span class="params">()</span> {</span>
-
 };
 
 Connection.prototype._write = <span class="function"><span class="keyword">function</span> <span class="title">write</span><span class="params">(chunk, encoding, callback)</span> {</span>
-
 };</pre></div></div>
             
         </li>

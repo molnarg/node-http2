@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+  <title>https.js</title>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <meta name="viewport" content="width=device-width, target-densitydpi=160dpi, initial-scale=1.0; maximum-scale=1.0; user-scalable=0;">
+  <link rel="stylesheet" media="all" href="docco.css" />
+</head>
+<body>
+  <div id="container">
+    <div id="background"></div>
+    
+      <ul id="jump_to">
+        <li>
+          <a class="large" href="javascript:void(0);">Jump To &hellip;</a>
+          <a class="small" href="javascript:void(0);">+</a>
+          <div id="jump_wrapper">
+          <div id="jump_page">
+            
+              
+              <a class="source" href="compressor.html">
+                compressor.js
+              </a>
+            
+              
+              <a class="source" href="connection.html">
+                connection.js
+              </a>
+            
+              
+              <a class="source" href="framer.html">
+                framer.js
+              </a>
+            
+              
+              <a class="source" href="http.html">
+                http.js
+              </a>
+            
+              
+              <a class="source" href="https.html">
+                https.js
+              </a>
+            
+              
+              <a class="source" href="stream.html">
+                stream.js
+              </a>
+            
+              
+              <a class="source" href="utils.html">
+                utils.js
+              </a>
+            
+          </div>
+        </li>
+      </ul>
+    
+    <ul class="sections">
+        
+          <li id="title">
+              <div class="annotation">
+                  <h1>https.js</h1>
+              </div>
+          </li>
+        
+        
+        
+        <li id="section-1">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-1">&#182;</a>
+              </div>
+              <p>This is the main API that can be used to create HTTP/2 server that runs on top of TLS.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="keyword">var</span> https2 = exports;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-2">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-2">&#182;</a>
+              </div>
+              <p>The main governing power behind the http2 API design is that it should look very similar to the
+existing node.js <a href="http://nodejs.org/api/http.html">HTTP</a>/<a href="http://nodejs.org/api/https.html">HTTPS</a>
+APIs. The additional features of HTTP/2 are exposed as extensions to these APIs. Furthermore,
+node-http2 should fall back to using HTTP/1.1 if needed.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="keyword">var</span> https = require(<span class="string">'https'</span>);
+
+<span class="keyword">var</span> default_settings = {};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-3">
+            <div class="annotation">
+              
+              <div class="pilwrap for-h2">
+                <a class="pilcrow" href="#section-3">&#182;</a>
+              </div>
+              <h2>Server</h2>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-4">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-4">&#182;</a>
+              </div>
+              
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>https2.createServer = <span class="function"><span class="keyword">function</span> <span class="title">createServer</span><span class="params">(options, requestListener)</span> {</span>
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-5">
+            <div class="annotation">
+              
+              <div class="pilwrap for-h2">
+                <a class="pilcrow" href="#section-5">&#182;</a>
+              </div>
+              <h2>Client</h2>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-6">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-6">&#182;</a>
+              </div>
+              
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>https2.request = <span class="function"><span class="keyword">function</span> <span class="title">request</span><span class="params">(options, callback)</span> {</span>
+};
+
+https2.get = <span class="function"><span class="keyword">function</span> <span class="title">get</span><span class="params">(options, callback)</span> {</span>
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-7">
+            <div class="annotation">
+              
+              <div class="pilwrap for-h2">
+                <a class="pilcrow" href="#section-7">&#182;</a>
+              </div>
+              <h2>Agent</h2>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-8">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-8">&#182;</a>
+              </div>
+              <p><a href="http://nodejs.org/api/https.html#https_class_https_agent">HTTPS agents</a> are not yet supported,
+so every client request will create a new TCP stream.</p>
+
+            </div>
+            
+        </li>
+        
+    </ul>
+  </div>
+</body>
+</html>
