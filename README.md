@@ -6,7 +6,7 @@ An HTTP/2 server implementation for node.js, developed as a [Google Summer of Co
 Status
 ======
 
-I post weekly status updates [on my blog](http://gabor.molnar.es/blog/categories/google-summer-of-code/). Short version: framing layer and compression is ready.
+I post weekly status updates [on my blog](http://gabor.molnar.es/blog/categories/google-summer-of-code/). Short version: framing layer and compression is ready. Stream and Connection handling is started.
 
 Installation
 ============
@@ -20,7 +20,7 @@ npm install http2
 Documentation
 =============
 
-The developer documentation is generated using [docco](http://jashkenas.github.io/docco/), and is located in the `doc` directory. API documentation is coming later.
+The developer documentation is generated using [docco](http://jashkenas.github.io/docco/), and is located in the `doc` directory. API documentation is coming later. The docs are usually updated only before releasing a new version. To regenerate them manually, run `npm run-script prepublish`.
 
 Running the tests
 =================
@@ -35,4 +35,3 @@ License
 The MIT License
 
 Copyright (C) 2013 Gábor Molnár <gabor@molnar.es>
-
