@@ -118,15 +118,15 @@ describe('compressor.js', function() {
 
   describe('Compressor', function() {
     describe('static method .integer(I, N)', function() {
-      it('should return an array of buffers that represent the encoded form of the string str', function() {
+      it('should return an array of buffers that represent the N-prefix coded form of the integer I', function() {
         for (var i = 0; i < test_strings.length; i++) {
           var test = test_strings[i];
           expect(concat(Compressor.string(test.string))).to.deep.equal(test.buffer);
         }
       });
     });
-    describe('static method .string(stringbuffer)', function() {
-      it('should return an array of buffers that represent the encoded form of the string buffer', function() {
+    describe('static method .string(string)', function() {
+      it('should return an array of buffers that represent the encoded form of the string', function() {
         for (var i = 0; i < test_strings.length; i++) {
           var test = test_strings[i];
           expect(concat(Compressor.string(test.string))).to.deep.equal(test.buffer);
