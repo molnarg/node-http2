@@ -51,7 +51,6 @@ function execute_sequence(sequence, done) {
   function check() {
     checks.forEach(function(check) {
       if ('outgoing' in check) {
-        console.log(outgoing_frames[0], check.outgoing);
         expect(outgoing_frames.shift()).to.deep.equal(check.outgoing);
       } else if ('event' in check) {
         expect(events.shift()).to.deep.equal(check.event);
@@ -66,34 +65,38 @@ function execute_sequence(sequence, done) {
 }
 
 describe('stream.js', function() {
-  describe('Stream class', function() {
-    it.only('should go over the appropriate states in the simplest client request scenario', function(done) {
-      execute_sequence([
-        { method  : { name: 'open', arguments: [{ ':path': '/' }] } },
-        { method  : { name: 'end', arguments: [] } },
-        { outgoing: { type: 'HEADERS', flags: { END_STREAM: true  }, headers: { ':path': '/' }, priority: undefined } },
-        { event   : { name: 'state', data: 'OPEN' } },
-        { event   : { name: 'state', data: 'HALF_CLOSED_LOCAL' } },
+  describe('test scenario', function() {
+    describe('simple client request', function() {
+      it('should trigger the appropriate state transitions and outgoing frames', function(done) {
+        execute_sequence([
+          { method  : { name: 'open', arguments: [{ ':path': '/' }] } },
+          { method  : { name: 'end', arguments: [] } },
+          { outgoing: { type: 'HEADERS', flags: { END_STREAM: true  }, headers: { ':path': '/' }, priority: undefined } },
+          { event   : { name: 'state', data: 'OPEN' } },
+          { event   : { name: 'state', data: 'HALF_CLOSED_LOCAL' } },
 
-        { wait    : 10 },
-        { incoming: { type: 'HEADERS', flags: { END_STREAM: false }, headers: { ':status': 200 } } },
-        { incoming: { type: 'DATA'   , flags: { END_STREAM: true  }, data: new Buffer(5) } },
-        { event   : { name: 'state', data: 'CLOSED' } }
-      ], done);
+          { wait    : 10 },
+          { incoming: { type: 'HEADERS', flags: { END_STREAM: false }, headers: { ':status': 200 } } },
+          { incoming: { type: 'DATA'   , flags: { END_STREAM: true  }, data: new Buffer(5) } },
+          { event   : { name: 'state', data: 'CLOSED' } }
+        ], done);
+      });
     });
-    it('should go over the appropriate states in a server push scenario', function(done) {
-      execute_sequence([
-        { incoming: { type: 'PUSH_PROMISE', flags: { END_STREAM: false }, headers: { ':path': '/' } } },
-        { event   : { name: 'state', data: 'RESERVED_REMOTE' } },
+    describe('server push', function(done) {
+      it('should trigger the appropriate state transitions and outgoing frames', function(done) {
+        execute_sequence([
+          { incoming: { type: 'PUSH_PROMISE', flags: { END_STREAM: false }, headers: { ':path': '/' } } },
+          { event   : { name: 'state', data: 'RESERVED_REMOTE' } },
 
-        { wait    : 10 },
-        { incoming: { type: 'HEADERS'     , flags: { END_STREAM: false }, headers: { ':status': 200 } } },
-        { event   : { name: 'state', data: 'HALF_CLOSED_LOCAL' } },
+          { wait    : 10 },
+          { incoming: { type: 'HEADERS'     , flags: { END_STREAM: false }, headers: { ':status': 200 } } },
+          { event   : { name: 'state', data: 'HALF_CLOSED_LOCAL' } },
 
-        { wait    : 10 },
-        { incoming: { type: 'DATA'        , flags: { END_STREAM: true  }, data: new Buffer(5) } },
-        { event   : { name: 'state', data: 'CLOSED' } }
-      ], done);
+          { wait    : 10 },
+          { incoming: { type: 'DATA'        , flags: { END_STREAM: true  }, data: new Buffer(5) } },
+          { event   : { name: 'state', data: 'CLOSED' } }
+        ], done);
+      });
     });
   });
 });
