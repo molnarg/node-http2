@@ -124,11 +124,11 @@
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-3">&#182;</a>
               </div>
-              <p>Clone an object</p>
+              <p>Shallow copy inspired by underscore&#39;s <a href="http://underscorejs.org/#clone">clone</a></p>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>exports.clone = <span class="function"><span class="keyword">function</span> <span class="title">clone</span><span class="params">(object)</span> {</span>
+            <div class="content"><div class='highlight'><pre>exports.shallow_copy = <span class="function"><span class="keyword">function</span> <span class="title">shallow_copy</span><span class="params">(object)</span> {</span>
   <span class="keyword">var</span> clone = {};
   <span class="keyword">for</span> (<span class="keyword">var</span> key <span class="keyword">in</span> object) {
     clone[key] = object[key];

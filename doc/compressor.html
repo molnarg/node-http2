@@ -1255,15 +1255,21 @@ Compressor.prototype._transform = <span class="function"><span class="keyword">f
               </div>
               <ul>
 <li>for each <code>chunk</code>, it pushes out a <code>chunk_frame</code> that is identical to the original, except
-the <code>data</code> property which holds the given chunk and the END_HEADERS/END_PUSH_STREAM flag
-that marks the last frame</li>
+the <code>data</code> property which holds the given chunk, the END_HEADERS/END_PUSH_STREAM flag that
+marks the last frame and the END_STREAM flag which is always false before the end</li>
 </ul>
 
             </div>
             
             <div class="content"><div class='highlight'><pre>    <span class="keyword">for</span> (<span class="keyword">var</span> i = <span class="number">0</span>; i &lt; chunks.length; i++) {
-      <span class="keyword">var</span> flags = utils.clone(frame.flags);
-      flags[<span class="string">'END_'</span> + frame.type] = (i === chunks.length - <span class="number">1</span>);
+      <span class="keyword">var</span> flags = utils.shallow_copy(frame.flags);
+      <span class="keyword">if</span> (i === chunks.length - <span class="number">1</span>) {
+        flags[<span class="string">'END_'</span> + frame.type] = <span class="literal">true</span>;
+      } <span class="keyword">else</span> {
+        flags[<span class="string">'END_'</span> + frame.type] = <span class="literal">true</span>;
+        flags[<span class="string">'END_STREAM'</span>] = <span class="literal">false</span>;
+      }
+
       <span class="keyword">this</span>.push({
         type: frame.type,
         flags: flags,

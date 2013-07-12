@@ -78,7 +78,9 @@ the Serializer and the Deserializer</p>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre><span class="keyword">var</span> Transform = require(<span class="string">'stream'</span>).Transform;
+            <div class="content"><div class='highlight'><pre><span class="keyword">var</span> utils = require(<span class="string">'./utils'</span>);
+
+<span class="keyword">var</span> Transform = require(<span class="string">'stream'</span>).Transform;
 
 exports.Serializer = Serializer;
 exports.Deserializer = Deserializer;</pre></div></div>
@@ -116,7 +118,7 @@ array        buffers                     buffer</code></pre>
             </div>
             
             <div class="content"><div class='highlight'><pre><span class="function"><span class="keyword">function</span> <span class="title">Serializer</span><span class="params">(log)</span> {</span>
-  <span class="keyword">this</span>._log = log || require(<span class="string">'./utils'</span>).nolog;
+  <span class="keyword">this</span>._log = log || utils.nolog;
   Transform.call(<span class="keyword">this</span>, { objectMode: <span class="literal">true</span> });
 }
 Serializer.prototype = Object.create(Transform.prototype, { constructor: { value: Serializer } });</pre></div></div>
@@ -186,7 +188,7 @@ object  header properties        payload properties</code></pre>
             </div>
             
             <div class="content"><div class='highlight'><pre><span class="function"><span class="keyword">function</span> <span class="title">Deserializer</span><span class="params">(log)</span> {</span>
-  <span class="keyword">this</span>._log = log || require(<span class="string">'./utils'</span>).nolog;
+  <span class="keyword">this</span>._log = log || utils.nolog;
   Transform.call(<span class="keyword">this</span>, { objectMode: <span class="literal">true</span> });
   <span class="keyword">this</span>._next(COMMON_HEADER_SIZE);
 }
