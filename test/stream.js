@@ -22,7 +22,7 @@ function execute_sequence(sequence, done) {
 
   var commands = [], checks = [];
   sequence.forEach(function(step) {
-    if ('method' in step || 'incoming' in step || 'wait' in step) {
+    if ('method' in step || 'incoming' in step || 'wait' in step || 'set_state' in step) {
       commands.push(step);
     } else {
       checks.push(step);
@@ -38,6 +38,9 @@ function execute_sequence(sequence, done) {
       } else if ('incoming' in command) {
         stream.upstream.write(command.incoming);
         execute(callback);
+      } else if ('set_state' in command) {
+        stream.state = command.set_state;
+        execute(callback);
       } else if ('wait' in command) {
         setTimeout(execute.bind(null, callback), command.wait);
       } else {
@@ -50,21 +53,83 @@ function execute_sequence(sequence, done) {
 
   function check() {
     checks.forEach(function(check) {
+      //console.log('check', check);
       if ('outgoing' in check) {
         expect(outgoing_frames.shift()).to.deep.equal(check.outgoing);
       } else if ('event' in check) {
         expect(events.shift()).to.deep.equal(check.event);
       } else {
+        //console.log('X')
         throw new Error('Invalid check', check);
       }
     });
+    //console.log('done')
     done();
   }
 
   execute(check);
 }
 
+var invalid_frames = {
+  IDLE: [
+    { type: 'DATA', data: new Buffer(5) },
+    { type: 'PRIORITY', priority: 1 },
+    { type: 'WINDOW_UPDATE', flags: {}, settings: {} }
+  ],
+  RESERVED_LOCAL: [
+    { type: 'DATA', data: new Buffer(5) },
+    { type: 'HEADERS', flags: {}, headers: {}, priority: undefined },
+    { type: 'PRIORITY', priority: 1 },
+    { type: 'PUSH_PROMISE', flags: {}, headers: {} },
+    { type: 'WINDOW_UPDATE', flags: {}, settings: {} }
+  ],
+  RESERVED_REMOTE: [
+    { type: 'DATA', data: new Buffer(5) },
+    { type: 'PRIORITY', priority: 1 },
+    { type: 'PUSH_PROMISE', flags: {}, headers: {} },
+    { type: 'WINDOW_UPDATE', flags: {}, settings: {} }
+  ],
+  OPEN: [
+  ],
+  HALF_CLOSED_LOCAL: [
+  ],
+  HALF_CLOSED_REMOTE: [
+    { type: 'DATA', data: new Buffer(5) },
+    { type: 'HEADERS', flags: {}, headers: {}, priority: undefined },
+    { type: 'PRIORITY', priority: 1 },
+    { type: 'PUSH_PROMISE', flags: {}, headers: {} },
+    { type: 'WINDOW_UPDATE', flags: {}, settings: {} }
+  ],
+  CLOSED: [ // TODO
+  ]
+};
+
 describe('stream.js', function() {
+  describe('Stream class', function() {
+    describe('._transition(sending, frame) method', function() {
+      Object.keys(invalid_frames).forEach(function(state) {
+        it('should answer RST_STREAM for invalid incoming frames in ' + state + ' state', function(done) {
+          var left = invalid_frames[state].length + 1;
+          function one_done() {
+            left -= 1;
+            if (!left) {
+              done();
+            }
+          }
+          one_done();
+
+          invalid_frames[state].forEach(function(invalid_frame) {
+            execute_sequence([
+              { set_state: state },
+              { incoming : invalid_frame },
+              { wait     : 10 },
+              { outgoing : { type: 'RST_STREAM', flags: {}, error: 'PROTOCOL_ERROR' } }
+            ], one_done);
+          });
+        });
+      });
+    });
+  });
   describe('test scenario', function() {
     describe('sending request', function() {
       it('should trigger the appropriate state transitions and outgoing frames', function(done) {
