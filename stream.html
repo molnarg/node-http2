@@ -34,6 +34,16 @@
               </a>
             
               
+              <a class="source" href="http.html">
+                http.js
+              </a>
+            
+              
+              <a class="source" href="https.html">
+                https.js
+              </a>
+            
+              
               <a class="source" href="stream.html">
                 stream.js
               </a>
@@ -66,34 +76,9 @@
               
             </div>
             
-            <div class="content"><div class='highlight'><pre><span class="keyword">var</span> EventEmitter = require(<span class="string">'events'</span>).EventEmitter;
-<span class="keyword">var</span> Duplex = require(<span class="string">'stream'</span>).Duplex;
-<span class="keyword">var</span> utils = require(<span class="string">'../lib/utils'</span>);
+            <div class="content"><div class='highlight'><pre><span class="keyword">var</span> utils = require(<span class="string">'../lib/utils'</span>);
 
-exports.Stream = Stream;
-
-<span class="keyword">var</span> MAX_HTTP_PAYLOAD_SIZE = <span class="number">16383</span>; <span class="comment">// TODO: this is repeated in multiple files</span>
-
-<span class="function"><span class="keyword">function</span> <span class="title">Stream</span><span class="params">(log)</span> {</span>
-  <span class="keyword">var</span> self = <span class="keyword">this</span>;
-
-  Duplex.call(<span class="keyword">this</span>);
-
-  <span class="keyword">this</span>.upstream = <span class="keyword">new</span> Duplex();
-  <span class="keyword">this</span>._read = <span class="keyword">this</span>.upstream._read = <span class="function"><span class="keyword">function</span> <span class="title">noop</span><span class="params">()</span> {</span>};
-  <span class="keyword">this</span>.upstream._write = <span class="keyword">function</span>(frame, encoding, done) {
-    self.emit(<span class="string">'receiving'</span>, frame);
-    done();
-  };
-
-  <span class="keyword">this</span>._log = log || require(<span class="string">'./utils'</span>).nolog;
-
-  <span class="keyword">this</span>._initializeState();
-
-  <span class="keyword">this</span>._initializeFlowControl();
-}
-
-Stream.prototype = Object.create(EventEmitter.prototype, { constructor: { value: Stream } });</pre></div></div>
+<span class="keyword">var</span> MAX_HTTP_PAYLOAD_SIZE = <span class="number">16383</span>; <span class="comment">// TODO: this is repeated in multiple files</span></pre></div></div>
             
         </li>
         
@@ -101,12 +86,18 @@ Stream.prototype = Object.create(EventEmitter.prototype, { constructor: { value:
         <li id="section-2">
             <div class="annotation">
               
-              <div class="pilwrap for-h2">
+              <div class="pilwrap ">
                 <a class="pilcrow" href="#section-2">&#182;</a>
               </div>
-              <h2>Managing the stream</h2>
+              <p>Stream is a <a href="http://nodejs.org/api/stream.html#stream_class_stream_duplex">Duplex stream</a>
+subclass that implements the <a href="http://http2.github.io/http2-spec/#rfc.section.3.4">HTTP/2 Stream</a>
+concept.</p>
 
             </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="keyword">var</span> Duplex = require(<span class="string">'stream'</span>).Duplex;
+
+exports.Stream = Stream;</pre></div></div>
             
         </li>
         
@@ -117,15 +108,158 @@ Stream.prototype = Object.create(EventEmitter.prototype, { constructor: { value:
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-3">&#182;</a>
               </div>
-              
+              <p>The main aspects of managing the stream are:</p>
+
             </div>
             
-            <div class="content"><div class='highlight'><pre>Stream.prototype._send = <span class="function"><span class="keyword">function</span> <span class="title">_send</span><span class="params">(frame)</span> {</span>
-  <span class="keyword">this</span>.upstream.push(frame);
-  <span class="keyword">this</span>.emit(<span class="string">'sending'</span>, frame);
-};
+            <div class="content"><div class='highlight'><pre><span class="function"><span class="keyword">function</span> <span class="title">Stream</span><span class="params">(log)</span> {</span>
+  Duplex.call(<span class="keyword">this</span>);</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-4">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-4">&#182;</a>
+              </div>
+              <ul>
+<li>every method uses the common logger object</li>
+</ul>
 
-Stream.prototype.promise = <span class="function"><span class="keyword">function</span> <span class="title">promise</span><span class="params">(headers)</span> {</span>
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">this</span>._log = log || require(<span class="string">'./utils'</span>).nolog;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-5">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-5">&#182;</a>
+              </div>
+              <ul>
+<li>receiving and sending stream management commands</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">this</span>._initializeManagement();</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-6">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-6">&#182;</a>
+              </div>
+              <ul>
+<li>sending and receiving frames to/from the upstream connection</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">this</span>._initializeUpstream();</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-7">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-7">&#182;</a>
+              </div>
+              <ul>
+<li>maintaining the state of the stream (idle, open, closed, etc.) and error detection</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">this</span>._initializeState();</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-8">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-8">&#182;</a>
+              </div>
+              <ul>
+<li>flow control, which includes forwarding data from/to the user on the Duplex stream interface
+(<code>write()</code>, <code>end()</code>, <code>pipe()</code>)</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">this</span>._initializeFlowControl();
+}
+
+Stream.prototype = Object.create(Duplex.prototype, { constructor: { value: Stream } });</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-9">
+            <div class="annotation">
+              
+              <div class="pilwrap for-h2">
+                <a class="pilcrow" href="#section-9">&#182;</a>
+              </div>
+              <h2>Managing the stream</h2>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-10">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-10">&#182;</a>
+              </div>
+              <p>PUSH_PROMISE and HEADERS are forwarded to the user through events. When error happens, we first
+close the stream.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>Stream.prototype._initializeManagement = <span class="function"><span class="keyword">function</span> <span class="title">_initializeManagement</span><span class="params">()</span> {</span>
+  <span class="keyword">this</span>.on(<span class="string">'receiving'</span>, <span class="keyword">function</span>(frame) {
+    <span class="keyword">if</span> (frame.type === <span class="string">'PUSH_PROMISE'</span>) {
+      <span class="keyword">this</span>.emit(<span class="string">'promise'</span>, frame.headers);
+    } <span class="keyword">else</span> <span class="keyword">if</span> (frame.type === <span class="string">'HEADERS'</span>) {
+      <span class="keyword">this</span>.emit(<span class="string">'headers'</span>, frame.headers);
+    }
+  });
+  <span class="keyword">this</span>.on(<span class="string">'error'</span>, <span class="keyword">function</span>() {
+    <span class="keyword">this</span>.push(<span class="literal">null</span>);
+  });
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-11">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-11">&#182;</a>
+              </div>
+              <p>For sending management frames, the <code>this._send(frame)</code> method is used. It notifies the state
+management code about the sent frames (using the &#39;sending&#39; event) so we don&#39;t have to manage
+state transitions here.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>Stream.prototype.promise = <span class="function"><span class="keyword">function</span> <span class="title">promise</span><span class="params">(headers)</span> {</span>
   <span class="keyword">this</span>._send({
     type: <span class="string">'PUSH_PROMISE'</span>,
     headers: headers
@@ -140,13 +274,6 @@ Stream.prototype.open = <span class="function"><span class="keyword">function</s
   });
 };
 
-
-Stream.prototype.close = <span class="function"><span class="keyword">function</span> <span class="title">close</span><span class="params">()</span> {</span>
-  <span class="keyword">this</span>._send({
-    type: <span class="string">'RST_STREAM'</span>
-  });
-};
-
 Stream.prototype.reset = <span class="function"><span class="keyword">function</span> <span class="title">reset</span><span class="params">(error)</span> {</span>
   <span class="keyword">this</span>._send({
     type: <span class="string">'RST_STREAM'</span>,
@@ -157,11 +284,131 @@ Stream.prototype.reset = <span class="function"><span class="keyword">function</
         </li>
         
         
-        <li id="section-4">
+        <li id="section-12">
             <div class="annotation">
               
               <div class="pilwrap for-h2">
-                <a class="pilcrow" href="#section-4">&#182;</a>
+                <a class="pilcrow" href="#section-12">&#182;</a>
+              </div>
+              <h2>Managing the upstream connection</h2>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-13">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-13">&#182;</a>
+              </div>
+              <p>The incoming and the generated outgoing frames are received/transmitted on the <code>this.upsteam</code>
+Duplex stream which operates in <a href="http://nodejs.org/api/stream.html#stream_new_stream_readable_options">object mode</a>. The <a href="connection.html">Connection</a> object
+instantiating the stream will read and write frames to/from it.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>Stream.prototype._initializeUpstream = <span class="function"><span class="keyword">function</span> <span class="title">_initializeUpstream</span><span class="params">()</span> {</span>
+  <span class="keyword">this</span>._flush_timer = <span class="literal">undefined</span>;
+  <span class="keyword">this</span>.on(<span class="string">'finish'</span>, <span class="keyword">this</span>._finishing.bind(<span class="keyword">this</span>));
+
+  <span class="keyword">this</span>.upstream = <span class="keyword">new</span> Duplex({ objectMode: <span class="literal">true</span> });
+  <span class="keyword">this</span>.upstream._queue = [];
+  <span class="keyword">this</span>.upstream._read = <span class="function"><span class="keyword">function</span> <span class="title">noop</span><span class="params">()</span> {</span>};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-14">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-14">&#182;</a>
+              </div>
+              <p>When there&#39;s an incoming frame, we let the world know this by emitting a &#39;receiving&#39; event.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">var</span> log = <span class="keyword">this</span>._log;
+  <span class="keyword">this</span>.upstream._write = <span class="keyword">function</span>(frame, encoding, done) {
+    log.debug({ frame: frame }, <span class="string">'Receiving frame'</span>);
+    <span class="keyword">this</span>.emit(<span class="string">'receiving'</span>, frame);
+    done();
+  };
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-15">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-15">&#182;</a>
+              </div>
+              <p>Frames can be sent upstream using the <code>_send</code> method. The frames to be sent are put into the
+<code>upstream._queue</code> first, and are flushed immediately on the beginning of the next turn.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>Stream.prototype._send = <span class="function"><span class="keyword">function</span> <span class="title">_send</span><span class="params">(frame)</span> {</span>
+  frame.flags = frame.flags || {};
+  <span class="keyword">this</span>.upstream._queue.push(frame);
+  <span class="keyword">if</span> (!<span class="keyword">this</span>._flush_timer) {
+    <span class="keyword">this</span>._flush_timer = setImmediate(<span class="keyword">this</span>._flush.bind(<span class="keyword">this</span>));
+  }
+};
+
+Stream.prototype._flush = <span class="function"><span class="keyword">function</span> <span class="title">_flush</span><span class="params">()</span> {</span>
+  <span class="keyword">var</span> frame;
+  <span class="keyword">while</span>(frame = <span class="keyword">this</span>.upstream._queue.shift()) {
+    <span class="keyword">this</span>.upstream.emit(<span class="string">'sending'</span>, frame);
+    <span class="keyword">this</span>._log.debug({ frame: frame }, <span class="string">'Sending frame'</span>);
+    <span class="keyword">this</span>.upstream.push(frame);
+  }
+  <span class="keyword">this</span>._flush_timer = <span class="literal">undefined</span>;
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-16">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-16">&#182;</a>
+              </div>
+              <p>The reason for using an output queue is this. When the stream is finishing (the user calls
+<code>end()</code> on it), then we have to set the <code>END_STREAM</code> flag on the last object.</p>
+<p>If there&#39;s no frame in the queue, then we create a 0 length DATA frame. We could do this
+all the time, but putting the flag on an existing frame is a nice optimization.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="keyword">var</span> empty_buffer = <span class="keyword">new</span> Buffer(<span class="number">0</span>);
+Stream.prototype._finishing = <span class="function"><span class="keyword">function</span> <span class="title">_finishing</span><span class="params">()</span> {</span>
+  <span class="keyword">var</span> length = <span class="keyword">this</span>.upstream._queue.length;
+  <span class="keyword">if</span> (length === <span class="number">0</span>) {
+    <span class="keyword">this</span>._send({
+      type: <span class="string">'DATA'</span>,
+      flags: { END_STREAM: <span class="literal">true</span> },
+      data: empty_buffer
+    });
+  } <span class="keyword">else</span> {
+    <span class="keyword">var</span> last_frame = <span class="keyword">this</span>.upstream._queue[length - <span class="number">1</span>];
+    last_frame.flags.END_STREAM = <span class="literal">true</span>;
+  }
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-17">
+            <div class="annotation">
+              
+              <div class="pilwrap for-h2">
+                <a class="pilcrow" href="#section-17">&#182;</a>
               </div>
               <h2><a href="http://tools.ietf.org/id/draft-unicorn-httpbis-http2-01.html#StreamStates">Stream States</a></h2>
 
@@ -170,11 +417,11 @@ Stream.prototype.reset = <span class="function"><span class="keyword">function</
         </li>
         
         
-        <li id="section-5">
+        <li id="section-18">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-5">&#182;</a>
+                <a class="pilcrow" href="#section-18">&#182;</a>
               </div>
               <pre><code>                      +--------+
                 PP    |        |    PP
@@ -201,16 +448,31 @@ Stream.prototype.reset = <span class="function"><span class="keyword">function</
 |  R                  | closed |                  R  |
 `--------------------&gt;|        |&lt;--------------------&#39;
                       +--------+</code></pre>
+<p>Streams begin in the IDLE state and transitions happen when there&#39;s an incoming or outgoing frame</p>
 
             </div>
             
             <div class="content"><div class='highlight'><pre>Stream.prototype._initializeState = <span class="function"><span class="keyword">function</span> <span class="title">_initializeState</span><span class="params">()</span> {</span>
   <span class="keyword">this</span>.state = <span class="string">'IDLE'</span>;
-  <span class="keyword">this</span>.on(<span class="string">'sending'</span>, <span class="keyword">this</span>._transition.bind(<span class="keyword">this</span>, <span class="literal">true</span>));
-  <span class="keyword">this</span>.on(<span class="string">'receiving'</span>, <span class="keyword">this</span>._transition.bind(<span class="keyword">this</span>, <span class="literal">false</span>));
-};
+  <span class="keyword">this</span>.upstream.on(<span class="string">'sending'</span>, <span class="keyword">this</span>._transition.bind(<span class="keyword">this</span>, <span class="literal">true</span>));
+  <span class="keyword">this</span>.upstream.on(<span class="string">'receiving'</span>, <span class="keyword">this</span>._transition.bind(<span class="keyword">this</span>, <span class="literal">false</span>));
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-19">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-19">&#182;</a>
+              </div>
+              <p>Only <code>_setState</code> should change <code>this.state</code> directly. It also logs the state change and notifies
+interested parties using the &#39;state&#39; event.</p>
 
-Stream.prototype._setState = <span class="function"><span class="keyword">function</span> <span class="title">transition</span><span class="params">(state)</span> {</span>
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>Stream.prototype._setState = <span class="function"><span class="keyword">function</span> <span class="title">transition</span><span class="params">(state)</span> {</span>
   <span class="keyword">if</span> (<span class="keyword">this</span>.state !== state) {
     <span class="keyword">this</span>._log.debug({ state: state }, <span class="string">'State transition'</span>);
     <span class="keyword">this</span>.emit(<span class="string">'state'</span>, state);
@@ -221,33 +483,34 @@ Stream.prototype._setState = <span class="function"><span class="keyword">functi
         </li>
         
         
-        <li id="section-6">
+        <li id="section-20">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-6">&#182;</a>
+                <a class="pilcrow" href="#section-20">&#182;</a>
               </div>
               <p><code>_transition</code> is called every time there&#39;s an incoming or outgoing frame. It manages state
-transitions, and detects stream errors.</p>
+transitions, and detects stream errors. A stream error is always caused by a frame that is not
+allowed in the current state.</p>
 
             </div>
             
             <div class="content"><div class='highlight'><pre>Stream.prototype._transition = <span class="function"><span class="keyword">function</span> <span class="title">transition</span><span class="params">(sending, frame)</span> {</span>
   <span class="keyword">var</span> receiving = !sending;
-  <span class="keyword">var</span> error = <span class="literal">false</span>;
+  <span class="keyword">var</span> error = <span class="literal">undefined</span>;
 
   <span class="keyword">switch</span> (<span class="keyword">this</span>.state) {</pre></div></div>
             
         </li>
         
         
-        <li id="section-7">
+        <li id="section-21">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-7">&#182;</a>
+                <a class="pilcrow" href="#section-21">&#182;</a>
               </div>
-              <p>All streams start in the &quot;idle&quot; state. In this state, no frames have been exchanged.</p>
+              <p>All streams start in the <strong>idle</strong> state. In this state, no frames have been exchanged.</p>
 <ul>
 <li>Sending or receiving a HEADERS frame causes the stream to become &quot;open&quot;.</li>
 <li>Sending a PUSH_PROMISE frame marks the associated stream for later use. The stream state
@@ -255,29 +518,33 @@ for the reserved stream transitions to &quot;reserved (local)&quot;.</li>
 <li>Receiving a PUSH_PROMISE frame marks the associated stream as reserved by the remote peer.
 The state of the stream becomes &quot;reserved (remote)&quot;.</li>
 </ul>
+<p>When the HEADERS frame contains the END_STREAM flags, then two state transitions happen.</p>
 
             </div>
             
             <div class="content"><div class='highlight'><pre>    <span class="keyword">case</span> <span class="string">'IDLE'</span>:
       <span class="keyword">if</span> (frame.type === <span class="string">'HEADERS'</span>) {
         <span class="keyword">this</span>._setState(<span class="string">'OPEN'</span>);
+        <span class="keyword">if</span> (frame.flags.END_STREAM) {
+          <span class="keyword">this</span>._setState(sending ? <span class="string">'HALF_CLOSED_LOCAL'</span> : <span class="string">'HALF_CLOSED_REMOTE'</span>);
+        }
       } <span class="keyword">else</span> <span class="keyword">if</span> (frame.type === <span class="string">'PUSH_PROMISE'</span>) {
         <span class="keyword">this</span>._setState(sending ? <span class="string">'RESERVED_LOCAL'</span> : <span class="string">'RESERVED_REMOTE'</span>);
       } <span class="keyword">else</span> { <span class="comment">// TODO: Not well defined. https://github.com/http2/http2-spec/issues/165</span>
-        error = <span class="literal">true</span>;
+        error = <span class="string">'PROTOCOL_ERROR'</span>;
       }
       <span class="keyword">break</span>;</pre></div></div>
             
         </li>
         
         
-        <li id="section-8">
+        <li id="section-22">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-8">&#182;</a>
+                <a class="pilcrow" href="#section-22">&#182;</a>
               </div>
-              <p>A stream in the &quot;reserved (local)&quot; state is one that has been promised by sending a
+              <p>A stream in the <strong>reserved (local)</strong> state is one that has been promised by sending a
 PUSH_PROMISE frame.</p>
 <ul>
 <li>The endpoint can send a HEADERS frame. This causes the stream to open in a &quot;half closed
@@ -292,23 +559,23 @@ releases the stream reservation.</li>
             <div class="content"><div class='highlight'><pre>    <span class="keyword">case</span> <span class="string">'RESERVED_LOCAL'</span>:
       <span class="keyword">if</span> (sending &amp;&amp; frame.type === <span class="string">'HEADERS'</span>) {
         <span class="keyword">this</span>._setState(<span class="string">'HALF_CLOSED_REMOTE'</span>);
-      } <span class="keyword">else</span> <span class="keyword">if</span> ( sending &amp;&amp; frame.type === <span class="string">'RST_STREAM'</span>) {
+      } <span class="keyword">else</span> <span class="keyword">if</span> (sending &amp;&amp; frame.type === <span class="string">'RST_STREAM'</span>) {
         <span class="keyword">this</span>._setState(<span class="string">'CLOSED'</span>);
       } <span class="keyword">else</span> { <span class="comment">// TODO: Not well defined. https://github.com/http2/http2-spec/issues/165</span>
-        error = <span class="literal">true</span>;
+        error = <span class="string">'PROTOCOL_ERROR'</span>;
       }
       <span class="keyword">break</span>;</pre></div></div>
             
         </li>
         
         
-        <li id="section-9">
+        <li id="section-23">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-9">&#182;</a>
+                <a class="pilcrow" href="#section-23">&#182;</a>
               </div>
-              <p>A stream in the &quot;reserved (remote)&quot; state has been reserved by a remote peer.</p>
+              <p>A stream in the <strong>reserved (remote)</strong> state has been reserved by a remote peer.</p>
 <ul>
 <li>Either endpoint can send a RST_STREAM frame to cause the stream to become &quot;closed&quot;. This
 releases the stream reservation.</li>
@@ -324,20 +591,20 @@ releases the stream reservation.</li>
       } <span class="keyword">else</span> <span class="keyword">if</span> (receiving &amp;&amp; frame.type === <span class="string">'HEADERS'</span>) {
         <span class="keyword">this</span>._setState(<span class="string">'HALF_CLOSED_LOCAL'</span>);
       } <span class="keyword">else</span> {
-        error = <span class="literal">true</span>;
+        error = <span class="string">'PROTOCOL_ERROR'</span>;
       }
       <span class="keyword">break</span>;</pre></div></div>
             
         </li>
         
         
-        <li id="section-10">
+        <li id="section-24">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-10">&#182;</a>
+                <a class="pilcrow" href="#section-24">&#182;</a>
               </div>
-              <p>The &quot;open&quot; state is where both peers can send frames. In this state, sending peers observe
+              <p>The <strong>open</strong> state is where both peers can send frames. In this state, sending peers observe
 advertised stream level flow control limits.</p>
 <ul>
 <li>From this state either endpoint can send a frame with a END_STREAM flag set, which causes
@@ -351,25 +618,23 @@ immediately to &quot;closed&quot;.</li>
             </div>
             
             <div class="content"><div class='highlight'><pre>    <span class="keyword">case</span> <span class="string">'OPEN'</span>:
-      <span class="keyword">if</span> (frame.flags &amp;&amp; frame.flags.END_STREAM) {
+      <span class="keyword">if</span> (frame.flags.END_STREAM) {
         <span class="keyword">this</span>._setState(sending ? <span class="string">'HALF_CLOSED_LOCAL'</span> : <span class="string">'HALF_CLOSED_REMOTE'</span>);
       } <span class="keyword">else</span> <span class="keyword">if</span> (frame.type === <span class="string">'RST_STREAM'</span>) {
         <span class="keyword">this</span>._setState(<span class="string">'CLOSED'</span>);
-      } <span class="keyword">else</span> <span class="keyword">if</span> (frame.type !== <span class="string">'DATA'</span>) { <span class="comment">// TODO: Not well defined. https://github.com/http2/http2-spec/issues/165</span>
-        error = <span class="literal">true</span>;
-      }
+      } <span class="comment">// Anything else is OK</span>
       <span class="keyword">break</span>;</pre></div></div>
             
         </li>
         
         
-        <li id="section-11">
+        <li id="section-25">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-11">&#182;</a>
+                <a class="pilcrow" href="#section-25">&#182;</a>
               </div>
-              <p>A stream that is &quot;half closed (local)&quot; cannot be used for sending frames.</p>
+              <p>A stream that is <strong>half closed (local)</strong> cannot be used for sending frames.</p>
 <ul>
 <li>A stream transitions from this state to &quot;closed&quot; when a frame that contains a END_STREAM
 flag is received, or when either peer sends a RST_STREAM frame.</li>
@@ -378,23 +643,23 @@ flag is received, or when either peer sends a RST_STREAM frame.</li>
             </div>
             
             <div class="content"><div class='highlight'><pre>    <span class="keyword">case</span> <span class="string">'HALF_CLOSED_LOCAL'</span>:
-      <span class="keyword">if</span> (frame.type === <span class="string">'RST_STREAM'</span> || (receiving &amp;&amp; frame.flags &amp;&amp; frame.flags.END_STREAM)) {
+      <span class="keyword">if</span> (frame.type === <span class="string">'RST_STREAM'</span> || (receiving &amp;&amp; frame.flags.END_STREAM)) {
         <span class="keyword">this</span>._setState(<span class="string">'CLOSED'</span>);
-      } <span class="keyword">else</span> <span class="keyword">if</span> (sending) { <span class="comment">// TODO: what is valid here?</span>
-        error = <span class="literal">true</span>;
-      }
+      } <span class="keyword">else</span> <span class="keyword">if</span> (sending) {
+        error = <span class="string">'PROTOCOL_ERROR'</span>;
+      } <span class="comment">// Receiving anything is OK</span>
       <span class="keyword">break</span>;</pre></div></div>
             
         </li>
         
         
-        <li id="section-12">
+        <li id="section-26">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-12">&#182;</a>
+                <a class="pilcrow" href="#section-26">&#182;</a>
               </div>
-              <p>A stream that is &quot;half closed (remote)&quot; is no longer being used by the peer to send frames.
+              <p>A stream that is <strong>half closed (remote)</strong> is no longer being used by the peer to send frames.
 In this state, an endpoint is no longer obligated to maintain a receiver flow control window
 if it performs flow control.</p>
 <ul>
@@ -407,23 +672,23 @@ END_STREAM flag, or when either peer sends a RST_STREAM frame.</li>
             </div>
             
             <div class="content"><div class='highlight'><pre>    <span class="keyword">case</span> <span class="string">'HALF_CLOSED_REMOTE'</span>:
-      <span class="keyword">if</span> (frame.type === <span class="string">'RST_STREAM'</span> || (sending &amp;&amp; frame.flags &amp;&amp; frame.flags.END_STREAM)) {
+      <span class="keyword">if</span> (frame.type === <span class="string">'RST_STREAM'</span> || (sending &amp;&amp; frame.flags.END_STREAM)) {
         <span class="keyword">this</span>._setState(<span class="string">'CLOSED'</span>);
-      } <span class="keyword">else</span> <span class="keyword">if</span> (receiving) { <span class="comment">//  // TODO: what is valid here?</span>
-        error = <span class="literal">true</span>;
-      }
+      } <span class="keyword">else</span> <span class="keyword">if</span> (receiving) {
+        error = <span class="string">'PROTOCOL_ERROR'</span>;
+      } <span class="comment">// Sending anything is OK</span>
       <span class="keyword">break</span>;</pre></div></div>
             
         </li>
         
         
-        <li id="section-13">
+        <li id="section-27">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-13">&#182;</a>
+                <a class="pilcrow" href="#section-27">&#182;</a>
               </div>
-              <p>The &quot;closed&quot; state is the terminal state.</p>
+              <p>The <strong>closed</strong> state is the terminal state.</p>
 <ul>
 <li>An endpoint MUST NOT send frames on a closed stream. An endpoint that receives a frame
 after receiving a RST_STREAM or a frame containing a END_STREAM flag on that stream MUST
@@ -442,30 +707,70 @@ can be used to close any of those streams.</li>
             </div>
             
             <div class="content"><div class='highlight'><pre>    <span class="keyword">case</span> <span class="string">'CLOSED'</span>:
-      error = <span class="literal">true</span>;
+      <span class="keyword">if</span> (receiving &amp;&amp; frame.type === <span class="string">'PUSH_PROMISE'</span>) {
+        <span class="keyword">this</span>._setState(<span class="string">'RESERVED_REMOTE'</span>);
+      } <span class="keyword">else</span> <span class="keyword">if</span> (!(sending &amp;&amp; frame.type === <span class="string">'RST_STREAM'</span>)) {
+        error = <span class="string">'PROTOCOL_ERROR'</span>;
+      } <span class="comment">// TODO: act based on the reason for termination.</span>
       <span class="keyword">break</span>;
   }</pre></div></div>
             
         </li>
         
         
-        <li id="section-14">
+        <li id="section-28">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-14">&#182;</a>
+                <a class="pilcrow" href="#section-28">&#182;</a>
               </div>
-              <p>TODO: DATA frame handling. Sending is allowed in HALF_CLOSED_REMOTE and OPEN?</p>
+              <p>Common error handling.</p>
 
             </div>
             
             <div class="content"><div class='highlight'><pre>  <span class="keyword">if</span> (error) {
-    <span class="keyword">if</span> (sending) {
-      <span class="keyword">this</span>._log.error({ frame: frame, state: <span class="keyword">this</span>.state }, <span class="string">'Stream error: sending illegal frame.'</span>);
+    <span class="keyword">var</span> info = { error: error, frame: frame, state: <span class="keyword">this</span>.state };</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-29">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-29">&#182;</a>
+              </div>
+              <ul>
+<li>When sending something invalid, throwing an exception, since it is probably a bug.</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    <span class="keyword">if</span> (sending) {
+      <span class="keyword">this</span>._log.error(info, <span class="string">'Stream error: sending illegal frame.'</span>);
       <span class="keyword">throw</span> <span class="keyword">new</span> Error(<span class="string">'Sending illegal frame ('</span> + frame.type + <span class="string">') in '</span> + <span class="keyword">this</span>.state + <span class="string">' state.'</span>);
-    } <span class="keyword">else</span> {
-      <span class="keyword">this</span>._log.error({ frame: frame, state: <span class="keyword">this</span>.state }, <span class="string">'Stream error: received illegal frame.'</span>);
-      <span class="keyword">this</span>.emit(<span class="string">'error'</span>, <span class="string">'PROTOCOL_ERROR'</span>);
+    }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-30">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-30">&#182;</a>
+              </div>
+              <ul>
+<li>When receiving something invalid, sending an RST_STREAM using the <code>reset</code> method.
+This will automatically cause a transition to the CLOSED state.</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    <span class="keyword">else</span> {
+      <span class="keyword">this</span>._log.error(info, <span class="string">'Stream error: received illegal frame.'</span>);
+      <span class="keyword">this</span>.state = <span class="string">'CLOSED'</span>;
+      <span class="keyword">this</span>.reset(error);
     }
   }
 };</pre></div></div>
@@ -473,11 +778,11 @@ can be used to close any of those streams.</li>
         </li>
         
         
-        <li id="section-15">
+        <li id="section-31">
             <div class="annotation">
               
               <div class="pilwrap for-h2">
-                <a class="pilcrow" href="#section-15">&#182;</a>
+                <a class="pilcrow" href="#section-31">&#182;</a>
               </div>
               <h2><a href="http://tools.ietf.org/id/draft-unicorn-httpbis-http2-01.html#rfc.section.6.9">Flow control</a></h2>
 
@@ -486,36 +791,33 @@ can be used to close any of those streams.</li>
         </li>
         
         
-        <li id="section-16">
+        <li id="section-32">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-16">&#182;</a>
+                <a class="pilcrow" href="#section-32">&#182;</a>
               </div>
               <p>Flow control in HTTP/2.0 is implemented using a window kept by each sender on every stream.
 The flow control window is a simple integer value that indicates how many bytes of data the
 sender is permitted to transmit. Two flow control windows are applicable; the stream flow control
-window and the connection flow control window.</p>
+window and the connection flow control window. The stream only manages the flow control <code>window</code>.</p>
 
             </div>
             
             <div class="content"><div class='highlight'><pre>Stream.prototype._initializeFlowControl = <span class="function"><span class="keyword">function</span> <span class="title">_initializeFlowControl</span><span class="params">()</span> {</span>
+  <span class="keyword">this</span>._read = <span class="function"><span class="keyword">function</span> <span class="title">noop</span><span class="params">()</span> {</span>};
   <span class="keyword">this</span>.window = INITIAL_WINDOW_SIZE;
-  <span class="keyword">this</span>.on(<span class="string">'receiving'</span>, <span class="keyword">function</span>(frame) {
-    <span class="keyword">if</span> (frame.type === <span class="string">'WINDOW_UPDATE'</span>) {
-      <span class="keyword">this</span>._updateWindow(frame);
-    }
-  });
+  <span class="keyword">this</span>.upstream.on(<span class="string">'receiving'</span>, <span class="keyword">this</span>._updateWindow.bind(<span class="keyword">this</span>));
 };</pre></div></div>
             
         </li>
         
         
-        <li id="section-17">
+        <li id="section-33">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-17">&#182;</a>
+                <a class="pilcrow" href="#section-33">&#182;</a>
               </div>
               <p>When a HTTP/2.0 connection is first established, new streams are created with an initial flow
 control window size of 65535 bytes.</p>
@@ -527,15 +829,16 @@ control window size of 65535 bytes.</p>
         </li>
         
         
-        <li id="section-18">
+        <li id="section-34">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-18">&#182;</a>
+                <a class="pilcrow" href="#section-34">&#182;</a>
               </div>
               <p>A SETTINGS frame can alter the initial flow control window size for all current streams. When the
-value of SETTINGS_INITIAL_WINDOW_SIZE changes, a receiver MUST adjust the size of all stream flow
-control windows that it maintains by the difference between the new value and the old value.</p>
+value of SETTINGS_INITIAL_WINDOW_SIZE changes, a receiver MUST adjust the size of all stream by
+calling the <code>setInitialWindowSize</code> method. The window size has to be modified by the difference
+between the new value and the old value.</p>
 
             </div>
             
@@ -547,13 +850,14 @@ control windows that it maintains by the difference between the new value and th
         </li>
         
         
-        <li id="section-19">
+        <li id="section-35">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-19">&#182;</a>
+                <a class="pilcrow" href="#section-35">&#182;</a>
               </div>
-              <p>Flow control can be disabled for all streams on the connection using the
+              <p>Flow control can be disabled for all streams on the connection using the <code>disableFlowControl</code>
+method. This may happen when there&#39;s a SETTINGS frame received with the
 SETTINGS_FLOW_CONTROL_OPTIONS setting.</p>
 
             </div>
@@ -565,62 +869,149 @@ SETTINGS_FLOW_CONTROL_OPTIONS setting.</p>
         </li>
         
         
-        <li id="section-20">
+        <li id="section-36">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-20">&#182;</a>
+                <a class="pilcrow" href="#section-36">&#182;</a>
               </div>
-              <p>A sender that receives a WINDOW_UPDATE frame updates the corresponding window by the amount
-specified in the frame.</p>
-<p>Flow control can be disabled for an individual stream by sending a WINDOW_UPDATE with the
+              <p>The <code>_updateWindow</code> method gets called every time there&#39;s an incoming frame. It filters out
+WINDOW_UPDATE frames, and then modifies the modifies the flow control window:</p>
+<ul>
+<li>Flow control can be disabled for an individual stream by sending a WINDOW_UPDATE with the
 END_FLOW_CONTROL flag set. The payload of a WINDOW_UPDATE frame that has the END_FLOW_CONTROL
-flag set is ignored.</p>
+flag set is ignored.</li>
+<li>A sender that receives a WINDOW_UPDATE frame updates the corresponding window by the amount
+specified in the frame.</li>
+</ul>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>Stream.prototype._updateWindow = <span class="function"><span class="keyword">function</span> <span class="title">_received</span><span class="params">(frame)</span> {</span>
-  <span class="keyword">if</span> (frame.flags.END_FLOW_CONTROL) {
-    <span class="keyword">this</span>.disableFlowControl();
-  } <span class="keyword">else</span> {
-    <span class="keyword">this</span>.window += frame.window_size;
+            <div class="content"><div class='highlight'><pre>Stream.prototype._updateWindow = <span class="function"><span class="keyword">function</span> <span class="title">_updateWindow</span><span class="params">(frame)</span> {</span>
+  <span class="keyword">if</span> (frame.type === <span class="string">'WINDOW_UPDATE'</span>) {
+    <span class="keyword">if</span> (frame.flags.END_FLOW_CONTROL) {
+      <span class="keyword">this</span>.disableFlowControl();
+    } <span class="keyword">else</span> {
+      <span class="keyword">this</span>.window += frame.window_size;
+    }
+    <span class="keyword">this</span>.emit(<span class="string">'window_update'</span>);
   }
-  <span class="keyword">this</span>.emit(<span class="string">'window_update'</span>);
 };</pre></div></div>
             
         </li>
         
         
-        <li id="section-21">
+        <li id="section-37">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-21">&#182;</a>
+                <a class="pilcrow" href="#section-37">&#182;</a>
               </div>
-              <p>After sending a flow controlled frame, the sender reduces the space available in both windows by
-the length of the transmitted frame. For flow control calculations, the 8 byte frame header is
-not counted.</p>
+              <p>When the user wants to write a buffer into the stream</p>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>Stream.prototype._write = <span class="function"><span class="keyword">function</span> <span class="title">_write</span><span class="params">(buffer, encoding, done)</span> {</span>
-  <span class="keyword">var</span> chunks = utils.cut(buffer, MAX_HTTP_PAYLOAD_SIZE);
-  <span class="keyword">var</span> sent = <span class="number">0</span>;
+            <div class="content"><div class='highlight'><pre>Stream.prototype._write = <span class="function"><span class="keyword">function</span> <span class="title">_write</span><span class="params">(buffer, encoding, done)</span> {</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-38">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-38">&#182;</a>
+              </div>
+              <ul>
+<li>The incoming buffer is cut into pieces that are not larger than <code>MAX_HTTP_PAYLOAD_SIZE</code></li>
+</ul>
 
-  <span class="keyword">while</span> (chunks.length &gt; <span class="number">0</span> &amp;&amp; chunks[<span class="number">0</span>].length &lt;= <span class="keyword">this</span>.window) {
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">var</span> chunks = utils.cut(buffer, MAX_HTTP_PAYLOAD_SIZE);
+  <span class="keyword">var</span> sent = <span class="number">0</span>;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-39">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-39">&#182;</a>
+              </div>
+              <ul>
+<li>Chunks are wrapped in DATA frames and sent out until all of them are sent or the flow control
+<code>window</code> is not enough to send a chunk</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">while</span> (chunks.length &gt; <span class="number">0</span> &amp;&amp; chunks[<span class="number">0</span>].length &lt;= <span class="keyword">this</span>.window) {
     <span class="keyword">var</span> chunk = chunks.shift();
     sent += chunk.length;
-    <span class="keyword">this</span>.window -= chunk.length;
     <span class="keyword">this</span>._send({
       type: <span class="string">'DATA'</span>,
       flags: {},
       data: chunk
-    });
-  }
+    });</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-40">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-40">&#182;</a>
+              </div>
+              <ul>
+<li>After sending a flow controlled frame, the sender reduces the space available the window by
+the length of the transmitted frame. For flow control calculations, the 8 byte frame header
+is not counted.</li>
+</ul>
 
-  <span class="keyword">if</span> (chunks.length === <span class="number">0</span>) {
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    <span class="keyword">this</span>.window -= chunk.length;
+  }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-41">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-41">&#182;</a>
+              </div>
+              <ul>
+<li>If all of the chunks are sent, we are done</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">if</span> (chunks.length === <span class="number">0</span>) {
     done();
-  } <span class="keyword">else</span> {
+  }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-42">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-42">&#182;</a>
+              </div>
+              <ul>
+<li>Otherwise the process has to continue when a window_update occurs. It is guaranteed by
+the Duplex stream class, that there will be no more calls to <code>_write</code> until we are done</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">else</span> {
     <span class="keyword">this</span>.once(<span class="string">'window_update'</span>, <span class="keyword">this</span>._write.bind(<span class="keyword">this</span>, buffer.slice(sent), encoding, done));
   }
 };</pre></div></div>
