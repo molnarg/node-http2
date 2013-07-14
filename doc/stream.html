@@ -559,7 +559,7 @@ releases the stream reservation.</li>
             <div class="content"><div class='highlight'><pre>    <span class="keyword">case</span> <span class="string">'RESERVED_LOCAL'</span>:
       <span class="keyword">if</span> (sending &amp;&amp; frame.type === <span class="string">'HEADERS'</span>) {
         <span class="keyword">this</span>._setState(<span class="string">'HALF_CLOSED_REMOTE'</span>);
-      } <span class="keyword">else</span> <span class="keyword">if</span> ( sending &amp;&amp; frame.type === <span class="string">'RST_STREAM'</span>) {
+      } <span class="keyword">else</span> <span class="keyword">if</span> (sending &amp;&amp; frame.type === <span class="string">'RST_STREAM'</span>) {
         <span class="keyword">this</span>._setState(<span class="string">'CLOSED'</span>);
       } <span class="keyword">else</span> { <span class="comment">// TODO: Not well defined. https://github.com/http2/http2-spec/issues/165</span>
         error = <span class="string">'PROTOCOL_ERROR'</span>;
@@ -709,7 +709,7 @@ can be used to close any of those streams.</li>
             <div class="content"><div class='highlight'><pre>    <span class="keyword">case</span> <span class="string">'CLOSED'</span>:
       <span class="keyword">if</span> (receiving &amp;&amp; frame.type === <span class="string">'PUSH_PROMISE'</span>) {
         <span class="keyword">this</span>._setState(<span class="string">'RESERVED_REMOTE'</span>);
-      } <span class="keyword">else</span> {
+      } <span class="keyword">else</span> <span class="keyword">if</span> (!(sending &amp;&amp; frame.type === <span class="string">'RST_STREAM'</span>)) {
         error = <span class="string">'PROTOCOL_ERROR'</span>;
       } <span class="comment">// TODO: act based on the reason for termination.</span>
       <span class="keyword">break</span>;
@@ -769,6 +769,7 @@ This will automatically cause a transition to the CLOSED state.</li>
             
             <div class="content"><div class='highlight'><pre>    <span class="keyword">else</span> {
       <span class="keyword">this</span>._log.error(info, <span class="string">'Stream error: received illegal frame.'</span>);
+      <span class="keyword">this</span>.state = <span class="string">'CLOSED'</span>;
       <span class="keyword">this</span>.reset(error);
     }
   }
