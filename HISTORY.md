@@ -1,7 +1,14 @@
 Version history
 ===============
 
-### 0.0.3 (2013-07-08) ###
+### 0.0.5 (2013-07-14) ###
+
+* `Stream` class is done
+* Public API stubs are in place
+* [Blog post](http://gabor.molnar.es/blog/2013/07/08/gsoc-week-number-4/)
+* [Tarball](https://github.com/molnarg/node-http2/archive/node-http2-0.0.5.tar.gz)
+
+### 0.0.4 (2013-07-08) ###
 
 * Added logging
 * Started `Stream` class implementation
