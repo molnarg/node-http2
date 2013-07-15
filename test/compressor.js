@@ -201,5 +201,25 @@ describe('compressor.js', function() {
         }
       });
     });
+    describe('source.pipe(compressor).pipe(decompressor).pipe(destination)', function() {
+      it('should behave like source.pipe(destination) for a stream of frames', function(done) {
+        var compressor = new Compressor('RESPONSE', log);
+        var decompressor = new Decompressor('RESPONSE');
+        compressor.pipe(decompressor);
+        for (var i = 0; i < 10; i++) {
+          compressor.write({
+            type: 'HEADERS',
+            flags: {},
+            headers: test_header_sets[i%2].headers
+          });
+        }
+        setTimeout(function() {
+          for (var j = 0; j < 10; j++) {
+            expect(decompressor.read().headers).to.deep.equal(test_header_sets[j%2].headers);
+          }
+          done();
+        }, 10);
+      });
+    });
   });
 });
