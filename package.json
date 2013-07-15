@@ -7,13 +7,14 @@
     "node" : ">=0.10.0"
   },
   "devDependencies": {
+    "istanbul": "*",
     "chai": "*",
     "mocha": "*",
     "docco": "*",
     "bunyan": "*"
   },
   "scripts": {
-    "test": "mocha --reporter spec",
+    "test": "istanbul test _mocha -- --reporter spec",
     "prepublish": "docco lib/* --output doc --layout parallel --css doc/docco.css"
   },
   "repository": {
