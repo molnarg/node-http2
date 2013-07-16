@@ -8,7 +8,7 @@ var log = process.env.DEBUG ? require('bunyan').createLogger({ name: 'http2', le
 describe('connection.js', function() {
   describe('scenario', function() {
     describe('connection setup', function() {
-      it.only('should work as expected', function(done) {
+      it('should work as expected', function(done) {
         var c = new Connection(1, {}, log);
         var s = new Connection(2, {}, log);
 
