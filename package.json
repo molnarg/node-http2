@@ -2,7 +2,7 @@
   "name": "http2",
   "version": "0.0.5",
   "description": "An HTTP/2 server implementation",
-  "main": "index.js",
+  "main": "lib/index.js",
   "engines" : {
     "node" : ">=0.10.0"
   },
