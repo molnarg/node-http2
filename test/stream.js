@@ -2,8 +2,10 @@ var expect = require('chai').expect;
 
 var Stream = require('../lib/stream').Stream;
 
-var log = process.env.DEBUG ? require('bunyan').createLogger({ name: 'http2', level: 'trace' })
-                            : undefined;
+var log;
+if (process.env.HTTP2_LOG) {
+  log = require('bunyan').createLogger({ name: 'http2', level: process.env.HTTP2_LOG });
+}
 
 // Execute a list of commands and assertions
 function execute_sequence(sequence, done) {

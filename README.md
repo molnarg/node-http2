@@ -72,6 +72,19 @@ Functions    : 89.16% ( 74/83 )
 Lines        : 86.94% ( 539/620 )
 ```
 
+Logging
+-------
+
+Logging is turned off by default. To turn it on, set the `HTTP2_LOG` environment variable to
+`fatal`, `error`, `warn`, `info`, `debug` or `trace` (the logging level). Log output is in JSON
+format, and can be pretty printed using the [bunyan][7] command line tool.
+
+For example, to run the tests with very verbose logging output:
+
+```
+HTTP2_LOG=trace npm test | bunyan -o short
+```
+
 License
 =======
 

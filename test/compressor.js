@@ -6,8 +6,10 @@ var CompressionContext = compressor.CompressionContext;
 var Compressor = compressor.Compressor;
 var Decompressor = compressor.Decompressor;
 
-var log = process.env.DEBUG ? require('bunyan').createLogger({ name: 'http2', level: 'trace' })
-                            : undefined;
+var log;
+if (process.env.HTTP2_LOG) {
+  log = require('bunyan').createLogger({ name: 'http2', level: process.env.HTTP2_LOG });
+}
 
 var test_integers = [{
   N: 5,

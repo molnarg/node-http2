@@ -5,8 +5,10 @@ var framer = require('../lib/framer');
 var Serializer = framer.Serializer;
 var Deserializer = framer.Deserializer;
 
-var log = process.env.DEBUG ? require('bunyan').createLogger({ name: 'http2', level: 'trace' })
-                            : undefined;
+var log;
+if (process.env.HTTP2_LOG) {
+  log = require('bunyan').createLogger({ name: 'http2', level: process.env.HTTP2_LOG });
+}
 
 var frame_types = {
   DATA:          ['data'],
