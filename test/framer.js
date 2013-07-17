@@ -5,11 +5,6 @@ var framer = require('../lib/framer');
 var Serializer = framer.Serializer;
 var Deserializer = framer.Deserializer;
 
-var log;
-if (process.env.HTTP2_LOG) {
-  log = require('bunyan').createLogger({ name: 'http2', level: process.env.HTTP2_LOG });
-}
-
 var frame_types = {
   DATA:          ['data'],
   HEADERS:       ['priority', 'data'],
@@ -187,7 +182,7 @@ describe('framer.js', function() {
 
     describe('transform stream', function() {
       it('should transform frame objects to appropriate buffers', function() {
-        var stream = new Serializer(log);
+        var stream = new Serializer();
 
         for (var i = 0; i < test_frames.length; i++) {
           var test = test_frames[i];
@@ -240,7 +235,7 @@ describe('framer.js', function() {
 
     describe('transform stream', function() {
       it('should transform buffers to appropriate frame object', function() {
-        var stream = new Deserializer(log);
+        var stream = new Deserializer();
 
         var shuffled = shuffle_buffers(test_frames.map(function(test) { return test.buffer; }));
         shuffled.forEach(stream.write.bind(stream));

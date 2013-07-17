@@ -2,14 +2,9 @@ var expect = require('chai').expect;
 
 var Stream = require('../lib/stream').Stream;
 
-var log;
-if (process.env.HTTP2_LOG) {
-  log = require('bunyan').createLogger({ name: 'http2', level: process.env.HTTP2_LOG });
-}
-
 // Execute a list of commands and assertions
 function execute_sequence(sequence, done) {
-  var stream = new Stream(log);
+  var stream = new Stream();
 
   var outgoing_frames = [];
   stream.upstream.on('sending', outgoing_frames.push.bind(outgoing_frames));
@@ -55,17 +50,14 @@ function execute_sequence(sequence, done) {
 
   function check() {
     checks.forEach(function(check) {
-      //console.log('check', check);
       if ('outgoing' in check) {
         expect(outgoing_frames.shift()).to.deep.equal(check.outgoing);
       } else if ('event' in check) {
         expect(events.shift()).to.deep.equal(check.event);
       } else {
-        //console.log('X')
         throw new Error('Invalid check', check);
       }
     });
-    //console.log('done')
     done();
   }
 

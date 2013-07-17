@@ -5,11 +5,6 @@ var Endpoint = endpoint.Endpoint;
 var Server   = endpoint.Server;
 var Client   = endpoint.Client;
 
-var log;
-if (process.env.HTTP2_LOG) {
-  log = require('bunyan').createLogger({ name: 'http2', level: process.env.HTTP2_LOG });
-}
-
 describe('endpoint.js', function() {
   describe('scenario', function() {
     describe('connection setup', function() {
