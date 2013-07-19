@@ -66,20 +66,20 @@ function execute_sequence(sequence, done) {
 
 var invalid_frames = {
   IDLE: [
-    { type: 'DATA', data: new Buffer(5) },
-    { type: 'PRIORITY', priority: 1 },
+    { type: 'DATA', flags: {}, data: new Buffer(5) },
+    { type: 'PRIORITY', flags: {}, priority: 1 },
     { type: 'WINDOW_UPDATE', flags: {}, settings: {} }
   ],
   RESERVED_LOCAL: [
-    { type: 'DATA', data: new Buffer(5) },
+    { type: 'DATA', flags: {}, data: new Buffer(5) },
     { type: 'HEADERS', flags: {}, headers: {}, priority: undefined },
-    { type: 'PRIORITY', priority: 1 },
+    { type: 'PRIORITY', flags: {}, priority: 1 },
     { type: 'PUSH_PROMISE', flags: {}, headers: {} },
     { type: 'WINDOW_UPDATE', flags: {}, settings: {} }
   ],
   RESERVED_REMOTE: [
-    { type: 'DATA', data: new Buffer(5) },
-    { type: 'PRIORITY', priority: 1 },
+    { type: 'DATA', flags: {}, data: new Buffer(5) },
+    { type: 'PRIORITY', flags: {}, priority: 1 },
     { type: 'PUSH_PROMISE', flags: {}, headers: {} },
     { type: 'WINDOW_UPDATE', flags: {}, settings: {} }
   ],
@@ -88,9 +88,9 @@ var invalid_frames = {
   HALF_CLOSED_LOCAL: [
   ],
   HALF_CLOSED_REMOTE: [
-    { type: 'DATA', data: new Buffer(5) },
+    { type: 'DATA', flags: {}, data: new Buffer(5) },
     { type: 'HEADERS', flags: {}, headers: {}, priority: undefined },
-    { type: 'PRIORITY', priority: 1 },
+    { type: 'PRIORITY', flags: {}, priority: 1 },
     { type: 'PUSH_PROMISE', flags: {}, headers: {} },
     { type: 'WINDOW_UPDATE', flags: {}, settings: {} }
   ],
