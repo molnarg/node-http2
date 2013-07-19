@@ -220,3 +220,15 @@ describe('compressor.js', function() {
     });
   });
 });
+
+// Missing test cases for 100% test coverage:
+// * very long header sets (more than one frame)
+// * PUSH_PROMISE frame type (instead of HEADERS)
+// * using simple indexed representation to add entry without indexing and substitution
+// * using literal representation without indexing
+// * shadowed entries
+// * generateRemoveCommand for an entry not in the working set.
+// * Header Table overflow and dropping entries
+// * duplicate header names (e.g. two Cookie header)
+// * compression involving indexes that cannot be stored on one byte
+// * interrupting a compressed frame series with an unrelated frame
