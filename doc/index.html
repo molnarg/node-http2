@@ -2,7 +2,7 @@
 
 <html>
 <head>
-  <title>http.js</title>
+  <title>index.js</title>
   <meta http-equiv="content-type" content="text/html; charset=UTF-8">
   <meta name="viewport" content="width=device-width, target-densitydpi=160dpi, initial-scale=1.0; maximum-scale=1.0; user-scalable=0;">
   <link rel="stylesheet" media="all" href="docco.css" />
@@ -29,6 +29,11 @@
               </a>
             
               
+              <a class="source" href="endpoint.html">
+                endpoint.js
+              </a>
+            
+              
               <a class="source" href="framer.html">
                 framer.js
               </a>
@@ -41,6 +46,16 @@
               
               <a class="source" href="https.html">
                 https.js
+              </a>
+            
+              
+              <a class="source" href="index.html">
+                index.js
+              </a>
+            
+              
+              <a class="source" href="logging.html">
+                logging.js
               </a>
             
               
@@ -61,7 +76,7 @@
         
           <li id="title">
               <div class="annotation">
-                  <h1>http.js</h1>
+                  <h1>index.js</h1>
               </div>
           </li>
         
@@ -73,7 +88,7 @@
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-1">&#182;</a>
               </div>
-              <p>This is the main API that can be used to create HTTP/2 server that does not run on top of TLS.</p>
+              <p><a href="https://github.com/molnarg/node-http2">node-http2</a> consists of the following components:</p>
 
             </div>
             
@@ -88,16 +103,13 @@
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-2">&#182;</a>
               </div>
-              <p>The main governing power behind the http2 API design is that it should look very similar to the
-existing node.js <a href="http://nodejs.org/api/http.html">HTTP</a>/<a href="http://nodejs.org/api/https.html">HTTPS</a>
-APIs. The additional features of HTTP/2 are exposed as extensions to these APIs. Furthermore,
-node-http2 should fall back to using HTTP/1.1 if needed.</p>
+              <ul>
+<li><a href="utils.html">utils.js</a>: common utility functions, like concatenating buffers</li>
+</ul>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre><span class="keyword">var</span> http = require(<span class="string">'http'</span>);
-
-http2.STATUS_CODES = http.STATUS_CODES;</pre></div></div>
+            <div class="content"><div class='highlight'><pre>http2.utils      = require(<span class="string">'./utils'</span>);</pre></div></div>
             
         </li>
         
@@ -108,12 +120,13 @@ http2.STATUS_CODES = http.STATUS_CODES;</pre></div></div>
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-3">&#182;</a>
               </div>
-              <p>This should hold sane defaults for mandatory settings. These can be overridden by the user
-using the options configuration object in client and server APIs.</p>
+              <ul>
+<li><a href="logging.html">logging.js</a>: a default logger object and a registry of log formatter functions</li>
+</ul>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre><span class="keyword">var</span> default_settings = {};</pre></div></div>
+            <div class="content"><div class='highlight'><pre>http2.logging    = require(<span class="string">'./logging'</span>);</pre></div></div>
             
         </li>
         
@@ -121,12 +134,17 @@ using the options configuration object in client and server APIs.</p>
         <li id="section-4">
             <div class="annotation">
               
-              <div class="pilwrap for-h2">
+              <div class="pilwrap ">
                 <a class="pilcrow" href="#section-4">&#182;</a>
               </div>
-              <h2>Server</h2>
+              <ul>
+<li><a href="framer.html">framer.js</a>: the lowest layer in the stack that transforms between the binary and
+the JavaScript object representation of HTTP/2 frames</li>
+</ul>
 
             </div>
+            
+            <div class="content"><div class='highlight'><pre>http2.framer     = require(<span class="string">'./framer'</span>);</pre></div></div>
             
         </li>
         
@@ -137,13 +155,13 @@ using the options configuration object in client and server APIs.</p>
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-5">&#182;</a>
               </div>
-              <p>Deviation from the original http API: there&#39;s and <code>options</code> optional argument. Values in it can
-override the default settings.</p>
+              <ul>
+<li><a href="compressor.html">compressor.js</a>: compression and decompression of HEADER frames</li>
+</ul>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>http2.createServer = <span class="function"><span class="keyword">function</span> <span class="title">createServer</span><span class="params">(options, requestListener)</span> {</span>
-};</pre></div></div>
+            <div class="content"><div class='highlight'><pre>http2.compressor = require(<span class="string">'./compressor'</span>);</pre></div></div>
             
         </li>
         
@@ -151,12 +169,16 @@ override the default settings.</p>
         <li id="section-6">
             <div class="annotation">
               
-              <div class="pilwrap for-h2">
+              <div class="pilwrap ">
                 <a class="pilcrow" href="#section-6">&#182;</a>
               </div>
-              <h2>Client</h2>
+              <ul>
+<li><a href="stream.html">stream.js</a>: implementation of the HTTP/2 stream concept</li>
+</ul>
 
             </div>
+            
+            <div class="content"><div class='highlight'><pre>http2.stream     = require(<span class="string">'./stream'</span>);</pre></div></div>
             
         </li>
         
@@ -167,27 +189,14 @@ override the default settings.</p>
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-7">&#182;</a>
               </div>
-              <p>Implementation hints:</p>
-<p>Settings encoding:</p>
-<pre><code>var buffers = [], Serializer = require(&#39;./framer&#39;).Serializer;
-Serializer.SETTINGS({ settings: { k1: v1, k2: v2 } }, buffers);
-var result = buffers[0];</code></pre>
-<p>Once handshake is complete and switching to HTTP2 mode</p>
-<ul>
-<li>create a <code>require(&#39;./connection&#39;).Connection</code> object, with</li>
-<li><code>&#39;CLIENT&#39;</code> as <code>role</code></li>
-<li>the used TCP stream as <code>socket</code></li>
-<li>the used settings as <code>settings</code></li>
-<li>the initial <code>req</code> and <code>res</code> object as <code>initialRequest</code> and <code>initialResponse</code></li>
+              <ul>
+<li><a href="connection.html">connection.js</a>: multiplexes streams, manages the identifiers of them and
+repsonsible for connection level flow control</li>
 </ul>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>http2.request = <span class="function"><span class="keyword">function</span> <span class="title">request</span><span class="params">(options, callback)</span> {</span>
-};
-
-http2.get = <span class="function"><span class="keyword">function</span> <span class="title">get</span><span class="params">(options, callback)</span> {</span>
-};</pre></div></div>
+            <div class="content"><div class='highlight'><pre>http2.connection = require(<span class="string">'./connection'</span>);</pre></div></div>
             
         </li>
         
@@ -195,12 +204,17 @@ http2.get = <span class="function"><span class="keyword">function</span> <span c
         <li id="section-8">
             <div class="annotation">
               
-              <div class="pilwrap for-h2">
+              <div class="pilwrap ">
                 <a class="pilcrow" href="#section-8">&#182;</a>
               </div>
-              <h2>Agent</h2>
+              <ul>
+<li><a href="endpoint.html">endpoint.js</a>: manages other components (framer, compressor, connection,
+streams) and part of the handshake process</li>
+</ul>
 
             </div>
+            
+            <div class="content"><div class='highlight'><pre>http2.endpoint   = require(<span class="string">'./endpoint'</span>);</pre></div></div>
             
         </li>
         
@@ -211,10 +225,30 @@ http2.get = <span class="function"><span class="keyword">function</span> <span c
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-9">&#182;</a>
               </div>
-              <p><a href="http://nodejs.org/api/http.html#http_class_http_agent">HTTP agents</a> are not yet supported,
-so every client request will create a new TCP stream.</p>
+              <ul>
+<li><a href="http.html">http.js</a>: public node-http2 API for unencrypted connections</li>
+</ul>
 
             </div>
+            
+            <div class="content"><div class='highlight'><pre>http2.http       = require(<span class="string">'./http'</span>);</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-10">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-10">&#182;</a>
+              </div>
+              <ul>
+<li><a href="https.html">https.js</a>: public node-http2 API for SSL/TLS encrypted connections</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>http2.https      = require(<span class="string">'./https'</span>);</pre></div></div>
             
         </li>
         
