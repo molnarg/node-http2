@@ -203,6 +203,28 @@ describe('compressor.js', function() {
         expect(decompressor.decompress(header_set.buffer)).to.deep.equal(header_set.headers);
       });
     });
+    describe('transform stream', function() {
+      it('should emit an error event if a series of header frames is interleaved with other frames', function() {
+        var decompressor = new Decompressor('REQUEST');
+        var error_occured = false;
+        decompressor.on('error', function() {
+          error_occured = true;
+        });
+        decompressor.write({
+          type: 'HEADERS',
+          flags: {
+            END_HEADERS: false
+          },
+          data: new Buffer(5)
+        });
+        decompressor.write({
+          type: 'DATA',
+          flags: {},
+          data: new Buffer(5)
+        });
+        expect(error_occured).to.be.equal(true);
+      });
+    });
   });
 
   describe('invariant', function() {
@@ -243,7 +265,3 @@ describe('compressor.js', function() {
     });
   });
 });
-
-// Missing test cases for 100% test coverage:
-// * generateRemoveCommand for an entry not in the working set.
-// * interrupting a compressed frame series with an unrelated frame
