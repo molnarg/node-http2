@@ -1,0 +1,1628 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <title>Code coverage report for lib/stream.js</title>
+    <meta charset="utf-8">
+
+    <link rel="stylesheet" href="../prettify.css">
+
+    <style>
+        body, html {
+            margin:0; padding: 0;
+        }
+        body {
+            font-family: Helvetica Neue, Helvetica,Arial;
+            font-size: 10pt;
+        }
+        div.header, div.footer {
+            background: #eee;
+            padding: 1em;
+        }
+        div.header {
+            z-index: 100;
+            position: fixed;
+            top: 0;
+            border-bottom: 1px solid #666;
+            width: 100%;
+        }
+        div.footer {
+            border-top: 1px solid #666;
+        }
+        div.body {
+            margin-top: 10em;
+        }
+        div.meta {
+            font-size: 90%;
+            text-align: center;
+        }
+        h1, h2, h3 {
+            font-weight: normal;
+        }
+        h1 {
+            font-size: 12pt;
+        }
+        h2 {
+            font-size: 10pt;
+        }
+        pre {
+            font-family: Consolas, Menlo, Monaco, monospace;
+            margin: 0;
+            padding: 0;
+            line-height: 14px;
+            font-size: 14px;
+            -moz-tab-size: 2;
+            -o-tab-size:  2;
+            tab-size: 2;
+        }
+
+        div.path { font-size: 110%; }
+        div.path a:link, div.path a:visited { color: #000; }
+        table.coverage { border-collapse: collapse; margin:0; padding: 0 }
+
+        table.coverage td {
+            margin: 0;
+            padding: 0;
+            color: #111;
+            vertical-align: top;
+        }
+        table.coverage td.line-count {
+            width: 50px;
+            text-align: right;
+            padding-right: 5px;
+        }
+        table.coverage td.line-coverage {
+            color: #777 !important;
+            text-align: right;
+            border-left: 1px solid #666;
+            border-right: 1px solid #666;
+        }
+
+        table.coverage td.text {
+        }
+
+        table.coverage td span.cline-any {
+            display: inline-block;
+            padding: 0 5px;
+            width: 40px;
+        }
+        table.coverage td span.cline-neutral {
+            background: #eee;
+        }
+        table.coverage td span.cline-yes {
+            background: #b5d592;
+            color: #999;
+        }
+        table.coverage td span.cline-no {
+            background: #fc8c84;
+        }
+
+        .cstat-yes { color: #111; }
+        .cstat-no { background: #fc8c84; color: #111; }
+        .fstat-no { background: #ffc520; color: #111 !important; }
+        .cbranch-no { background:  yellow !important; color: #111; }
+        .missing-if-branch {
+            display: inline-block;
+            margin-right: 10px;
+            position: relative;
+            padding: 0 4px;
+            background: black;
+            color: yellow;
+            xtext-decoration: line-through;
+        }
+        .missing-if-branch .typ {
+            color: inherit !important;
+        }
+
+        .entity, .metric { font-weight: bold; }
+        .metric { display: inline-block; border: 1px solid #333; padding: 0.3em; background: white; }
+        .metric small { font-size: 80%; font-weight: normal; color: #666; }
+
+        div.coverage-summary table { border-collapse: collapse; margin: 3em; font-size: 110%; }
+        div.coverage-summary td, div.coverage-summary table  th { margin: 0; padding: 0.25em 1em; border-top: 1px solid #666; border-bottom: 1px solid #666; }
+        div.coverage-summary th { text-align: left; border: 1px solid #666; background: #eee; font-weight: normal; }
+        div.coverage-summary th.file { border-right: none !important; }
+        div.coverage-summary th.pic { border-left: none !important; text-align: right; }
+        div.coverage-summary th.pct { border-right: none !important; }
+        div.coverage-summary th.abs { border-left: none !important; text-align: right; }
+        div.coverage-summary td.pct { text-align: right; border-left: 1px solid #666; }
+        div.coverage-summary td.abs { text-align: right; font-size: 90%; color: #444; border-right: 1px solid #666; }
+        div.coverage-summary td.file { text-align: right; border-left: 1px solid #666; white-space: nowrap;  }
+        div.coverage-summary td.pic { min-width: 120px !important;  }
+        div.coverage-summary a:link { text-decoration: none; color: #000; }
+        div.coverage-summary a:visited { text-decoration: none; color: #333; }
+        div.coverage-summary a:hover { text-decoration: underline; }
+        div.coverage-summary tfoot td { border-top: 1px solid #666; }
+
+        div.coverage-summary .yui3-datatable-sort-indicator, div.coverage-summary .dummy-sort-indicator {
+            height: 10px;
+            width: 7px;
+            display: inline-block;
+            margin-left: 0.5em;
+        }
+        div.coverage-summary .yui3-datatable-sort-indicator {
+            background: url("http://yui.yahooapis.com/3.6.0/build/datatable-sort/assets/skins/sam/sort-arrow-sprite.png") no-repeat scroll 0 0 transparent;
+        }
+        div.coverage-summary .yui3-datatable-sorted .yui3-datatable-sort-indicator {
+            background-position: 0 -20px;
+        }
+        div.coverage-summary .yui3-datatable-sorted-desc .yui3-datatable-sort-indicator {
+            background-position: 0 -10px;
+        }
+
+        .high { background: #b5d592 !important; }
+        .medium { background: #ffe87c !important; }
+        .low { background: #fc8c84 !important; }
+
+        span.cover-fill, span.cover-empty {
+            display:inline-block;
+            border:1px solid #444;
+            background: white;
+            height: 12px;
+        }
+        span.cover-fill {
+            background: #ccc;
+            border-right: 1px solid #444;
+        }
+        span.cover-empty {
+            background: white;
+            border-left: none;
+        }
+        span.cover-full {
+            border-right: none !important;
+        }
+        pre.prettyprint {
+            border: none !important;
+            padding: 0 !important;
+            margin: 0 !important;
+        }
+        .com { color: #999 !important; }
+    </style>
+</head>
+<body>
+<div class="header high">
+    <h1>Code coverage report for <span class="entity">lib/stream.js</span></h1>
+    <h2>
+        
+        Statements: <span class="metric">90.2% <small>(138 / 153)</small></span> &nbsp;&nbsp;&nbsp;&nbsp;
+        
+        
+        Branches: <span class="metric">84.27% <small>(75 / 89)</small></span> &nbsp;&nbsp;&nbsp;&nbsp;
+        
+        
+        Functions: <span class="metric">85.71% <small>(18 / 21)</small></span> &nbsp;&nbsp;&nbsp;&nbsp;
+        
+        
+        Lines: <span class="metric">90.2% <small>(138 / 153)</small></span> &nbsp;&nbsp;&nbsp;&nbsp;
+        
+    </h2>
+    <div class="path"><a href="../index.html">All files</a> &#187; <a href="index.html">lib/</a> &#187; stream.js</div>
+</div>
+<div class="body">
+<pre><table class="coverage">
+<tr><td class="line-count">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+71
+72
+73
+74
+75
+76
+77
+78
+79
+80
+81
+82
+83
+84
+85
+86
+87
+88
+89
+90
+91
+92
+93
+94
+95
+96
+97
+98
+99
+100
+101
+102
+103
+104
+105
+106
+107
+108
+109
+110
+111
+112
+113
+114
+115
+116
+117
+118
+119
+120
+121
+122
+123
+124
+125
+126
+127
+128
+129
+130
+131
+132
+133
+134
+135
+136
+137
+138
+139
+140
+141
+142
+143
+144
+145
+146
+147
+148
+149
+150
+151
+152
+153
+154
+155
+156
+157
+158
+159
+160
+161
+162
+163
+164
+165
+166
+167
+168
+169
+170
+171
+172
+173
+174
+175
+176
+177
+178
+179
+180
+181
+182
+183
+184
+185
+186
+187
+188
+189
+190
+191
+192
+193
+194
+195
+196
+197
+198
+199
+200
+201
+202
+203
+204
+205
+206
+207
+208
+209
+210
+211
+212
+213
+214
+215
+216
+217
+218
+219
+220
+221
+222
+223
+224
+225
+226
+227
+228
+229
+230
+231
+232
+233
+234
+235
+236
+237
+238
+239
+240
+241
+242
+243
+244
+245
+246
+247
+248
+249
+250
+251
+252
+253
+254
+255
+256
+257
+258
+259
+260
+261
+262
+263
+264
+265
+266
+267
+268
+269
+270
+271
+272
+273
+274
+275
+276
+277
+278
+279
+280
+281
+282
+283
+284
+285
+286
+287
+288
+289
+290
+291
+292
+293
+294
+295
+296
+297
+298
+299
+300
+301
+302
+303
+304
+305
+306
+307
+308
+309
+310
+311
+312
+313
+314
+315
+316
+317
+318
+319
+320
+321
+322
+323
+324
+325
+326
+327
+328
+329
+330
+331
+332
+333
+334
+335
+336
+337
+338
+339
+340
+341
+342
+343
+344
+345
+346
+347
+348
+349
+350
+351
+352
+353
+354
+355
+356
+357
+358
+359
+360
+361
+362
+363
+364
+365
+366
+367
+368
+369
+370
+371
+372
+373
+374
+375
+376
+377
+378
+379
+380
+381
+382
+383
+384
+385
+386
+387
+388
+389
+390
+391
+392
+393
+394
+395
+396
+397
+398
+399
+400
+401
+402
+403
+404
+405
+406
+407
+408
+409
+410
+411
+412
+413
+414
+415
+416
+417
+418
+419
+420
+421
+422
+423
+424
+425
+426
+427
+428
+429
+430
+431
+432
+433
+434
+435
+436
+437
+438
+439
+440
+441
+442</td><td class="line-coverage"><span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-yes">23</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">23</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">23</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">23</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">23</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">23</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-yes">23</span>
+<span class="cline-any cline-yes">29</span>
+<span class="cline-any cline-yes">4</span>
+<span class="cline-any cline-yes">25</span>
+<span class="cline-any cline-yes">7</span>
+<span class="cline-any cline-yes">7</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">23</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-yes">5</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">5</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-yes">17</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-yes">23</span>
+<span class="cline-any cline-yes">23</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">23</span>
+<span class="cline-any cline-yes">23</span>
+<span class="cline-any cline-yes">23</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">23</span>
+<span class="cline-any cline-yes">23</span>
+<span class="cline-any cline-yes">29</span>
+<span class="cline-any cline-yes">29</span>
+<span class="cline-any cline-yes">29</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-yes">27</span>
+<span class="cline-any cline-yes">27</span>
+<span class="cline-any cline-yes">27</span>
+<span class="cline-any cline-yes">23</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-yes">23</span>
+<span class="cline-any cline-yes">23</span>
+<span class="cline-any cline-yes">27</span>
+<span class="cline-any cline-yes">27</span>
+<span class="cline-any cline-yes">27</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">23</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-yes">5</span>
+<span class="cline-any cline-yes">5</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">5</span>
+<span class="cline-any cline-yes">5</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-yes">23</span>
+<span class="cline-any cline-yes">23</span>
+<span class="cline-any cline-yes">23</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-yes">18</span>
+<span class="cline-any cline-yes">18</span>
+<span class="cline-any cline-yes">18</span>
+<span class="cline-any cline-yes">18</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-yes">56</span>
+<span class="cline-any cline-yes">56</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">56</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">9</span>
+<span class="cline-any cline-yes">4</span>
+<span class="cline-any cline-yes">4</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">5</span>
+<span class="cline-any cline-yes">2</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">9</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">6</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-yes">5</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">5</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">6</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">5</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">5</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">5</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4</span>
+<span class="cline-any cline-yes">3</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">5</span>
+<span class="cline-any cline-yes">3</span>
+<span class="cline-any cline-yes">2</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">5</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">10</span>
+<span class="cline-any cline-yes">3</span>
+<span class="cline-any cline-yes">7</span>
+<span class="cline-any cline-yes">5</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">10</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">17</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">17</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">17</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">56</span>
+<span class="cline-any cline-yes">17</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">17</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">17</span>
+<span class="cline-any cline-yes">17</span>
+<span class="cline-any cline-yes">17</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-yes">23</span>
+<span class="cline-any cline-yes">23</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">23</span>
+<span class="cline-any cline-yes">23</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-yes">29</span>
+<span class="cline-any cline-yes">4</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4</span>
+<span class="cline-any cline-yes">4</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4</span>
+<span class="cline-any cline-yes">4</span>
+<span class="cline-any cline-yes">4</span>
+<span class="cline-any cline-yes">4</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4</span>
+<span class="cline-any cline-yes">4</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-yes">29</span>
+<span class="cline-any cline-yes">10</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">29</span>
+<span class="cline-any cline-yes">5</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">var utils   = require('./utils');
+var logging = require('./logging');
+&nbsp;
+var MAX_HTTP_PAYLOAD_SIZE = 16383; // TODO: this is repeated in multiple files
+&nbsp;
+// Stream is a [Duplex stream](http://nodejs.org/api/stream.html#stream_class_stream_duplex)
+// subclass that implements the [HTTP/2 Stream](http://http2.github.io/http2-spec/#rfc.section.3.4)
+// concept.
+&nbsp;
+var Duplex = require('stream').Duplex;
+&nbsp;
+exports.Stream = Stream;
+&nbsp;
+// The main aspects of managing the stream are:
+function Stream(log) {
+  Duplex.call(this);
+&nbsp;
+  // * every method uses the common logger object
+  this._log = (log || logging.root).child({ component: 'stream' });
+&nbsp;
+  // * sending and receiving frames to/from the upstream connection
+  this._initializeUpstream();
+&nbsp;
+  // * receiving and sending stream management commands
+  this._initializeManagement();
+&nbsp;
+  // * maintaining the state of the stream (idle, open, closed, etc.) and error detection
+  this._initializeState();
+&nbsp;
+  // * flow control, which includes forwarding data from/to the user on the Duplex stream interface
+  // (`write()`, `end()`, `pipe()`)
+  this._initializeFlowControl();
+}
+&nbsp;
+Stream.prototype = Object.create(Duplex.prototype, { constructor: { value: Stream } });
+&nbsp;
+// Managing the stream
+// -------------------
+&nbsp;
+// PUSH_PROMISE and HEADERS are forwarded to the user through events. When error happens, we first
+// close the stream.
+Stream.prototype._initializeManagement = function _initializeManagement() {
+  this.upstream.on('receiving', function(frame) {
+    if (frame.type === 'PUSH_PROMISE') {
+      this.emit('promise', frame.headers);
+    } else if (frame.type === 'HEADERS') {
+      this.priority = frame.priority;
+      this.emit('headers', frame.headers);
+    }
+  }.bind(this));
+  this.on('error', <span class="fstat-no" title="function not covered" >function() {</span>
+<span class="cstat-no" title="statement not covered" >    this.push(null);</span>
+  });
+};
+&nbsp;
+// For sending management frames, the `this._send(frame)` method is used. It notifies the state
+// management code about the sent frames (using the 'sending' event) so we don't have to manage
+// state transitions here.
+Stream.prototype.promise = function promise(headers) {
+  this._send({
+    type: 'PUSH_PROMISE',
+    headers: headers
+  });
+};
+&nbsp;
+Stream.prototype.open = function open(headers, priority) {
+  this._send({
+    type: 'HEADERS',
+    priority: priority,
+    headers: headers
+  });
+  this.priority = priority;
+};
+&nbsp;
+Stream.prototype.reset = function reset(error) {
+  this._send({
+    type: 'RST_STREAM',
+    error: error
+  });
+};
+&nbsp;
+// Managing the upstream connection
+// --------------------------------
+&nbsp;
+// The incoming and the generated outgoing frames are received/transmitted on the `this.upsteam`
+// Duplex stream which operates in [object mode][1]. The [Connection](connection.html) object
+// instantiating the stream will read and write frames to/from it.
+// [1]: http://nodejs.org/api/stream.html#stream_new_stream_readable_options
+Stream.prototype._initializeUpstream = function _initializeUpstream() {
+  this._flush_timer = undefined;
+  this.on('finish', this._finishing.bind(this));
+&nbsp;
+  this.upstream = new Duplex({ objectMode: true });
+  this.upstream._queue = [];
+  this.upstream._read = utils.noop;
+&nbsp;
+  // When there's an incoming frame, we let the world know this by emitting a 'receiving' event.
+  var log = this._log;
+  this.upstream._write = function(frame, encoding, done) {
+    log.debug({ frame: frame }, 'Receiving frame');
+    this.emit('receiving', frame);
+    done();
+  };
+};
+&nbsp;
+// Frames can be sent upstream using the `_send` method. The frames to be sent are put into the
+// `upstream._queue` first, and are flushed immediately on the beginning of the next turn.
+Stream.prototype._send = function _send(frame) {
+  frame.flags = frame.flags || {};
+  this.upstream._queue.push(frame);
+  if (!this._flush_timer) {
+    this._flush_timer = setImmediate(this._flush.bind(this));
+  }
+};
+&nbsp;
+Stream.prototype._flush = function _flush() {
+  var frame;
+  while(frame = this.upstream._queue.shift()) {
+    this.upstream.emit('sending', frame);
+    this._log.debug({ frame: frame }, 'Sending frame');
+    this.upstream.push(frame);
+  }
+  this._flush_timer = undefined;
+};
+&nbsp;
+// The reason for using an output queue is this. When the stream is finishing (the user calls
+// `end()` on it), then we have to set the `END_STREAM` flag on the last object.
+//
+// If there's no frame in the queue, then we create a 0 length DATA frame. We could do this
+// all the time, but putting the flag on an existing frame is a nice optimization.
+var empty_buffer = new Buffer(0);
+Stream.prototype._finishing = function _finishing() {
+  var length = this.upstream._queue.length;
+  <span class="missing-if-branch" title="if path not taken"" >I</span>if (length === 0) {
+<span class="cstat-no" title="statement not covered" >    this._send({</span>
+      type: 'DATA',
+      flags: { END_STREAM: true },
+      data: empty_buffer
+    });
+  } else {
+    var last_frame = this.upstream._queue[length - 1];
+    last_frame.flags.END_STREAM = true;
+  }
+};
+&nbsp;
+// [Stream States](http://tools.ietf.org/id/draft-unicorn-httpbis-http2-01.html#StreamStates)
+// ----------------
+//
+//                           +--------+
+//                     PP    |        |    PP
+//                  ,--------|  idle  |--------.
+//                 /         |        |         \
+//                v          +--------+          v
+//         +----------+          |           +----------+
+//         |          |          | H         |          |
+//     ,---| reserved |          |           | reserved |---.
+//     |   | (local)  |          v           | (remote) |   |
+//     |   +----------+      +--------+      +----------+   |
+//     |      |          ES  |        |  ES          |      |
+//     |      | H    ,-------|  open  |-------.      | H    |
+//     |      |     /        |        |        \     |      |
+//     |      v    v         +--------+         v    v      |
+//     |   +----------+          |           +----------+   |
+//     |   |   half   |          |           |   half   |   |
+//     |   |  closed  |          | R         |  closed  |   |
+//     |   | (remote) |          |           | (local)  |   |
+//     |   +----------+          |           +----------+   |
+//     |        |                v                 |        |
+//     |        |  ES / R    +--------+  ES / R    |        |
+//     |        `-----------&gt;|        |&lt;-----------'        |
+//     |  R                  | closed |                  R  |
+//     `--------------------&gt;|        |&lt;--------------------'
+//                           +--------+
+&nbsp;
+// Streams begin in the IDLE state and transitions happen when there's an incoming or outgoing frame
+Stream.prototype._initializeState = function _initializeState() {
+  this.state = 'IDLE';
+  this.upstream.on('sending', this._transition.bind(this, true));
+  this.upstream.on('receiving', this._transition.bind(this, false));
+};
+&nbsp;
+// Only `_setState` should change `this.state` directly. It also logs the state change and notifies
+// interested parties using the 'state' event.
+Stream.prototype._setState = function transition(state) {
+  <span class="missing-if-branch" title="else path not taken"" >E</span>if (this.state !== state) {
+    this._log.debug({ from: this.state, to: state }, 'State transition');
+    this.emit('state', state);
+    this.state = state;
+  }
+};
+&nbsp;
+// `_transition` is called every time there's an incoming or outgoing frame. It manages state
+// transitions, and detects stream errors. A stream error is always caused by a frame that is not
+// allowed in the current state.
+Stream.prototype._transition = function transition(sending, frame) {
+  var receiving = !sending;
+  var error = undefined;
+&nbsp;
+  switch (this.state) {
+    // All streams start in the **idle** state. In this state, no frames have been exchanged.
+    //
+    // * Sending or receiving a HEADERS frame causes the stream to become "open".
+    // * Sending a PUSH_PROMISE frame marks the associated stream for later use. The stream state
+    //   for the reserved stream transitions to "reserved (local)".
+    // * Receiving a PUSH_PROMISE frame marks the associated stream as reserved by the remote peer.
+    //   The state of the stream becomes "reserved (remote)".
+    //
+    // When the HEADERS frame contains the END_STREAM flags, then two state transitions happen.
+    case 'IDLE':
+      if (frame.type === 'HEADERS') {
+        this._setState('OPEN');
+        if (frame.flags.END_STREAM) {
+          this._setState(sending ? 'HALF_CLOSED_LOCAL' : <span class="branch-1 cbranch-no" title="branch not covered" >'HALF_CLOSED_REMOTE')</span>;
+        }
+      } else if (frame.type === 'PUSH_PROMISE') {
+        this._setState(sending ? 'RESERVED_LOCAL' : 'RESERVED_REMOTE');
+      } else { // TODO: Not well defined. https://github.com/http2/http2-spec/issues/165
+        error = 'PROTOCOL_ERROR';
+      }
+      break;
+&nbsp;
+    // A stream in the **reserved (local)** state is one that has been promised by sending a
+    // PUSH_PROMISE frame.
+    //
+    // * The endpoint can send a HEADERS frame. This causes the stream to open in a "half closed
+    //   (remote)" state.
+    // * Either endpoint can send a RST_STREAM frame to cause the stream to become "closed". This
+    //   releases the stream reservation.
+    // * An endpoint MUST NOT send any other type of frame in this state.
+    case 'RESERVED_LOCAL':
+      if (sending &amp;&amp; frame.type === 'HEADERS') {
+        this._setState('HALF_CLOSED_REMOTE');
+      } else <span class="missing-if-branch" title="if path not taken"" >I</span>if (sending &amp;&amp; <span class="branch-1 cbranch-no" title="branch not covered" >frame.type === 'RST_STREAM')</span> {
+<span class="cstat-no" title="statement not covered" >        this._setState('CLOSED');</span>
+      } else { // TODO: Not well defined. https://github.com/http2/http2-spec/issues/165
+        error = 'PROTOCOL_ERROR';
+      }
+      break;
+&nbsp;
+    // A stream in the **reserved (remote)** state has been reserved by a remote peer.
+    //
+    // * Either endpoint can send a RST_STREAM frame to cause the stream to become "closed". This
+    //   releases the stream reservation.
+    // * Receiving a HEADERS frame causes the stream to transition to "half closed (local)".
+    // * Receiving any other type of frame MUST be treated as a stream error of type PROTOCOL_ERROR.
+    case 'RESERVED_REMOTE':
+      <span class="missing-if-branch" title="if path not taken"" >I</span>if (frame.type === 'RST_STREAM') {
+<span class="cstat-no" title="statement not covered" >        this._setState('CLOSED');</span>
+      } else if (receiving &amp;&amp; frame.type === 'HEADERS') {
+        this._setState('HALF_CLOSED_LOCAL');
+      } else {
+        error = 'PROTOCOL_ERROR';
+      }
+      break;
+&nbsp;
+    // The **open** state is where both peers can send frames. In this state, sending peers observe
+    // advertised stream level flow control limits.
+    //
+    // * From this state either endpoint can send a frame with a END_STREAM flag set, which causes
+    //   the stream to transition into one of the "half closed" states: an endpoint sending a
+    //   END_STREAM flag causes the stream state to become "half closed (local)"; an endpoint
+    //   receiving a END_STREAM flag causes the stream state to become "half closed (remote)".
+    // * Either endpoint can send a RST_STREAM frame from this state, causing it to transition
+    //   immediately to "closed".
+    case 'OPEN':
+      if (frame.flags.END_STREAM) {
+        this._setState(sending ? 'HALF_CLOSED_LOCAL' : 'HALF_CLOSED_REMOTE');
+      } else <span class="missing-if-branch" title="if path not taken"" >I</span>if (frame.type === 'RST_STREAM') {
+<span class="cstat-no" title="statement not covered" >        this._setState('CLOSED');</span>
+      } // Anything else is OK
+      break;
+&nbsp;
+    // A stream that is **half closed (local)** cannot be used for sending frames.
+    //
+    // * A stream transitions from this state to "closed" when a frame that contains a END_STREAM
+    //   flag is received, or when either peer sends a RST_STREAM frame.
+    case 'HALF_CLOSED_LOCAL':
+      if (frame.type === 'RST_STREAM' || (receiving &amp;&amp; frame.flags.END_STREAM)) {
+        this._setState('CLOSED');
+      } else <span class="missing-if-branch" title="if path not taken"" >I</span>if (sending) {
+<span class="cstat-no" title="statement not covered" >        error = 'PROTOCOL_ERROR';</span>
+      } // Receiving anything is OK
+      break;
+&nbsp;
+    // A stream that is **half closed (remote)** is no longer being used by the peer to send frames.
+    // In this state, an endpoint is no longer obligated to maintain a receiver flow control window
+    // if it performs flow control.
+    //
+    // * If an endpoint receives additional frames for a stream that is in this state it MUST
+    //   respond with a stream error of type STREAM_CLOSED.
+    // * A stream can transition from this state to "closed" by sending a frame that contains a
+    //   END_STREAM flag, or when either peer sends a RST_STREAM frame.
+    case 'HALF_CLOSED_REMOTE':
+      if (frame.type === 'RST_STREAM' || (sending &amp;&amp; frame.flags.END_STREAM)) {
+        this._setState('CLOSED');
+      } else if (receiving) {
+        error = 'PROTOCOL_ERROR';
+      } // Sending anything is OK
+      break;
+&nbsp;
+    // The **closed** state is the terminal state.
+    //
+    // * An endpoint MUST NOT send frames on a closed stream. An endpoint that receives a frame
+    //   after receiving a RST_STREAM or a frame containing a END_STREAM flag on that stream MUST
+    //   treat that as a stream error of type STREAM_CLOSED.
+    // * If this state is reached as a result of sending a RST_STREAM frame, the peer that receives
+    //   the RST_STREAM might have already sent - or enqueued for sending - frames on the stream
+    //   that cannot be withdrawn. An endpoint that sends a RST_STREAM frame MUST ignore frames that
+    //   it receives on closed streams after it has sent a RST_STREAM frame. An endpoint MAY choose
+    //   to limit the period over which it ignores frames and treat frames that arrive after this
+    //   time as being in error.
+    // * An endpoint might receive a PUSH_PROMISE frame after it sends RST_STREAM. PUSH_PROMISE
+    //   causes a stream to become "reserved". If promised streams are not desired, a RST_STREAM
+    //   can be used to close any of those streams.
+    case 'CLOSED':
+      <span class="missing-if-branch" title="if path not taken"" >I</span>if (receiving &amp;&amp; <span class="branch-1 cbranch-no" title="branch not covered" >frame.type === 'PUSH_PROMISE')</span> {
+<span class="cstat-no" title="statement not covered" >        this._setState('RESERVED_REMOTE');</span>
+      } else <span class="missing-if-branch" title="if path not taken"" >I</span>if (!(sending &amp;&amp; frame.type === 'RST_STREAM')) {
+<span class="cstat-no" title="statement not covered" >        error = 'PROTOCOL_ERROR';</span>
+      } // TODO: act based on the reason for termination.
+      break;
+  }
+&nbsp;
+  // Common error handling.
+  if (error) {
+    var info = { error: error, frame: frame, state: this.state };
+&nbsp;
+    // * When sending something invalid, throwing an exception, since it is probably a bug.
+    <span class="missing-if-branch" title="if path not taken"" >I</span>if (sending) {
+<span class="cstat-no" title="statement not covered" >      this._log.error(info, 'Stream error: sending illegal frame.');</span>
+<span class="cstat-no" title="statement not covered" >      throw new Error('Sending illegal frame (' + frame.type + ') in ' + this.state + ' state.');</span>
+    }
+&nbsp;
+    // * When receiving something invalid, sending an RST_STREAM using the `reset` method.
+    //   This will automatically cause a transition to the CLOSED state.
+    else {
+      this._log.error(info, 'Stream error: received illegal frame.');
+      this.state = 'CLOSED';
+      this.reset(error);
+    }
+  }
+};
+&nbsp;
+// [Flow control](http://tools.ietf.org/id/draft-unicorn-httpbis-http2-01.html#rfc.section.6.9)
+// --------------
+&nbsp;
+// Flow control in HTTP/2.0 is implemented using a window kept by each sender on every stream.
+// The flow control window is a simple integer value that indicates how many bytes of data the
+// sender is permitted to transmit. Two flow control windows are applicable; the stream flow control
+// window and the connection flow control window. The stream only manages the flow control `window`.
+Stream.prototype._initializeFlowControl = function _initializeFlowControl() {
+  this._read = utils.noop;
+  this.upstream.on('receiving', this._receiveData.bind(this));
+&nbsp;
+  this._window = INITIAL_WINDOW_SIZE;
+  this.upstream.on('receiving', this._updateWindow.bind(this));
+};
+&nbsp;
+// When a HTTP/2.0 connection is first established, new streams are created with an initial flow
+// control window size of 65535 bytes.
+var INITIAL_WINDOW_SIZE = 65535;
+&nbsp;
+// A SETTINGS frame can alter the initial flow control window size for all current streams. When the
+// value of SETTINGS_INITIAL_WINDOW_SIZE changes, a receiver MUST adjust the size of all stream by
+// calling the `setInitialWindowSize` method. The window size has to be modified by the difference
+// between the new value and the old value.
+Stream.prototype.setInitialWindowSize = <span class="fstat-no" title="function not covered" >function setInitialWindowSize(initialWindowSize) {</span>
+<span class="cstat-no" title="statement not covered" >  this._window = this._window - this._initialWindowSize + initialWindowSize;</span>
+<span class="cstat-no" title="statement not covered" >  this._initialWindowSize = initialWindowSize;</span>
+};
+&nbsp;
+// Flow control can be disabled for all streams on the connection using the `disableFlowControl`
+// method. This may happen when there's a SETTINGS frame received with the
+// SETTINGS_FLOW_CONTROL_OPTIONS setting.
+Stream.prototype.disableFlowControl = <span class="fstat-no" title="function not covered" >function disableFlowControl() {</span>
+<span class="cstat-no" title="statement not covered" >  this._window = Infinity;</span>
+};
+&nbsp;
+// The `_updateWindow` method gets called every time there's an incoming frame. It filters out
+// WINDOW_UPDATE frames, and then modifies the modifies the flow control window:
+//
+// * Flow control can be disabled for an individual stream by sending a WINDOW_UPDATE with the
+//   END_FLOW_CONTROL flag set. The payload of a WINDOW_UPDATE frame that has the END_FLOW_CONTROL
+//   flag set is ignored.
+// * A sender that receives a WINDOW_UPDATE frame updates the corresponding window by the amount
+//   specified in the frame.
+Stream.prototype._updateWindow = function _updateWindow(frame) {
+  if (frame.type === 'WINDOW_UPDATE') {
+    <span class="missing-if-branch" title="if path not taken"" >I</span>if (frame.flags.END_FLOW_CONTROL) {
+<span class="cstat-no" title="statement not covered" >      this.disableFlowControl();</span>
+    } else {
+      this._window += frame.window_size;
+    }
+    this.emit('window_update');
+  }
+};
+&nbsp;
+// When the user wants to write a buffer into the stream
+Stream.prototype._write = function _write(buffer, encoding, done) {
+  // * The incoming buffer is cut into pieces that are not larger than `MAX_HTTP_PAYLOAD_SIZE`
+  var chunks = utils.cut(buffer, MAX_HTTP_PAYLOAD_SIZE);
+  var sent = 0;
+&nbsp;
+  // * Chunks are wrapped in DATA frames and sent out until all of them are sent or the flow control
+  //   `window` is not enough to send a chunk
+  while (chunks.length &gt; 0 &amp;&amp; chunks[0].length &lt;= this._window) {
+    var chunk = chunks.shift();
+    sent += chunk.length;
+    this._send({
+      type: 'DATA',
+      flags: {},
+      data: chunk
+    });
+&nbsp;
+    // * After sending a flow controlled frame, the sender reduces the space available the window by
+    //   the length of the transmitted frame. For flow control calculations, the 8 byte frame header
+    //   is not counted.
+    this._window -= chunk.length;
+  }
+&nbsp;
+  // * If all of the chunks are sent, we are done
+  <span class="missing-if-branch" title="else path not taken"" >E</span>if (chunks.length === 0) {
+    done();
+  }
+&nbsp;
+  // * Otherwise the process has to continue when a window_update occurs. It is guaranteed by
+  //   the Duplex stream class, that there will be no more calls to `_write` until we are done
+  else {
+<span class="cstat-no" title="statement not covered" >    this.once('window_update', this._write.bind(this, buffer.slice(sent), encoding, done));</span>
+  }
+};
+&nbsp;
+Stream.prototype._receiveData = function _receiveData(frame) {
+  if (frame.type === 'DATA') {
+    this.push(frame.data);
+  }
+&nbsp;
+  if (frame.flags.END_STREAM) {
+    this.push(null);
+  }
+};
+&nbsp;</pre></td></tr>
+</table></pre>
+
+</div>
+<div class="footer">
+    <div class="meta">Generated by <a href="http://istanbul-js.org/" target="_blank">istanbul</a> at Fri Jul 19 2013 18:31:14 GMT+0200 (CEST)</div>
+</div>
+
+<script src="../prettify.js"></script>
+
+<script src="http://yui.yahooapis.com/3.6.0/build/yui/yui-min.js"></script>
+<script>
+
+    YUI().use('datatable', function (Y) {
+
+        var formatters = {
+          pct: function (o) {
+              o.className += o.record.get('classes')[o.column.key];
+              try {
+                  return o.value.toFixed(2) + '%';
+              } catch (ex) { return o.value + '%'; }
+          },
+          html: function (o) {
+              o.className += o.record.get('classes')[o.column.key];
+              return o.record.get(o.column.key + '_html');
+          }
+        },
+          defaultFormatter = function (o) {
+              o.className += o.record.get('classes')[o.column.key];
+              return o.value;
+          };
+
+        function getColumns(theadNode) {
+            var colNodes = theadNode.all('tr th'),
+                cols = [],
+                col;
+            colNodes.each(function (colNode) {
+                col = {
+                    key: colNode.getAttribute('data-col'),
+                    label: colNode.get('innerHTML') || ' ',
+                    sortable: !colNode.getAttribute('data-nosort'),
+                    className: colNode.getAttribute('class'),
+                    type: colNode.getAttribute('data-type'),
+                    allowHTML: colNode.getAttribute('data-html') === 'true' || colNode.getAttribute('data-fmt') === 'html'
+                };
+                col.formatter = formatters[colNode.getAttribute('data-fmt')] || defaultFormatter;
+                cols.push(col);
+            });
+            return cols;
+        }
+
+        function getRowData(trNode, cols) {
+            var tdNodes = trNode.all('td'),
+                    i,
+                    row = { classes: {} },
+                    node,
+                    name;
+            for (i = 0; i < cols.length; i += 1) {
+                name = cols[i].key;
+                node = tdNodes.item(i);
+                row[name] = node.getAttribute('data-value') || node.get('innerHTML');
+                row[name + '_html'] = node.get('innerHTML');
+                row.classes[name] = node.getAttribute('class');
+                //Y.log('Name: ' + name + '; Value: ' + row[name]);
+                if (cols[i].type === 'number') { row[name] = row[name] * 1; }
+            }
+            //Y.log(row);
+            return row;
+        }
+
+        function getData(tbodyNode, cols) {
+            var data = [];
+            tbodyNode.all('tr').each(function (trNode) {
+                data.push(getRowData(trNode, cols));
+            });
+            return data;
+        }
+
+        function replaceTable(node) {
+            if (!node) { return; }
+            var cols = getColumns(node.one('thead')),
+                data = getData(node.one('tbody'), cols),
+                table,
+                parent = node.get('parentNode');
+
+            table = new Y.DataTable({
+                columns: cols,
+                data: data,
+                sortBy: 'file'
+            });
+            parent.set('innerHTML', '');
+            table.render(parent);
+        }
+
+        Y.on('domready', function () {
+            replaceTable(Y.one('div.coverage-summary table'));
+            if (typeof prettyPrint === 'function') {
+                prettyPrint();
+            }
+        });
+    });
+</script>
+</body>
+</html>

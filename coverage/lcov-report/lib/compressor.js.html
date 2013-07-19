@@ -1,0 +1,2726 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <title>Code coverage report for lib/compressor.js</title>
+    <meta charset="utf-8">
+
+    <link rel="stylesheet" href="../prettify.css">
+
+    <style>
+        body, html {
+            margin:0; padding: 0;
+        }
+        body {
+            font-family: Helvetica Neue, Helvetica,Arial;
+            font-size: 10pt;
+        }
+        div.header, div.footer {
+            background: #eee;
+            padding: 1em;
+        }
+        div.header {
+            z-index: 100;
+            position: fixed;
+            top: 0;
+            border-bottom: 1px solid #666;
+            width: 100%;
+        }
+        div.footer {
+            border-top: 1px solid #666;
+        }
+        div.body {
+            margin-top: 10em;
+        }
+        div.meta {
+            font-size: 90%;
+            text-align: center;
+        }
+        h1, h2, h3 {
+            font-weight: normal;
+        }
+        h1 {
+            font-size: 12pt;
+        }
+        h2 {
+            font-size: 10pt;
+        }
+        pre {
+            font-family: Consolas, Menlo, Monaco, monospace;
+            margin: 0;
+            padding: 0;
+            line-height: 14px;
+            font-size: 14px;
+            -moz-tab-size: 2;
+            -o-tab-size:  2;
+            tab-size: 2;
+        }
+
+        div.path { font-size: 110%; }
+        div.path a:link, div.path a:visited { color: #000; }
+        table.coverage { border-collapse: collapse; margin:0; padding: 0 }
+
+        table.coverage td {
+            margin: 0;
+            padding: 0;
+            color: #111;
+            vertical-align: top;
+        }
+        table.coverage td.line-count {
+            width: 50px;
+            text-align: right;
+            padding-right: 5px;
+        }
+        table.coverage td.line-coverage {
+            color: #777 !important;
+            text-align: right;
+            border-left: 1px solid #666;
+            border-right: 1px solid #666;
+        }
+
+        table.coverage td.text {
+        }
+
+        table.coverage td span.cline-any {
+            display: inline-block;
+            padding: 0 5px;
+            width: 40px;
+        }
+        table.coverage td span.cline-neutral {
+            background: #eee;
+        }
+        table.coverage td span.cline-yes {
+            background: #b5d592;
+            color: #999;
+        }
+        table.coverage td span.cline-no {
+            background: #fc8c84;
+        }
+
+        .cstat-yes { color: #111; }
+        .cstat-no { background: #fc8c84; color: #111; }
+        .fstat-no { background: #ffc520; color: #111 !important; }
+        .cbranch-no { background:  yellow !important; color: #111; }
+        .missing-if-branch {
+            display: inline-block;
+            margin-right: 10px;
+            position: relative;
+            padding: 0 4px;
+            background: black;
+            color: yellow;
+            xtext-decoration: line-through;
+        }
+        .missing-if-branch .typ {
+            color: inherit !important;
+        }
+
+        .entity, .metric { font-weight: bold; }
+        .metric { display: inline-block; border: 1px solid #333; padding: 0.3em; background: white; }
+        .metric small { font-size: 80%; font-weight: normal; color: #666; }
+
+        div.coverage-summary table { border-collapse: collapse; margin: 3em; font-size: 110%; }
+        div.coverage-summary td, div.coverage-summary table  th { margin: 0; padding: 0.25em 1em; border-top: 1px solid #666; border-bottom: 1px solid #666; }
+        div.coverage-summary th { text-align: left; border: 1px solid #666; background: #eee; font-weight: normal; }
+        div.coverage-summary th.file { border-right: none !important; }
+        div.coverage-summary th.pic { border-left: none !important; text-align: right; }
+        div.coverage-summary th.pct { border-right: none !important; }
+        div.coverage-summary th.abs { border-left: none !important; text-align: right; }
+        div.coverage-summary td.pct { text-align: right; border-left: 1px solid #666; }
+        div.coverage-summary td.abs { text-align: right; font-size: 90%; color: #444; border-right: 1px solid #666; }
+        div.coverage-summary td.file { text-align: right; border-left: 1px solid #666; white-space: nowrap;  }
+        div.coverage-summary td.pic { min-width: 120px !important;  }
+        div.coverage-summary a:link { text-decoration: none; color: #000; }
+        div.coverage-summary a:visited { text-decoration: none; color: #333; }
+        div.coverage-summary a:hover { text-decoration: underline; }
+        div.coverage-summary tfoot td { border-top: 1px solid #666; }
+
+        div.coverage-summary .yui3-datatable-sort-indicator, div.coverage-summary .dummy-sort-indicator {
+            height: 10px;
+            width: 7px;
+            display: inline-block;
+            margin-left: 0.5em;
+        }
+        div.coverage-summary .yui3-datatable-sort-indicator {
+            background: url("http://yui.yahooapis.com/3.6.0/build/datatable-sort/assets/skins/sam/sort-arrow-sprite.png") no-repeat scroll 0 0 transparent;
+        }
+        div.coverage-summary .yui3-datatable-sorted .yui3-datatable-sort-indicator {
+            background-position: 0 -20px;
+        }
+        div.coverage-summary .yui3-datatable-sorted-desc .yui3-datatable-sort-indicator {
+            background-position: 0 -10px;
+        }
+
+        .high { background: #b5d592 !important; }
+        .medium { background: #ffe87c !important; }
+        .low { background: #fc8c84 !important; }
+
+        span.cover-fill, span.cover-empty {
+            display:inline-block;
+            border:1px solid #444;
+            background: white;
+            height: 12px;
+        }
+        span.cover-fill {
+            background: #ccc;
+            border-right: 1px solid #444;
+        }
+        span.cover-empty {
+            background: white;
+            border-left: none;
+        }
+        span.cover-full {
+            border-right: none !important;
+        }
+        pre.prettyprint {
+            border: none !important;
+            padding: 0 !important;
+            margin: 0 !important;
+        }
+        .com { color: #999 !important; }
+    </style>
+</head>
+<body>
+<div class="header high">
+    <h1>Code coverage report for <span class="entity">lib/compressor.js</span></h1>
+    <h2>
+        
+        Statements: <span class="metric">100% <small>(262 / 262)</small></span> &nbsp;&nbsp;&nbsp;&nbsp;
+        
+        
+        Branches: <span class="metric">100% <small>(101 / 101)</small></span> &nbsp;&nbsp;&nbsp;&nbsp;
+        
+        
+        Functions: <span class="metric">100% <small>(31 / 31)</small></span> &nbsp;&nbsp;&nbsp;&nbsp;
+        
+        
+        Lines: <span class="metric">100% <small>(262 / 262)</small></span> &nbsp;&nbsp;&nbsp;&nbsp;
+        
+    </h2>
+    <div class="path"><a href="../index.html">All files</a> &#187; <a href="index.html">lib/</a> &#187; compressor.js</div>
+</div>
+<div class="body">
+<pre><table class="coverage">
+<tr><td class="line-count">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+71
+72
+73
+74
+75
+76
+77
+78
+79
+80
+81
+82
+83
+84
+85
+86
+87
+88
+89
+90
+91
+92
+93
+94
+95
+96
+97
+98
+99
+100
+101
+102
+103
+104
+105
+106
+107
+108
+109
+110
+111
+112
+113
+114
+115
+116
+117
+118
+119
+120
+121
+122
+123
+124
+125
+126
+127
+128
+129
+130
+131
+132
+133
+134
+135
+136
+137
+138
+139
+140
+141
+142
+143
+144
+145
+146
+147
+148
+149
+150
+151
+152
+153
+154
+155
+156
+157
+158
+159
+160
+161
+162
+163
+164
+165
+166
+167
+168
+169
+170
+171
+172
+173
+174
+175
+176
+177
+178
+179
+180
+181
+182
+183
+184
+185
+186
+187
+188
+189
+190
+191
+192
+193
+194
+195
+196
+197
+198
+199
+200
+201
+202
+203
+204
+205
+206
+207
+208
+209
+210
+211
+212
+213
+214
+215
+216
+217
+218
+219
+220
+221
+222
+223
+224
+225
+226
+227
+228
+229
+230
+231
+232
+233
+234
+235
+236
+237
+238
+239
+240
+241
+242
+243
+244
+245
+246
+247
+248
+249
+250
+251
+252
+253
+254
+255
+256
+257
+258
+259
+260
+261
+262
+263
+264
+265
+266
+267
+268
+269
+270
+271
+272
+273
+274
+275
+276
+277
+278
+279
+280
+281
+282
+283
+284
+285
+286
+287
+288
+289
+290
+291
+292
+293
+294
+295
+296
+297
+298
+299
+300
+301
+302
+303
+304
+305
+306
+307
+308
+309
+310
+311
+312
+313
+314
+315
+316
+317
+318
+319
+320
+321
+322
+323
+324
+325
+326
+327
+328
+329
+330
+331
+332
+333
+334
+335
+336
+337
+338
+339
+340
+341
+342
+343
+344
+345
+346
+347
+348
+349
+350
+351
+352
+353
+354
+355
+356
+357
+358
+359
+360
+361
+362
+363
+364
+365
+366
+367
+368
+369
+370
+371
+372
+373
+374
+375
+376
+377
+378
+379
+380
+381
+382
+383
+384
+385
+386
+387
+388
+389
+390
+391
+392
+393
+394
+395
+396
+397
+398
+399
+400
+401
+402
+403
+404
+405
+406
+407
+408
+409
+410
+411
+412
+413
+414
+415
+416
+417
+418
+419
+420
+421
+422
+423
+424
+425
+426
+427
+428
+429
+430
+431
+432
+433
+434
+435
+436
+437
+438
+439
+440
+441
+442
+443
+444
+445
+446
+447
+448
+449
+450
+451
+452
+453
+454
+455
+456
+457
+458
+459
+460
+461
+462
+463
+464
+465
+466
+467
+468
+469
+470
+471
+472
+473
+474
+475
+476
+477
+478
+479
+480
+481
+482
+483
+484
+485
+486
+487
+488
+489
+490
+491
+492
+493
+494
+495
+496
+497
+498
+499
+500
+501
+502
+503
+504
+505
+506
+507
+508
+509
+510
+511
+512
+513
+514
+515
+516
+517
+518
+519
+520
+521
+522
+523
+524
+525
+526
+527
+528
+529
+530
+531
+532
+533
+534
+535
+536
+537
+538
+539
+540
+541
+542
+543
+544
+545
+546
+547
+548
+549
+550
+551
+552
+553
+554
+555
+556
+557
+558
+559
+560
+561
+562
+563
+564
+565
+566
+567
+568
+569
+570
+571
+572
+573
+574
+575
+576
+577
+578
+579
+580
+581
+582
+583
+584
+585
+586
+587
+588
+589
+590
+591
+592
+593
+594
+595
+596
+597
+598
+599
+600
+601
+602
+603
+604
+605
+606
+607
+608
+609
+610
+611
+612
+613
+614
+615
+616
+617
+618
+619
+620
+621
+622
+623
+624
+625
+626
+627
+628
+629
+630
+631
+632
+633
+634
+635
+636
+637
+638
+639
+640
+641
+642
+643
+644
+645
+646
+647
+648
+649
+650
+651
+652
+653
+654
+655
+656
+657
+658
+659
+660
+661
+662
+663
+664
+665
+666
+667
+668
+669
+670
+671
+672
+673
+674
+675
+676
+677
+678
+679
+680
+681
+682
+683
+684
+685
+686
+687
+688
+689
+690
+691
+692
+693
+694
+695
+696
+697
+698
+699
+700
+701
+702
+703
+704
+705
+706
+707
+708
+709
+710
+711
+712
+713
+714
+715
+716
+717
+718
+719
+720
+721
+722
+723
+724
+725
+726
+727
+728
+729
+730
+731
+732
+733
+734
+735
+736
+737
+738
+739
+740
+741
+742
+743
+744
+745
+746
+747
+748
+749
+750
+751
+752
+753
+754
+755
+756
+757
+758
+759
+760
+761
+762
+763
+764
+765
+766
+767
+768
+769
+770
+771
+772
+773
+774
+775
+776
+777
+778
+779
+780
+781
+782
+783
+784
+785
+786
+787
+788
+789
+790
+791
+792
+793
+794
+795
+796
+797
+798
+799
+800
+801
+802
+803
+804
+805
+806
+807
+808</td><td class="line-coverage"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-yes">10</span>
+<span class="cline-any cline-yes">10</span>
+<span class="cline-any cline-yes">10</span>
+<span class="cline-any cline-yes">10</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-yes">1421</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-yes">43</span>
+<span class="cline-any cline-yes">136</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-yes">43</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">43</span>
+<span class="cline-any cline-yes">154</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">98</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">43</span>
+<span class="cline-any cline-yes">98</span>
+<span class="cline-any cline-yes">98</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-yes">172</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">172</span>
+<span class="cline-any cline-yes">52</span>
+<span class="cline-any cline-yes">52</span>
+<span class="cline-any cline-yes">139</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">52</span>
+<span class="cline-any cline-yes">2</span>
+<span class="cline-any cline-yes">2</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">50</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">120</span>
+<span class="cline-any cline-yes">35</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">85</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">120</span>
+<span class="cline-any cline-yes">119</span>
+<span class="cline-any cline-yes">88</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">31</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">119</span>
+<span class="cline-any cline-yes">119</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">120</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-yes">36</span>
+<span class="cline-any cline-yes">90</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-yes">58</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">58</span>
+<span class="cline-any cline-yes">58</span>
+<span class="cline-any cline-yes">5</span>
+<span class="cline-any cline-yes">5</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">57</span>
+<span class="cline-any cline-yes">57</span>
+<span class="cline-any cline-yes">1029</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">57</span>
+<span class="cline-any cline-yes">31</span>
+<span class="cline-any cline-yes">31</span>
+<span class="cline-any cline-yes">15</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">42</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-yes">24</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">24</span>
+<span class="cline-any cline-yes">42</span>
+<span class="cline-any cline-yes">24</span>
+<span class="cline-any cline-yes">24</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">24</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-yes">119</span>
+<span class="cline-any cline-yes">119</span>
+<span class="cline-any cline-yes">119</span>
+<span class="cline-any cline-yes">2345</span>
+<span class="cline-any cline-yes">192</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2345</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">119</span>
+<span class="cline-any cline-yes">218</span>
+<span class="cline-any cline-yes">218</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-yes">6</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">6</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">6</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">6</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-yes">23</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">23</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">23</span>
+<span class="cline-any cline-yes">23</span>
+<span class="cline-any cline-yes">90</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">23</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">23</span>
+<span class="cline-any cline-yes">23</span>
+<span class="cline-any cline-yes">90</span>
+<span class="cline-any cline-yes">90</span>
+<span class="cline-any cline-yes">90</span>
+<span class="cline-any cline-yes">17</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">9</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">73</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">23</span>
+<span class="cline-any cline-yes">23</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-yes">4</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-yes">20</span>
+<span class="cline-any cline-yes">20</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">20</span>
+<span class="cline-any cline-yes">20</span>
+<span class="cline-any cline-yes">64</span>
+<span class="cline-any cline-yes">64</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">24</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">56</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">20</span>
+<span class="cline-any cline-yes">20</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">20</span>
+<span class="cline-any cline-yes">46</span>
+<span class="cline-any cline-yes">24</span>
+<span class="cline-any cline-yes">24</span>
+<span class="cline-any cline-yes">24</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">20</span>
+<span class="cline-any cline-yes">80</span>
+<span class="cline-any cline-yes">58</span>
+<span class="cline-any cline-yes">58</span>
+<span class="cline-any cline-yes">58</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">20</span>
+<span class="cline-any cline-yes">20</span>
+<span class="cline-any cline-yes">82</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">20</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">20</span>
+<span class="cline-any cline-yes">20</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-yes">216</span>
+<span class="cline-any cline-yes">216</span>
+<span class="cline-any cline-yes">88</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">128</span>
+<span class="cline-any cline-yes">128</span>
+<span class="cline-any cline-yes">2</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">128</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">128</span>
+<span class="cline-any cline-yes">128</span>
+<span class="cline-any cline-yes">136</span>
+<span class="cline-any cline-yes">136</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">136</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">136</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">136</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">128</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-yes">234</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">234</span>
+<span class="cline-any cline-yes">234</span>
+<span class="cline-any cline-yes">100</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">234</span>
+<span class="cline-any cline-yes">139</span>
+<span class="cline-any cline-yes">139</span>
+<span class="cline-any cline-yes">149</span>
+<span class="cline-any cline-yes">149</span>
+<span class="cline-any cline-yes">149</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">234</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-yes">110</span>
+<span class="cline-any cline-yes">110</span>
+<span class="cline-any cline-yes">110</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-yes">115</span>
+<span class="cline-any cline-yes">115</span>
+<span class="cline-any cline-yes">115</span>
+<span class="cline-any cline-yes">115</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-yes">90</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">90</span>
+<span class="cline-any cline-yes">27</span>
+<span class="cline-any cline-yes">63</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-yes">62</span>
+<span class="cline-any cline-yes">46</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">16</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">90</span>
+<span class="cline-any cline-yes">27</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">63</span>
+<span class="cline-any cline-yes">20</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">43</span>
+<span class="cline-any cline-yes">43</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">63</span>
+<span class="cline-any cline-yes">16</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">63</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">90</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">90</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-yes">98</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">98</span>
+<span class="cline-any cline-yes">98</span>
+<span class="cline-any cline-yes">29</span>
+<span class="cline-any cline-yes">69</span>
+<span class="cline-any cline-yes">52</span>
+<span class="cline-any cline-yes">2</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">50</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">17</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">98</span>
+<span class="cline-any cline-yes">29</span>
+<span class="cline-any cline-yes">29</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">69</span>
+<span class="cline-any cline-yes">69</span>
+<span class="cline-any cline-yes">44</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">69</span>
+<span class="cline-any cline-yes">17</span>
+<span class="cline-any cline-yes">52</span>
+<span class="cline-any cline-yes">50</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">69</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">98</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-yes">4</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">14</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">10</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">10</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">10</span>
+<span class="cline-any cline-yes">12</span>
+<span class="cline-any cline-yes">12</span>
+<span class="cline-any cline-yes">10</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2</span>
+<span class="cline-any cline-yes">2</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">12</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">14</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-yes">6</span>
+<span class="cline-any cline-yes">6</span>
+<span class="cline-any cline-yes">6</span>
+<span class="cline-any cline-yes">6</span>
+<span class="cline-any cline-yes">6</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">18</span>
+<span class="cline-any cline-yes">3</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">15</span>
+<span class="cline-any cline-yes">11</span>
+<span class="cline-any cline-yes">11</span>
+<span class="cline-any cline-yes">11</span>
+<span class="cline-any cline-yes">11</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">18</span>
+<span class="cline-any cline-yes">10</span>
+<span class="cline-any cline-yes">12</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">10</span>
+<span class="cline-any cline-yes">10</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">10</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">18</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">// HTTP/2 compression is implemented by two [Transform Stream][1] subclasses that operate in
+// [object mode][2]: the Compressor and the Decompressor. These provide a layer between the
+// [framer](framer.html) and the [connection handling component](connection.html) that
+// generates/parses binary header data.
+//
+// Compression functionality is separated from the integration part. The latter is implemented in
+// the last part of the file, while the larger part of the file is an implementation of the [HTTP/2
+// Header Compression][3] spec. Both Compressor and Decompressor store their compression related
+// state in CompressionContext objects. It is always accessed using methods that guarantee that
+// it remains in a valid state.
+//
+// [1]: http://nodejs.org/api/stream.html#stream_class_stream_transform
+// [2]: http://nodejs.org/api/stream.html#stream_new_stream_readable_options
+// [3]: http://tools.ietf.org/html/draft-ietf-httpbis-header-compression-00
+&nbsp;
+var utils = require('../lib/utils');
+var logging = require('./logging');
+var Transform = require('stream').Transform;
+&nbsp;
+exports.CompressionContext = CompressionContext;
+exports.Decompressor = Decompressor;
+exports.Compressor = Compressor;
+&nbsp;
+// Compression Context
+// ===================
+&nbsp;
+// A `CompressionContext` consists of the following tables:
+//
+// * Header Table (`this._table`) that is limited in size (`this._limit`)
+// * Reference Set (`this._reference`)
+// * Working Set (`this._working`)
+//
+// Header Table and Reference Set entries are `[name, value]` pairs (where both are strings), while
+// Working Set entries are objects with two properties: `index` (a number) and `pair` (a pair).
+//
+// There are only two methods that modifies the state of the tables: `reinitialize()` and
+// `execute(command)`.
+var DEFAULT_HEADER_TABLE_LIMIT = 4096;
+&nbsp;
+function CompressionContext(table, limit) {
+  this._table = table.slice();
+  this._limit = limit || DEFAULT_HEADER_TABLE_LIMIT;
+  this._reference = [];
+  this._working = [];
+}
+&nbsp;
+// The `equal(pair1, pair2)` static method decides if two headers are considered equal. Name
+// comparison is case insensitive while value comparison is case sensitive.
+CompressionContext.equal = function(pair1, pair2) {
+  return (pair1[0].toLowerCase() === pair2[0].toLowerCase()) &amp;&amp; (pair1[1] === pair2[1]);
+};
+&nbsp;
+// `getWorkingSet()` returns the current working set as an array of `[name, value]` pairs.
+CompressionContext.prototype.getWorkingSet = function getWorkingSet() {
+  return this._working.map(function(entry) {
+    return entry.pair;
+  });
+};
+&nbsp;
+// `reinitialize()` must be called between parsing/generating header blocks.
+CompressionContext.prototype.reinitialize = function reinitialize() {
+  var self = this;
+&nbsp;
+  // * It first executes the steps needed to *end the processing of the previous block*.
+  // The new reference set of headers is computed by removing from the working set all the headers
+  // that are not present in the header table.
+  this._reference = this._working.filter(function(entry) {
+    return self._table.indexOf(entry.pair) !== -1;
+  }).map(function(entry) {
+    return entry.pair;
+  });
+&nbsp;
+  // * Then *prepares the processing of the next block*.
+  // The reference set of headers is interpreted into the working set of headers: for each header
+  // in the reference set, an entry is added to the working set, containing the header name, its
+  // value, and its current index in the header table.
+  this._working = this._reference.map(function(pair) {
+    var index = self._table.indexOf(pair);
+    return { index: index, pair: pair };
+  });
+};
+&nbsp;
+// `execute(command)` executes the given command ([header representation][1]): updates the Header
+// Table and the Working Set.
+// [1]: http://tools.ietf.org/html/draft-ietf-httpbis-header-compression-00#section-3.3
+&nbsp;
+// The *JavaScript object representation* of a command:
+//
+//     {
+//       name: String || Integer,  // string literal or index
+//       value: String || Integer, // string literal or index
+//       index: Integer            // -1       : no indexing
+//                                 // 0 - ...  : substitution indexing
+//                                 // Infinity : incremental indexing
+//     }
+//
+// Examples:
+//
+//     Indexed:
+//     { name: 2  , value: 2  , index: -1       }
+//     Literal:
+//     { name: 2  , value: 'X', index: -1       } // without indexing
+//     { name: 2  , value: 'Y', index: Infinity } // incremental indexing
+//     { name: 'A', value: 'Z', index: 123      } // substitution indexing
+&nbsp;
+CompressionContext.prototype.execute = function execute(command) {
+  var index, pair;
+&nbsp;
+  // * For an indexed representation, it checks whether the index is present in the working set.
+  // If true, the corresponding entry is removed from the working set. If several entries correspond
+  // to this encoded index, all these entries are removed from the working set. If the index is not
+  // present in the working set, it is used to retrieve the corresponding header from the Header
+  // Table, and a new entry is added to the working set representing this header.
+  if (typeof command.value === 'number') {
+    index = command.value;
+    var filtered = this._working.filter(function(entry) {
+      return entry.index !== index;
+    });
+    if (filtered.length === this._working.length) {
+      pair = this._table[index];
+      this._working.push({ index: index, pair: pair });
+    } else {
+      this._working = filtered;
+    }
+  }
+&nbsp;
+  // * For a literal representation, a new entry is added to the working set representing this
+  // header. If the literal representation specifies that the header is to be indexed, the header is
+  // added accordingly to the header table, and its index is included in the entry in the working
+  // set. Otherwise, the entry in the working set contains an undefined index.
+  else {
+    if (typeof command.name === 'number') {
+      pair = [this._table[command.name][0], command.value];
+    } else {
+      pair = [command.name, command.value];
+    }
+&nbsp;
+    if (command.index !== -1) {
+      if (command.index === Infinity) {
+        this._table.push(pair);
+      } else {
+        this._table.splice(command.index, 1, pair);
+      }
+      this._enforceSizeBound();           // TODO: The order of these two
+      index = this._table.indexOf(pair);  // TODO: operation is not well defined!
+    }
+&nbsp;
+    this._working.push({ index: index, pair: pair });
+  }
+};
+&nbsp;
+// `_isShadowed` determines the reachability of a given index in the Header Table. An entry in the
+// Header Table is shadowed if there's an entry in the Working Set with the same ID.
+CompressionContext.prototype._isShadowed = function(index) {
+  return this._working.some(function(entry) {
+    return entry.index === index;
+  });
+};
+&nbsp;
+// `generateAddCommand` tries to find a compact command (header representation) for the given
+// `[name, value]` pair that causes the decoder to add the given pair to the Working Set.
+CompressionContext.prototype.generateAddCommand = function(pair) {
+  var equal = CompressionContext.equal.bind(null, pair);
+&nbsp;
+  var full_match = this._table.filter(equal);
+  if (full_match.length !== 0) {
+    var full_index = this._table.indexOf(full_match[0]);
+    if (!this._isShadowed(full_index)) {
+      return {
+        name: full_index,
+        value: full_index,
+        index: -1
+      };
+    }
+  }
+&nbsp;
+  var name = pair[0].toLowerCase();
+  var name_match = this._table.filter(function(entry) {
+    return entry[0].toLowerCase() === name;
+  });
+  if (name_match.length !== 0) {
+    var name_index = this._table.indexOf(name_match[0]);
+    if (!this._isShadowed(name_index)) {
+      return {
+        name: name_index,
+        value: pair[1],
+        index: name_index
+      };
+    }
+  }
+&nbsp;
+  return {
+    name: name,
+    value: pair[1],
+    index: Infinity
+  };
+};
+&nbsp;
+// `generateRemoveCommand` generates a command (an Indexed Header Representation) that causes the
+// decoder to drop the given pair from the Working Set.
+CompressionContext.prototype.generateRemoveCommand = function(pair) {
+  var match;
+&nbsp;
+  for (var i = 0; i &lt; this._working.length; i++) {
+    if (this._working[i].pair === pair) {
+      match = this._working[i];
+      break;
+    }
+  }
+&nbsp;
+  return {
+    name: match.index,
+    value: match.index,
+    index: -1
+  };
+};
+&nbsp;
+// The header table size can be bounded so as to limit the memory requirements.
+// The `_enforceSizeBound()` private method drops the entries that are over the limit
+// (`this._limit`).
+//
+// The header table size is defined as the sum of the size of each entry of the table. The size
+// of an entry is the sum of the length in bytes of its name, of value's length in bytes and of
+// 32 bytes (for accounting for the entry structure overhead).
+CompressionContext.prototype._enforceSizeBound = function() {
+  var table = this._table;
+  var size = 0;
+  for (var i = 0; i &lt; table.length; i++) {
+    if (table[i].size === undefined) {
+      table[i].size = new Buffer(table[i][0] + table[i][1], 'utf8').length + 32;
+    }
+    size += table[i].size;
+  }
+  while (size &gt; this._limit) {
+    var dropped = table.shift();
+    size -= dropped.size;
+  }
+};
+&nbsp;
+// [Decompression process](http://tools.ietf.org/html/draft-ietf-httpbis-header-compression-00#section-3.4)
+// =======================
+&nbsp;
+// The decompression process is always done by a `Decompressor` object.
+//
+// The compression related mutable state is stored in a contained `CompressionContext` object.
+// The initial value of it's Header Table depends on which side of the connection is it on.
+function Decompressor(type, log) {
+  this._log = (log || logging.root).child({ component: 'decompressor' });
+&nbsp;
+  var initial_table = (type === 'REQUEST') ? CompressionContext.initialRequestTable
+                                           : CompressionContext.initialResponseTable;
+  this._context = new CompressionContext(initial_table);
+&nbsp;
+  this._initializeStream();
+}
+Decompressor.prototype = Object.create(Transform.prototype, { constructor: { value: Decompressor } });
+&nbsp;
+// The `decompress` method takes a buffer, and returns the decoded header set.
+//
+// According to the spec, to ensure a correct decoding of a set of headers, the following steps or
+// equivalent ones MUST be executed by the decoder.
+Decompressor.prototype.decompress = function decompress(buffer) {
+  this._log.trace({ data: buffer }, 'Starting header decompression');
+&nbsp;
+  // * First, upon starting the decoding of a new set of headers, the reference set of headers is
+  // interpreted into the working set of headers
+  this._context.reinitialize();
+&nbsp;
+  // * Then, the header representations are processed in their order of occurrence in the frame.
+  // The decoding process of the header representations are defined in the `execute(command)`
+  // method of the `CompressionContext` class.
+  buffer.cursor = 0;
+  while (buffer.cursor &lt; buffer.length) {
+    this._context.execute(Decompressor.header(buffer));
+  }
+&nbsp;
+  // * When all the header representations have been processed, the working set contains all the
+  // headers of the set of headers.
+  var pairs = this._context.getWorkingSet();
+&nbsp;
+  // * The working set entries are `[name, value]` pairs. As a last step, these are converted to the
+  // usual header set format used in node.js: `{ name1: value1, name2: [value2, value3], ... }`
+  var headers = {};
+  for (var i = 0; i &lt; pairs.length; i++) {
+    var name = pairs[i][0];
+    var value = pairs[i][1];
+    if (name in headers) {
+      if (headers[name] instanceof Array) {
+        headers[name].push(value);
+      } else {
+        headers[name] = [headers[name], value];
+      }
+    } else {
+      headers[name] = value;
+    }
+  }
+  this._log.debug({ headers: headers }, 'Header decompression is done');
+  return headers;
+};
+&nbsp;
+// Compression process
+// ===================
+&nbsp;
+// The decompression process is always done by a `Compressor` object.
+//
+// The compression related mutable state is stored in a contained `CompressionContext` object.
+// The initial value of it's Header Table depends on which side of the connection is it on.
+function Compressor(type, log) {
+  this._log = (log || logging.root).child({ component: 'compressor' });
+&nbsp;
+  var initial_table = (type === 'REQUEST') ? CompressionContext.initialRequestTable
+                                           : CompressionContext.initialResponseTable;
+  this._context = new CompressionContext(initial_table);
+&nbsp;
+  this._initializeStream();
+}
+Compressor.prototype = Object.create(Transform.prototype, { constructor: { value: Compressor } });
+&nbsp;
+// The `compress` method takes a header set and returns an array of buffers containing the
+// encoded binary data.
+//
+// The inverse of the decoding process goes follows:
+Compressor.prototype.compress = function compress(headers) {
+  this._log.debug({ headers: headers }, 'Starting header compression');
+  var i;
+&nbsp;
+  // * First, the usual node.js header set format (`{ name1: value1, name2: [value2, value3], ... }`)
+  // has to be converted to `[name, value]` pairs.
+  var pairs = [];
+  for (var name in headers) {
+    var value = headers[name];
+    if (value instanceof Array) {
+      for (i = 0; i&lt; value.length; i++) {
+        pairs.push([name, value[i]]);
+      }
+    } else {
+      pairs.push([name, value]);
+    }
+  }
+&nbsp;
+  // * Before generating commands that make the working set equal to the generated pair set,
+  // the reference set and the working set has to be reinitialized.
+  this._context.reinitialize();
+  var working = this._context.getWorkingSet(), command, commands = [];
+&nbsp;
+  // * The first commands remove the unneeded headers from the working set.
+  for (i = 0; i &lt; working.length; i++) {
+    if (!pairs.some(CompressionContext.equal.bind(null, working[i]))) {
+      command = this._context.generateRemoveCommand(working[i]);
+      this._context.execute(command);
+      commands.push(command);
+    }
+  }
+&nbsp;
+  // * Then the headers that are not present in the working set yet are added.
+  for (i = 0; i &lt; pairs.length; i++) {
+    if (!working.some(CompressionContext.equal.bind(null, pairs[i]))) {
+      command = this._context.generateAddCommand(pairs[i]);
+      this._context.execute(command);
+      commands.push(command);
+    }
+  }
+&nbsp;
+  // * The last step is the serialization of the generated commands.
+  var buffers = [];
+  for (i = 0; i &lt; commands.length; i++) {
+    buffers.push(Compressor.header(commands[i]));
+  }
+&nbsp;
+  var buffer = utils.concat(Array.prototype.concat.apply([], buffers)); // [[bufs]] -&gt; [bufs] -&gt; buf
+&nbsp;
+  this._log.trace({ data: buffer }, 'Header compression is done');
+  return buffer;
+};
+&nbsp;
+// [Detailed Format](http://tools.ietf.org/html/draft-ietf-httpbis-header-compression-00#section-4)
+// =================
+&nbsp;
+// Integer representation
+// ----------------------
+//
+// The algorithm to represent an integer I is as follows:
+//
+// 1. If I &lt; 2^N - 1, encode I on N bits
+// 2. Else, encode 2^N - 1 on N bits and do the following steps:
+//    1. Set I to (I - (2^N - 1)) and Q to 1
+//    2. While Q &gt; 0
+//       1. Compute Q and R, quotient and remainder of I divided by 2^7
+//       2. If Q is strictly greater than 0, write one 1 bit; otherwise, write one 0 bit
+//       3. Encode R on the next 7 bits
+//       4. I = Q
+&nbsp;
+Compressor.integer = function writeInteger(I, N) {
+  var limit = Math.pow(2,N) - 1;
+  if (I &lt; limit) {
+    return [new Buffer([I])];
+  }
+&nbsp;
+  var bytes = [];
+  if (N !== 0) {
+    bytes.push(limit);
+  }
+  I -= limit;
+&nbsp;
+  var Q = 1, R;
+  while (Q &gt; 0) {
+    Q = Math.floor(I / 128);
+    R = I % 128;
+&nbsp;
+    if (Q &gt; 0) {
+      R += 128;
+    }
+    bytes.push(R);
+&nbsp;
+    I = Q;
+  }
+&nbsp;
+  return [new Buffer(bytes)];
+};
+&nbsp;
+// The inverse algorithm:
+//
+// 1. Set I to the number coded on the lower N bits of the first byte
+// 2. If I is smaller than 2^N - 1 then return I
+// 2. Else the number is encoded on more than one byte, so do the following steps:
+//    1. Set M to 0
+//    2. While returning with I
+//       1. Let B be the next byte (the first byte if N is 0)
+//       2. Read out the lower 7 bits of B and multiply it with 2^M
+//       3. Increase I with this number
+//       4. Increase M by 7
+//       5. Return I if the most significant bit of B is 0
+&nbsp;
+Decompressor.integer = function readInteger(buffer, N) {
+  var limit = Math.pow(2,N) - 1;
+&nbsp;
+  var I = buffer[buffer.cursor] &amp; limit;
+  if (N !== 0) {
+    buffer.cursor += 1;
+  }
+&nbsp;
+  if (I === limit) {
+    var M = 0;
+    do {
+      I += (buffer[buffer.cursor] &amp; 127) &lt;&lt; M;
+      M += 7;
+      buffer.cursor += 1;
+    } while (buffer[buffer.cursor - 1] &amp; 128);
+  }
+&nbsp;
+  return I;
+};
+&nbsp;
+// String literal representation
+// -----------------------------
+//
+// Literal **strings** can represent header names or header values.  They are encoded in two parts:
+//
+// 1. The string length, defined as the number of bytes needed to store its UTF-8 representation,
+//    is represented as an integer with a zero bits prefix.  If the string length is strictly less
+//    than 128, it is represented as one byte.
+// 2. The string value represented as a list of UTF-8 characters.
+&nbsp;
+Compressor.string = function writeString(str) {
+  var encoded_string = new Buffer(str, 'utf8');
+  var encoded_length = Compressor.integer(encoded_string.length, 0);
+  return encoded_length.concat(encoded_string);
+};
+&nbsp;
+Decompressor.string = function readString(buffer) {
+  var length = Decompressor.integer(buffer, 0);
+  var str = buffer.toString('utf8', buffer.cursor, buffer.cursor + length);
+  buffer.cursor += length;
+  return str;
+};
+&nbsp;
+// [Header represenations](http://tools.ietf.org/html/draft-ietf-httpbis-header-compression-00#section-4.3)
+// -----------------------
+&nbsp;
+// The JavaScript object representation is described near the
+// `CompressionContext.prototype.execute()` method definition.
+//
+// **All binary header representations** start with a prefix signaling the representation type and
+// an index represented using prefix coded integers:
+//
+//       0   1   2   3   4   5   6   7
+//     +---+---+---+---+---+---+---+---+
+//     | 1 |        Index (7+)         |  Indexed Representation
+//     +---+---------------------------+
+//
+//     +---+---+---+---+---+---+---+---+
+//     | 0 | 1 | 1 |    Index (5+)     |  Literal w/o Indexing
+//     +---+---+---+-------------------+
+//
+//     +---+---+---+---+---+---+---+---+
+//     | 0 | 1 | 0 |    Index (5+)     |  Literal w/ Incremental Indexing
+//     +---+---+---+-------------------+
+//
+//     +---+---+---+---+---+---+---+---+
+//     | 0 | 0 |      Index (6+)       |  Literal w/ Substitution Indexing
+//     +---+---+-----------------------+
+//
+// The **Indexed Representation** consists of the 1-bit prefix and the Index that is represented as
+// a 7-bit prefix coded integer and nothing else.
+//
+// After the first bits, **all literal representations** specify the header name, either as a
+// pointer to the Header Table (Index) or a string literal. When the string literal representation
+// is used, the Index is set to 0 and the string literal starts at the second byte.
+//
+// When using **Substitution Indexing**, a new index comes next represented as a 0-bit prefix
+// integer, specifying the record in the Header Table that needs to be replaced.
+//
+// For **all literal representations**, the specification of the header value comes next. It is
+// always represented as a string.
+&nbsp;
+var representations = {
+  indexed             : { prefix: 7, pattern: 0x80 },
+  literal             : { prefix: 5, pattern: 0x60 },
+  literal_incremental : { prefix: 5, pattern: 0x40 },
+  literal_substitution: { prefix: 6, pattern: 0x00 }
+};
+&nbsp;
+Compressor.header = function writeString(header) {
+  var representation, buffers = [];
+&nbsp;
+  if (typeof header.value === 'number') {
+    representation = representations.indexed;
+  } else if (header.index === -1) {
+    representation = representations.literal;
+  } else if (header.index === Infinity) {
+    representation = representations.literal_incremental;
+  } else {
+    representation = representations.literal_substitution;
+  }
+&nbsp;
+  if (representation === representations.indexed) {
+    buffers.push(Compressor.integer(header.value, representation.prefix));
+&nbsp;
+  } else {
+    if (typeof header.name === 'number') {
+      buffers.push(Compressor.integer(header.name + 1, representation.prefix));
+    } else {
+      buffers.push(Compressor.integer(0, representation.prefix));
+      buffers.push(Compressor.string(header.name));
+    }
+&nbsp;
+    if (representation === representations.literal_substitution) {
+      buffers.push(Compressor.integer(header.index, 0));
+    }
+&nbsp;
+    buffers.push(Compressor.string(header.value));
+  }
+&nbsp;
+  buffers[0][0][0] |= representation.pattern;
+&nbsp;
+  return Array.prototype.concat.apply([], buffers); // array of arrays of buffers -&gt; array of buffers
+};
+&nbsp;
+Decompressor.header = function readString(buffer) {
+  var representation, header = {};
+&nbsp;
+  var first_byte = buffer[buffer.cursor];
+  if (first_byte &amp; 0x80) {
+    representation = representations.indexed;
+  } else if (first_byte &amp; 0x40) {
+    if (first_byte &amp; 0x20) {
+      representation = representations.literal;
+    } else {
+      representation = representations.literal_incremental;
+    }
+  } else {
+    representation = representations.literal_substitution;
+  }
+&nbsp;
+  if (representation === representations.indexed) {
+    header.value = header.name = Decompressor.integer(buffer, representation.prefix);
+    header.index = -1;
+&nbsp;
+  } else {
+    header.name = Decompressor.integer(buffer, representation.prefix) - 1;
+    if (header.name === -1) {
+      header.name = Decompressor.string(buffer);
+    }
+&nbsp;
+    if (representation === representations.literal_substitution) {
+      header.index = Decompressor.integer(buffer, 0);
+    } else if (representation === representations.literal_incremental) {
+      header.index = Infinity;
+    } else {
+      header.index = -1;
+    }
+&nbsp;
+    header.value = Decompressor.string(buffer);
+  }
+&nbsp;
+  return header;
+};
+&nbsp;
+// The compression layer
+// =====================
+&nbsp;
+// This section describes the interaction between the compressor/decompressor and the rest of the
+// HTTP/2 implementation. The Compressor and the Decompressor makes up a layer between the
+// [framer](framer.html) and the [connection handling component](connection.html). They let most
+// frames pass through, except HEADERS and PUSH_PROMISE frames. They convert the frames between
+// these two representations:
+//
+//     {                                   {
+//      type: 'HEADERS',                    type: 'HEADERS',
+//      flags: {},                          flags: {},
+//      stream: 1,               &lt;===&gt;      stream: 1,
+//      headers: {                          data: Buffer
+//       N1: 'V1',                         }
+//       N2: ['V1', 'V2', ...],
+//       // ...
+//      }
+//     }
+//
+// There are possibly several binary frame that belong to a single non-binary frame.
+&nbsp;
+var MAX_HTTP_PAYLOAD_SIZE = 16383;
+&nbsp;
+// The Compressor transform stream is basically stateless.
+Compressor.prototype._initializeStream = function _initializeStream() {
+  Transform.call(this, { objectMode: true });
+};
+&nbsp;
+Compressor.prototype._transform = function _transform(frame, encoding, done) {
+  // When it receives a HEADERS or PUSH_PROMISE frame
+  if (frame.type === 'HEADERS' || frame.type === 'PUSH_PROMISE') {
+    // * it generates a header block using the compress method
+    var buffer = this.compress(frame.headers);
+&nbsp;
+    // * cuts the header block into `chunks` that are not larger than `MAX_HTTP_PAYLOAD_SIZE`
+    var chunks = utils.cut(buffer, MAX_HTTP_PAYLOAD_SIZE);
+&nbsp;
+    // * for each `chunk`, it pushes out a `chunk_frame` that is identical to the original, except
+    // the `data` property which holds the given chunk, the END_HEADERS/END_PUSH_STREAM flag that
+    // marks the last frame and the END_STREAM flag which is always false before the end
+    for (var i = 0; i &lt; chunks.length; i++) {
+      var flags = utils.shallow_copy(frame.flags);
+      if (i === chunks.length - 1) {
+        flags['END_' + frame.type] = true;
+      } else {
+        flags['END_' + frame.type] = false;
+        flags['END_STREAM'] = false;
+      }
+&nbsp;
+      this.push({
+        type: frame.type,
+        flags: flags,
+        stream: frame.stream,
+        priority: frame.priority,
+        data: chunks[i]
+      });
+    }
+  }
+&nbsp;
+  // Otherwise, the frame is forwarded without taking any action
+  else {
+    this.push(frame);
+  }
+&nbsp;
+  done();
+};
+&nbsp;
+// The Decompressor is a stateful transform stream, since it has to collect multiple frames first,
+// and the decoding comes after unifying the payload of those frames.
+//
+// If there's a frame in progress, `this._in_progress` is `true`. The frames are collected in
+// `this._frames`, and the type of the frame and the stream identifier is stored in `this._type`
+// and `this._stream` respectively.
+Decompressor.prototype._initializeStream = function _initializeStream() {
+  Transform.call(this, { objectMode: true });
+  this._in_progress = false;
+  this._type = undefined;
+  this._stream = undefined;
+  this._frames = undefined;
+};
+&nbsp;
+// When a `frame` arrives
+Decompressor.prototype._transform = function _transform(frame, encoding, done) {
+  // * and the collection process is already `_in_progress`, the frame is simply stored, except if
+  // it's an illegal frame
+  if (this._in_progress) {
+    if (frame.type !== this._type || frame.stream !== this._stream) {
+      this.emit('error', 'A series of header frames must not be interleaved with other frames!');
+    }
+    this._frames.push(frame);
+  }
+&nbsp;
+  // * and the collection process is not `_in_progress`, but the new frame's type is HEADERS or
+  // PUSH_PROMISE, a new collection process begins
+  else if (frame.type === 'HEADERS' || frame.type === 'PUSH_PROMISE') {
+    this._in_progress = true;
+    this._type = frame.type;
+    this._stream = frame.stream;
+    this._frames = [frame];
+  }
+&nbsp;
+  // * otherwise, the frame is forwarded without taking any action
+  else {
+    this.push(frame);
+  }
+&nbsp;
+  // When the frame signals that it's the last in the series, the header block chunks are
+  // concatenated, the headers are decompressed, and a new frame gets pushed out with the
+  // decompressed headers.
+  if (this._in_progress &amp;&amp; (frame.flags.END_HEADERS || frame.flags.END_PUSH_PROMISE)) {
+    var buffer = utils.concat(this._frames.map(function(frame) {
+      return frame.data;
+    }));
+    var headers = this.decompress(buffer);
+    this.push({
+      type: frame.type,
+      flags: frame.flags,
+      stream: frame.stream,
+      priority: frame.priority,
+      headers: headers
+    });
+    this._in_progress = false;
+  }
+&nbsp;
+  done();
+};
+&nbsp;
+// [Initial header names](http://tools.ietf.org/html/draft-ietf-httpbis-header-compression-00#appendix-A)
+// ======================
+&nbsp;
+CompressionContext.initialRequestTable  = [
+  [ ':scheme'                     , 'http'  ],
+  [ ':scheme'                     , 'https' ],
+  [ ':host'                       , ''      ],
+  [ ':path'                       , '/'     ],
+  [ ':method'                     , 'get'   ],
+  [ 'accept'                      , ''      ],
+  [ 'accept-charset'              , ''      ],
+  [ 'accept-encoding'             , ''      ],
+  [ 'accept-language'             , ''      ],
+  [ 'cookie'                      , ''      ],
+  [ 'if-modified-since'           , ''      ],
+  [ 'keep-alive'                  , ''      ],
+  [ 'user-agent'                  , ''      ],
+  [ 'proxy-connection'            , ''      ],
+  [ 'referer'                     , ''      ],
+  [ 'accept-datetime'             , ''      ],
+  [ 'authorization'               , ''      ],
+  [ 'allow'                       , ''      ],
+  [ 'cache-control'               , ''      ],
+  [ 'connection'                  , ''      ],
+  [ 'content-length'              , ''      ],
+  [ 'content-md5'                 , ''      ],
+  [ 'content-type'                , ''      ],
+  [ 'date'                        , ''      ],
+  [ 'expect'                      , ''      ],
+  [ 'from'                        , ''      ],
+  [ 'if-match'                    , ''      ],
+  [ 'if-none-match'               , ''      ],
+  [ 'if-range'                    , ''      ],
+  [ 'if-unmodified-since'         , ''      ],
+  [ 'max-forwards'                , ''      ],
+  [ 'pragma'                      , ''      ],
+  [ 'proxy-authorization'         , ''      ],
+  [ 'range'                       , ''      ],
+  [ 'te'                          , ''      ],
+  [ 'upgrade'                     , ''      ],
+  [ 'via'                         , ''      ],
+  [ 'warning'                     , ''      ]
+];
+&nbsp;
+CompressionContext.initialResponseTable = [
+  [ ':status'                     , '200'   ],
+  [ 'age'                         , ''      ],
+  [ 'cache-control'               , ''      ],
+  [ 'content-length'              , ''      ],
+  [ 'content-type'                , ''      ],
+  [ 'date'                        , ''      ],
+  [ 'etag'                        , ''      ],
+  [ 'expires'                     , ''      ],
+  [ 'last-modified'               , ''      ],
+  [ 'server'                      , ''      ],
+  [ 'set-cookie'                  , ''      ],
+  [ 'vary'                        , ''      ],
+  [ 'via'                         , ''      ],
+  [ 'access-control-allow-origin' , ''      ],
+  [ 'accept-ranges'               , ''      ],
+  [ 'allow'                       , ''      ],
+  [ 'connection'                  , ''      ],
+  [ 'content-disposition'         , ''      ],
+  [ 'content-encoding'            , ''      ],
+  [ 'content-language'            , ''      ],
+  [ 'content-location'            , ''      ],
+  [ 'content-md5'                 , ''      ],
+  [ 'content-range'               , ''      ],
+  [ 'link'                        , ''      ],
+  [ 'location'                    , ''      ],
+  [ 'p3p'                         , ''      ],
+  [ 'pragma'                      , ''      ],
+  [ 'proxy-authenticate'          , ''      ],
+  [ 'refresh'                     , ''      ],
+  [ 'retry-after'                 , ''      ],
+  [ 'strict-transport-security'   , ''      ],
+  [ 'trailer'                     , ''      ],
+  [ 'transfer-encoding'           , ''      ],
+  [ 'warning'                     , ''      ],
+  [ 'www-authenticate'            , ''      ]
+];
+&nbsp;</pre></td></tr>
+</table></pre>
+
+</div>
+<div class="footer">
+    <div class="meta">Generated by <a href="http://istanbul-js.org/" target="_blank">istanbul</a> at Fri Jul 19 2013 18:31:14 GMT+0200 (CEST)</div>
+</div>
+
+<script src="../prettify.js"></script>
+
+<script src="http://yui.yahooapis.com/3.6.0/build/yui/yui-min.js"></script>
+<script>
+
+    YUI().use('datatable', function (Y) {
+
+        var formatters = {
+          pct: function (o) {
+              o.className += o.record.get('classes')[o.column.key];
+              try {
+                  return o.value.toFixed(2) + '%';
+              } catch (ex) { return o.value + '%'; }
+          },
+          html: function (o) {
+              o.className += o.record.get('classes')[o.column.key];
+              return o.record.get(o.column.key + '_html');
+          }
+        },
+          defaultFormatter = function (o) {
+              o.className += o.record.get('classes')[o.column.key];
+              return o.value;
+          };
+
+        function getColumns(theadNode) {
+            var colNodes = theadNode.all('tr th'),
+                cols = [],
+                col;
+            colNodes.each(function (colNode) {
+                col = {
+                    key: colNode.getAttribute('data-col'),
+                    label: colNode.get('innerHTML') || ' ',
+                    sortable: !colNode.getAttribute('data-nosort'),
+                    className: colNode.getAttribute('class'),
+                    type: colNode.getAttribute('data-type'),
+                    allowHTML: colNode.getAttribute('data-html') === 'true' || colNode.getAttribute('data-fmt') === 'html'
+                };
+                col.formatter = formatters[colNode.getAttribute('data-fmt')] || defaultFormatter;
+                cols.push(col);
+            });
+            return cols;
+        }
+
+        function getRowData(trNode, cols) {
+            var tdNodes = trNode.all('td'),
+                    i,
+                    row = { classes: {} },
+                    node,
+                    name;
+            for (i = 0; i < cols.length; i += 1) {
+                name = cols[i].key;
+                node = tdNodes.item(i);
+                row[name] = node.getAttribute('data-value') || node.get('innerHTML');
+                row[name + '_html'] = node.get('innerHTML');
+                row.classes[name] = node.getAttribute('class');
+                //Y.log('Name: ' + name + '; Value: ' + row[name]);
+                if (cols[i].type === 'number') { row[name] = row[name] * 1; }
+            }
+            //Y.log(row);
+            return row;
+        }
+
+        function getData(tbodyNode, cols) {
+            var data = [];
+            tbodyNode.all('tr').each(function (trNode) {
+                data.push(getRowData(trNode, cols));
+            });
+            return data;
+        }
+
+        function replaceTable(node) {
+            if (!node) { return; }
+            var cols = getColumns(node.one('thead')),
+                data = getData(node.one('tbody'), cols),
+                table,
+                parent = node.get('parentNode');
+
+            table = new Y.DataTable({
+                columns: cols,
+                data: data,
+                sortBy: 'file'
+            });
+            parent.set('innerHTML', '');
+            table.render(parent);
+        }
+
+        Y.on('domready', function () {
+            replaceTable(Y.one('div.coverage-summary table'));
+            if (typeof prettyPrint === 'function') {
+                prettyPrint();
+            }
+        });
+    });
+</script>
+</body>
+</html>
