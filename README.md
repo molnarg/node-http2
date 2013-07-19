@@ -74,11 +74,14 @@ Used libraries:
 
 The developer documentation is located in the `doc` directory. The docs are usually updated only
 before releasing a new version. To regenerate them manually, run `npm run-script prepublish`.
+There's a hosted version which is located [here](http://molnarg.github.io/node-http2/doc/).
 
 ### Running the tests ###
 
 It's easy, just run `npm test`. The tests are written in BDD style, so they are a good starting
 point to understand the code.
+
+### Test coverage ###
 
 To generate a code coverage report, run `npm test --coverage`. Code coverage summary as of version
 0.0.6:
@@ -88,6 +91,10 @@ Branches     : 84.69% ( 249/294 )
 Functions    : 88.03% ( 103/117 )
 Lines        : 91.18% ( 775/850 )
 ```
+
+There's a hosted version of the detailed (line-by-line) coverage report [here][8].
+
+[8]: http://molnarg.github.io/node-http2/coverage/lcov-report/lib/
 
 ### Logging ###
 
