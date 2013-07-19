@@ -2,7 +2,7 @@
 
 <html>
 <head>
-  <title>https.js</title>
+  <title>index.js</title>
   <meta http-equiv="content-type" content="text/html; charset=UTF-8">
   <meta name="viewport" content="width=device-width, target-densitydpi=160dpi, initial-scale=1.0; maximum-scale=1.0; user-scalable=0;">
   <link rel="stylesheet" media="all" href="docco.css" />
@@ -76,7 +76,7 @@
         
           <li id="title">
               <div class="annotation">
-                  <h1>https.js</h1>
+                  <h1>index.js</h1>
               </div>
           </li>
         
@@ -88,11 +88,11 @@
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-1">&#182;</a>
               </div>
-              <p>This is the main API that can be used to create HTTP/2 server that runs on top of TLS.</p>
+              <p><a href="https://github.com/molnarg/node-http2">node-http2</a> consists of the following components:</p>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre><span class="keyword">var</span> https2 = exports;</pre></div></div>
+            <div class="content"><div class='highlight'><pre><span class="keyword">var</span> http2 = exports;</pre></div></div>
             
         </li>
         
@@ -103,16 +103,13 @@
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-2">&#182;</a>
               </div>
-              <p>The main governing power behind the http2 API design is that it should look very similar to the
-existing node.js <a href="http://nodejs.org/api/http.html">HTTP</a>/<a href="http://nodejs.org/api/https.html">HTTPS</a>
-APIs. The additional features of HTTP/2 are exposed as extensions to these APIs. Furthermore,
-node-http2 should fall back to using HTTP/1.1 if needed.</p>
+              <ul>
+<li><a href="utils.html">utils.js</a>: common utility functions, like concatenating buffers</li>
+</ul>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre><span class="keyword">var</span> https = require(<span class="string">'https'</span>);
-
-<span class="keyword">var</span> default_settings = {};</pre></div></div>
+            <div class="content"><div class='highlight'><pre>http2.utils      = require(<span class="string">'./utils'</span>);</pre></div></div>
             
         </li>
         
@@ -120,12 +117,16 @@ node-http2 should fall back to using HTTP/1.1 if needed.</p>
         <li id="section-3">
             <div class="annotation">
               
-              <div class="pilwrap for-h2">
+              <div class="pilwrap ">
                 <a class="pilcrow" href="#section-3">&#182;</a>
               </div>
-              <h2>Server</h2>
+              <ul>
+<li><a href="logging.html">logging.js</a>: a default logger object and a registry of log formatter functions</li>
+</ul>
 
             </div>
+            
+            <div class="content"><div class='highlight'><pre>http2.logging    = require(<span class="string">'./logging'</span>);</pre></div></div>
             
         </li>
         
@@ -136,11 +137,14 @@ node-http2 should fall back to using HTTP/1.1 if needed.</p>
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-4">&#182;</a>
               </div>
-              
+              <ul>
+<li><a href="framer.html">framer.js</a>: the lowest layer in the stack that transforms between the binary and
+the JavaScript object representation of HTTP/2 frames</li>
+</ul>
+
             </div>
             
-            <div class="content"><div class='highlight'><pre>https2.createServer = <span class="function"><span class="keyword">function</span> <span class="title">createServer</span><span class="params">(options, requestListener)</span> {</span>
-};</pre></div></div>
+            <div class="content"><div class='highlight'><pre>http2.framer     = require(<span class="string">'./framer'</span>);</pre></div></div>
             
         </li>
         
@@ -148,12 +152,16 @@ node-http2 should fall back to using HTTP/1.1 if needed.</p>
         <li id="section-5">
             <div class="annotation">
               
-              <div class="pilwrap for-h2">
+              <div class="pilwrap ">
                 <a class="pilcrow" href="#section-5">&#182;</a>
               </div>
-              <h2>Client</h2>
+              <ul>
+<li><a href="compressor.html">compressor.js</a>: compression and decompression of HEADER frames</li>
+</ul>
 
             </div>
+            
+            <div class="content"><div class='highlight'><pre>http2.compressor = require(<span class="string">'./compressor'</span>);</pre></div></div>
             
         </li>
         
@@ -164,14 +172,13 @@ node-http2 should fall back to using HTTP/1.1 if needed.</p>
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-6">&#182;</a>
               </div>
-              
+              <ul>
+<li><a href="stream.html">stream.js</a>: implementation of the HTTP/2 stream concept</li>
+</ul>
+
             </div>
             
-            <div class="content"><div class='highlight'><pre>https2.request = <span class="function"><span class="keyword">function</span> <span class="title">request</span><span class="params">(options, callback)</span> {</span>
-};
-
-https2.get = <span class="function"><span class="keyword">function</span> <span class="title">get</span><span class="params">(options, callback)</span> {</span>
-};</pre></div></div>
+            <div class="content"><div class='highlight'><pre>http2.stream     = require(<span class="string">'./stream'</span>);</pre></div></div>
             
         </li>
         
@@ -179,12 +186,17 @@ https2.get = <span class="function"><span class="keyword">function</span> <span 
         <li id="section-7">
             <div class="annotation">
               
-              <div class="pilwrap for-h2">
+              <div class="pilwrap ">
                 <a class="pilcrow" href="#section-7">&#182;</a>
               </div>
-              <h2>Agent</h2>
+              <ul>
+<li><a href="connection.html">connection.js</a>: multiplexes streams, manages the identifiers of them and
+repsonsible for connection level flow control</li>
+</ul>
 
             </div>
+            
+            <div class="content"><div class='highlight'><pre>http2.connection = require(<span class="string">'./connection'</span>);</pre></div></div>
             
         </li>
         
@@ -195,10 +207,48 @@ https2.get = <span class="function"><span class="keyword">function</span> <span 
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-8">&#182;</a>
               </div>
-              <p><a href="http://nodejs.org/api/https.html#https_class_https_agent">HTTPS agents</a> are not yet supported,
-so every client request will create a new TCP stream.</p>
+              <ul>
+<li><a href="endpoint.html">endpoint.js</a>: manages other components (framer, compressor, connection,
+streams) and part of the handshake process</li>
+</ul>
 
             </div>
+            
+            <div class="content"><div class='highlight'><pre>http2.endpoint   = require(<span class="string">'./endpoint'</span>);</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-9">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-9">&#182;</a>
+              </div>
+              <ul>
+<li><a href="http.html">http.js</a>: public node-http2 API for unencrypted connections</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>http2.http       = require(<span class="string">'./http'</span>);</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-10">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-10">&#182;</a>
+              </div>
+              <ul>
+<li><a href="https.html">https.js</a>: public node-http2 API for SSL/TLS encrypted connections</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>http2.https      = require(<span class="string">'./https'</span>);</pre></div></div>
             
         </li>
         

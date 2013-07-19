@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+  <title>endpoint.js</title>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <meta name="viewport" content="width=device-width, target-densitydpi=160dpi, initial-scale=1.0; maximum-scale=1.0; user-scalable=0;">
+  <link rel="stylesheet" media="all" href="docco.css" />
+</head>
+<body>
+  <div id="container">
+    <div id="background"></div>
+    
+      <ul id="jump_to">
+        <li>
+          <a class="large" href="javascript:void(0);">Jump To &hellip;</a>
+          <a class="small" href="javascript:void(0);">+</a>
+          <div id="jump_wrapper">
+          <div id="jump_page">
+            
+              
+              <a class="source" href="compressor.html">
+                compressor.js
+              </a>
+            
+              
+              <a class="source" href="connection.html">
+                connection.js
+              </a>
+            
+              
+              <a class="source" href="endpoint.html">
+                endpoint.js
+              </a>
+            
+              
+              <a class="source" href="framer.html">
+                framer.js
+              </a>
+            
+              
+              <a class="source" href="http.html">
+                http.js
+              </a>
+            
+              
+              <a class="source" href="https.html">
+                https.js
+              </a>
+            
+              
+              <a class="source" href="index.html">
+                index.js
+              </a>
+            
+              
+              <a class="source" href="logging.html">
+                logging.js
+              </a>
+            
+              
+              <a class="source" href="stream.html">
+                stream.js
+              </a>
+            
+              
+              <a class="source" href="utils.html">
+                utils.js
+              </a>
+            
+          </div>
+        </li>
+      </ul>
+    
+    <ul class="sections">
+        
+          <li id="title">
+              <div class="annotation">
+                  <h1>endpoint.js</h1>
+              </div>
+          </li>
+        
+        
+        
+        <li id="section-1">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-1">&#182;</a>
+              </div>
+              
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="keyword">var</span> logging      = require(<span class="string">'./logging'</span>);
+<span class="keyword">var</span> Serializer   = require(<span class="string">'./framer'</span>).Serializer;
+<span class="keyword">var</span> Deserializer = require(<span class="string">'./framer'</span>).Deserializer;
+<span class="keyword">var</span> Compressor   = require(<span class="string">'./compressor'</span>).Compressor;
+<span class="keyword">var</span> Decompressor = require(<span class="string">'./compressor'</span>).Decompressor;
+<span class="keyword">var</span> Connection   = require(<span class="string">'./connection'</span>).Connection;
+<span class="keyword">var</span> Duplex       = require(<span class="string">'stream'</span>).Duplex;
+
+exports.Endpoint = Endpoint;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-2">
+            <div class="annotation">
+              
+              <div class="pilwrap for-h1">
+                <a class="pilcrow" href="#section-2">&#182;</a>
+              </div>
+              <h1>Endpoint</h1>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-3">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-3">&#182;</a>
+              </div>
+              <p>The process of initialization:</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="function"><span class="keyword">function</span> <span class="title">Endpoint</span><span class="params">(role, settings, log)</span> {</span>
+  Duplex.call(<span class="keyword">this</span>);</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-4">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-4">&#182;</a>
+              </div>
+              <ul>
+<li>Initializing logging infrastructure</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">this</span>._log = (log || logging.root).child({ component: <span class="string">'endpoint'</span> });</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-5">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-5">&#182;</a>
+              </div>
+              <ul>
+<li>First part of the handshake process: sending and receiving the client connection header
+prelude.</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">if</span> (role === <span class="string">'CLIENT'</span>) {
+    <span class="keyword">this</span>._writePrelude();
+  } <span class="keyword">else</span> <span class="keyword">if</span> (role === <span class="string">'SERVER'</span>) {
+    <span class="keyword">this</span>._readPrelude();
+  } <span class="keyword">else</span> {
+    <span class="keyword">throw</span> <span class="keyword">new</span> Error(<span class="string">'Invalid role: '</span> + role);
+  }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-6">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-6">&#182;</a>
+              </div>
+              <ul>
+<li>Initialization of componenet. This includes the second part of the handshake process:
+sending the first SETTINGS frame. This is done by the connection class right after
+initialization.</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">this</span>._initializeDataFlow(role, settings);</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-7">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-7">&#182;</a>
+              </div>
+              <ul>
+<li>Initializing error handling.</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">this</span>._initializeErrorHandling();
+}
+Endpoint.prototype = Object.create(Duplex.prototype, { constructor: { value: Endpoint } });</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-8">
+            <div class="annotation">
+              
+              <div class="pilwrap for-h2">
+                <a class="pilcrow" href="#section-8">&#182;</a>
+              </div>
+              <h2>Handshake</h2>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-9">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-9">&#182;</a>
+              </div>
+              
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="keyword">var</span> CLIENT_PRELUDE = <span class="keyword">new</span> Buffer(<span class="string">'PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n'</span>);</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-10">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-10">&#182;</a>
+              </div>
+              <p>Writing the client header is simple and synchronous.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>Endpoint.prototype._writePrelude = <span class="function"><span class="keyword">function</span> <span class="title">_writePrelude</span><span class="params">()</span> {</span>
+  <span class="keyword">this</span>._log.info(<span class="string">'Sending the client connection header prelude.'</span>);
+  <span class="keyword">this</span>.push(CLIENT_PRELUDE);
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-11">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-11">&#182;</a>
+              </div>
+              <p>The asynchronous process of reading the client header:</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>Endpoint.prototype._readPrelude = <span class="function"><span class="keyword">function</span> <span class="title">_readPrelude</span><span class="params">()</span> {</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-12">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-12">&#182;</a>
+              </div>
+              <ul>
+<li>progress in the header is tracker using a <code>cursor</code></li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">var</span> cursor = <span class="number">0</span>;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-13">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-13">&#182;</a>
+              </div>
+              <ul>
+<li><code>_write</code> is temporarily replaced by the comparator function</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">this</span>._write = <span class="function"><span class="keyword">function</span> <span class="title">_temporalWrite</span><span class="params">(chunk, encoding, done)</span> {</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-14">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-14">&#182;</a>
+              </div>
+              <ul>
+<li>which compares the stored header with the current <code>chunk</code> byte by byte and emits the
+&#39;error&#39; event if there&#39;s a byte that doesn&#39;t match</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    <span class="keyword">var</span> offset = cursor;
+    <span class="keyword">while</span>(cursor &lt; CLIENT_PRELUDE.length &amp;&amp; (cursor - offset) &lt; chunk.length) {
+      <span class="keyword">if</span> (CLIENT_PRELUDE[cursor] !== chunk[cursor - offset]) {
+        <span class="keyword">this</span>._log.fatal({ cursor: cursor, offset: offset, chunk: chunk },
+                        <span class="string">'Client connection header prelude does not match.'</span>);
+        <span class="keyword">this</span>._error(<span class="string">'handshake'</span>, <span class="string">'Client connection header prelude does not match.'</span>);
+        <span class="keyword">return</span>;
+      }
+      cursor += <span class="number">1</span>;
+    }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-15">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-15">&#182;</a>
+              </div>
+              <ul>
+<li>if the whole header is over, and there were no error then restore the original <code>_write</code>
+and call it with the remaining part of the current chunk</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    <span class="keyword">if</span> (cursor === CLIENT_PRELUDE.length) {
+      <span class="keyword">this</span>._log.info(<span class="string">'Successfully received the client connection header prelude.'</span>);
+      <span class="keyword">delete</span> <span class="keyword">this</span>._write;
+      chunk = chunk.slice(cursor - offset);
+      <span class="keyword">this</span>._write(chunk, encoding, done);
+    }
+  };
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-16">
+            <div class="annotation">
+              
+              <div class="pilwrap for-h2">
+                <a class="pilcrow" href="#section-16">&#182;</a>
+              </div>
+              <h2>Data flow</h2>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-17">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-17">&#182;</a>
+              </div>
+              <pre><code>+---------------------------------------------+
+|                                             |
+|   +-------------------------------------+   |
+|   | +---------+ +---------+ +---------+ |   |
+|   | | stream1 | | stream2 | |   ...   | |   |
+|   | +---------+ +---------+ +---------+ |   |
+|   |             connection              |   |
+|   +-------------------------------------+   |
+|             |                 ^             |
+|        pipe |                 | pipe        |
+|             v                 |             |
+|   +------------------+------------------+   |
+|   |    compressor    |   decompressor   |   |
+|   +------------------+------------------+   |
+|             |                 ^             |
+|        pipe |                 | pipe        |
+|             v                 |             |
+|   +------------------+------------------+   |
+|   |    serializer    |   deserializer   |   |
+|   +------------------+------------------+   |
+|             |                 ^             |
+|     _read() |                 | _write()    |
+|             v                 |             |
+|      +------------+     +-----------+       |
+|      |output queue|     |input queue|       |
++------+------------+-----+-----------+-------+
+              |                 ^
+       read() |                 | write()
+              v                 |</code></pre>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>Endpoint.prototype._initializeDataFlow = <span class="function"><span class="keyword">function</span> <span class="title">_initializeDataFlow</span><span class="params">(role, settings)</span> {</span>
+  <span class="keyword">var</span> firstStreamId, compressorRole, decompressorRole;
+  <span class="keyword">if</span> (role === <span class="string">'CLIENT'</span>) {
+    firstStreamId = <span class="number">1</span>;
+    compressorRole = <span class="string">'REQUEST'</span>;
+    decompressorRole = <span class="string">'RESPONSE'</span>;
+  } <span class="keyword">else</span> {
+    firstStreamId = <span class="number">2</span>;
+    compressorRole = <span class="string">'RESPONSE'</span>;
+    decompressorRole = <span class="string">'REQUEST'</span>;
+  }
+
+  <span class="keyword">this</span>._serializer   = <span class="keyword">new</span> Serializer(<span class="keyword">this</span>._log);
+  <span class="keyword">this</span>._deserializer = <span class="keyword">new</span> Deserializer(<span class="keyword">this</span>._log);
+  <span class="keyword">this</span>._compressor   = <span class="keyword">new</span> Compressor(compressorRole, <span class="keyword">this</span>._log);
+  <span class="keyword">this</span>._decompressor = <span class="keyword">new</span> Decompressor(decompressorRole, <span class="keyword">this</span>._log);
+  <span class="keyword">this</span>._connection   = <span class="keyword">new</span> Connection(firstStreamId, settings, <span class="keyword">this</span>._log);
+
+  <span class="keyword">this</span>._connection.pipe(<span class="keyword">this</span>._compressor).pipe(<span class="keyword">this</span>._serializer);
+  <span class="keyword">this</span>._deserializer.pipe(<span class="keyword">this</span>._decompressor).pipe(<span class="keyword">this</span>._connection);
+};
+
+Endpoint.prototype._read = <span class="function"><span class="keyword">function</span> <span class="title">_read</span><span class="params">(size)</span> {</span>
+  <span class="keyword">var</span> more_needed = <span class="literal">true</span>, chunk;
+  <span class="keyword">while</span> (more_needed &amp;&amp; (chunk = <span class="keyword">this</span>._serializer.read(size))) {
+    more_needed = <span class="keyword">this</span>.push(chunk);
+  }
+
+  <span class="keyword">if</span> (more_needed) {
+    <span class="keyword">this</span>._serializer.once(<span class="string">'readable'</span>, <span class="keyword">this</span>._read.bind(<span class="keyword">this</span>));
+  }
+};
+
+Endpoint.prototype._write = <span class="function"><span class="keyword">function</span> <span class="title">_write</span><span class="params">(chunk, encoding, done)</span> {</span>
+  <span class="keyword">this</span>._deserializer.write(chunk, encoding, done);
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-18">
+            <div class="annotation">
+              
+              <div class="pilwrap for-h2">
+                <a class="pilcrow" href="#section-18">&#182;</a>
+              </div>
+              <h2>Error handling</h2>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-19">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-19">&#182;</a>
+              </div>
+              
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>Endpoint.prototype._initializeErrorHandling = <span class="function"><span class="keyword">function</span> <span class="title">_initializeErrorHandling</span><span class="params">()</span> {</span>
+  <span class="keyword">this</span>._serializer.on(<span class="string">'error'</span>, <span class="keyword">this</span>._error.bind(<span class="keyword">this</span>, <span class="string">'serializer'</span>));
+  <span class="keyword">this</span>._deserializer.on(<span class="string">'error'</span>, <span class="keyword">this</span>._error.bind(<span class="keyword">this</span>, <span class="string">'deserializer'</span>));
+  <span class="keyword">this</span>._compressor.on(<span class="string">'error'</span>, <span class="keyword">this</span>._error.bind(<span class="keyword">this</span>, <span class="string">'compressor'</span>));
+  <span class="keyword">this</span>._decompressor.on(<span class="string">'error'</span>, <span class="keyword">this</span>._error.bind(<span class="keyword">this</span>, <span class="string">'decompressor'</span>));
+  <span class="keyword">this</span>._connection.on(<span class="string">'error'</span>, <span class="keyword">this</span>._error.bind(<span class="keyword">this</span>, <span class="string">'connection'</span>));
+};
+
+Endpoint.prototype._error = <span class="function"><span class="keyword">function</span> <span class="title">_error</span><span class="params">(component, message)</span> {</span>
+  <span class="keyword">this</span>._log.fatal({ component: component, message: message }, <span class="string">'Fatal error, closing connection'</span>);
+  <span class="keyword">this</span>.push(<span class="literal">null</span>);
+  <span class="keyword">this</span>.emit(<span class="string">'error'</span>, component, message);
+};</pre></div></div>
+            
+        </li>
+        
+    </ul>
+  </div>
+</body>
+</html>

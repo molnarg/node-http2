@@ -29,6 +29,11 @@
               </a>
             
               
+              <a class="source" href="endpoint.html">
+                endpoint.js
+              </a>
+            
+              
               <a class="source" href="framer.html">
                 framer.js
               </a>
@@ -41,6 +46,16 @@
               
               <a class="source" href="https.html">
                 https.js
+              </a>
+            
+              
+              <a class="source" href="index.html">
+                index.js
+              </a>
+            
+              
+              <a class="source" href="logging.html">
+                logging.js
               </a>
             
               
@@ -133,7 +148,7 @@
   <span class="keyword">for</span> (<span class="keyword">var</span> key <span class="keyword">in</span> object) {
     clone[key] = object[key];
   }
-  <span class="keyword">return</span> object;
+  <span class="keyword">return</span> clone;
 };</pre></div></div>
             
         </li>
@@ -145,19 +160,12 @@
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-4">&#182;</a>
               </div>
-              <p>No-op dummy logger</p>
+              <p>Placeholder no-op function</p>
 
             </div>
             
             <div class="content"><div class='highlight'><pre><span class="function"><span class="keyword">function</span> <span class="title">noop</span><span class="params">()</span> {</span>}
-exports.nolog = {
-  fatal: noop,
-  error: noop,
-  warn: noop,
-  info: noop,
-  debug: noop,
-  trace: noop
-};</pre></div></div>
+exports.noop = noop;</pre></div></div>
             
         </li>
         

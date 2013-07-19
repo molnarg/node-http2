@@ -29,6 +29,11 @@
               </a>
             
               
+              <a class="source" href="endpoint.html">
+                endpoint.js
+              </a>
+            
+              
               <a class="source" href="framer.html">
                 framer.js
               </a>
@@ -41,6 +46,16 @@
               
               <a class="source" href="https.html">
                 https.js
+              </a>
+            
+              
+              <a class="source" href="index.html">
+                index.js
+              </a>
+            
+              
+              <a class="source" href="logging.html">
+                logging.js
               </a>
             
               
@@ -76,7 +91,8 @@
               
             </div>
             
-            <div class="content"><div class='highlight'><pre><span class="keyword">var</span> utils = require(<span class="string">'../lib/utils'</span>);
+            <div class="content"><div class='highlight'><pre><span class="keyword">var</span> utils   = require(<span class="string">'./utils'</span>);
+<span class="keyword">var</span> logging = require(<span class="string">'./logging'</span>);
 
 <span class="keyword">var</span> MAX_HTTP_PAYLOAD_SIZE = <span class="number">16383</span>; <span class="comment">// TODO: this is repeated in multiple files</span></pre></div></div>
             
@@ -130,7 +146,7 @@ exports.Stream = Stream;</pre></div></div>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>  <span class="keyword">this</span>._log = log || require(<span class="string">'./utils'</span>).nolog;</pre></div></div>
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">this</span>._log = (log || logging.root).child({ component: <span class="string">'stream'</span> });</pre></div></div>
             
         </li>
         
@@ -142,12 +158,12 @@ exports.Stream = Stream;</pre></div></div>
                 <a class="pilcrow" href="#section-5">&#182;</a>
               </div>
               <ul>
-<li>receiving and sending stream management commands</li>
+<li>sending and receiving frames to/from the upstream connection</li>
 </ul>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>  <span class="keyword">this</span>._initializeManagement();</pre></div></div>
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">this</span>._initializeUpstream();</pre></div></div>
             
         </li>
         
@@ -159,12 +175,12 @@ exports.Stream = Stream;</pre></div></div>
                 <a class="pilcrow" href="#section-6">&#182;</a>
               </div>
               <ul>
-<li>sending and receiving frames to/from the upstream connection</li>
+<li>receiving and sending stream management commands</li>
 </ul>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>  <span class="keyword">this</span>._initializeUpstream();</pre></div></div>
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">this</span>._initializeManagement();</pre></div></div>
             
         </li>
         
@@ -232,13 +248,14 @@ close the stream.</p>
             </div>
             
             <div class="content"><div class='highlight'><pre>Stream.prototype._initializeManagement = <span class="function"><span class="keyword">function</span> <span class="title">_initializeManagement</span><span class="params">()</span> {</span>
-  <span class="keyword">this</span>.on(<span class="string">'receiving'</span>, <span class="keyword">function</span>(frame) {
+  <span class="keyword">this</span>.upstream.on(<span class="string">'receiving'</span>, <span class="keyword">function</span>(frame) {
     <span class="keyword">if</span> (frame.type === <span class="string">'PUSH_PROMISE'</span>) {
       <span class="keyword">this</span>.emit(<span class="string">'promise'</span>, frame.headers);
     } <span class="keyword">else</span> <span class="keyword">if</span> (frame.type === <span class="string">'HEADERS'</span>) {
+      <span class="keyword">this</span>.priority = frame.priority;
       <span class="keyword">this</span>.emit(<span class="string">'headers'</span>, frame.headers);
     }
-  });
+  }.bind(<span class="keyword">this</span>));
   <span class="keyword">this</span>.on(<span class="string">'error'</span>, <span class="keyword">function</span>() {
     <span class="keyword">this</span>.push(<span class="literal">null</span>);
   });
@@ -272,6 +289,7 @@ Stream.prototype.open = <span class="function"><span class="keyword">function</s
     priority: priority,
     headers: headers
   });
+  <span class="keyword">this</span>.priority = priority;
 };
 
 Stream.prototype.reset = <span class="function"><span class="keyword">function</span> <span class="title">reset</span><span class="params">(error)</span> {</span>
@@ -315,7 +333,7 @@ instantiating the stream will read and write frames to/from it.</p>
 
   <span class="keyword">this</span>.upstream = <span class="keyword">new</span> Duplex({ objectMode: <span class="literal">true</span> });
   <span class="keyword">this</span>.upstream._queue = [];
-  <span class="keyword">this</span>.upstream._read = <span class="function"><span class="keyword">function</span> <span class="title">noop</span><span class="params">()</span> {</span>};</pre></div></div>
+  <span class="keyword">this</span>.upstream._read = utils.noop;</pre></div></div>
             
         </li>
         
@@ -474,7 +492,7 @@ interested parties using the &#39;state&#39; event.</p>
             
             <div class="content"><div class='highlight'><pre>Stream.prototype._setState = <span class="function"><span class="keyword">function</span> <span class="title">transition</span><span class="params">(state)</span> {</span>
   <span class="keyword">if</span> (<span class="keyword">this</span>.state !== state) {
-    <span class="keyword">this</span>._log.debug({ state: state }, <span class="string">'State transition'</span>);
+    <span class="keyword">this</span>._log.debug({ from: <span class="keyword">this</span>.state, to: state }, <span class="string">'State transition'</span>);
     <span class="keyword">this</span>.emit(<span class="string">'state'</span>, state);
     <span class="keyword">this</span>.state = state;
   }
@@ -805,8 +823,10 @@ window and the connection flow control window. The stream only manages the flow 
             </div>
             
             <div class="content"><div class='highlight'><pre>Stream.prototype._initializeFlowControl = <span class="function"><span class="keyword">function</span> <span class="title">_initializeFlowControl</span><span class="params">()</span> {</span>
-  <span class="keyword">this</span>._read = <span class="function"><span class="keyword">function</span> <span class="title">noop</span><span class="params">()</span> {</span>};
-  <span class="keyword">this</span>.window = INITIAL_WINDOW_SIZE;
+  <span class="keyword">this</span>._read = utils.noop;
+  <span class="keyword">this</span>.upstream.on(<span class="string">'receiving'</span>, <span class="keyword">this</span>._receiveData.bind(<span class="keyword">this</span>));
+
+  <span class="keyword">this</span>._window = INITIAL_WINDOW_SIZE;
   <span class="keyword">this</span>.upstream.on(<span class="string">'receiving'</span>, <span class="keyword">this</span>._updateWindow.bind(<span class="keyword">this</span>));
 };</pre></div></div>
             
@@ -843,7 +863,7 @@ between the new value and the old value.</p>
             </div>
             
             <div class="content"><div class='highlight'><pre>Stream.prototype.setInitialWindowSize = <span class="function"><span class="keyword">function</span> <span class="title">setInitialWindowSize</span><span class="params">(initialWindowSize)</span> {</span>
-  <span class="keyword">this</span>.window = <span class="keyword">this</span>.window - <span class="keyword">this</span>._initialWindowSize + initialWindowSize;
+  <span class="keyword">this</span>._window = <span class="keyword">this</span>._window - <span class="keyword">this</span>._initialWindowSize + initialWindowSize;
   <span class="keyword">this</span>._initialWindowSize = initialWindowSize;
 };</pre></div></div>
             
@@ -863,7 +883,7 @@ SETTINGS_FLOW_CONTROL_OPTIONS setting.</p>
             </div>
             
             <div class="content"><div class='highlight'><pre>Stream.prototype.disableFlowControl = <span class="function"><span class="keyword">function</span> <span class="title">disableFlowControl</span><span class="params">()</span> {</span>
-  <span class="keyword">this</span>.window = <span class="literal">Infinity</span>;
+  <span class="keyword">this</span>._window = <span class="literal">Infinity</span>;
 };</pre></div></div>
             
         </li>
@@ -892,7 +912,7 @@ specified in the frame.</li>
     <span class="keyword">if</span> (frame.flags.END_FLOW_CONTROL) {
       <span class="keyword">this</span>.disableFlowControl();
     } <span class="keyword">else</span> {
-      <span class="keyword">this</span>.window += frame.window_size;
+      <span class="keyword">this</span>._window += frame.window_size;
     }
     <span class="keyword">this</span>.emit(<span class="string">'window_update'</span>);
   }
@@ -947,7 +967,7 @@ specified in the frame.</li>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>  <span class="keyword">while</span> (chunks.length &gt; <span class="number">0</span> &amp;&amp; chunks[<span class="number">0</span>].length &lt;= <span class="keyword">this</span>.window) {
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">while</span> (chunks.length &gt; <span class="number">0</span> &amp;&amp; chunks[<span class="number">0</span>].length &lt;= <span class="keyword">this</span>._window) {
     <span class="keyword">var</span> chunk = chunks.shift();
     sent += chunk.length;
     <span class="keyword">this</span>._send({
@@ -973,7 +993,7 @@ is not counted.</li>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>    <span class="keyword">this</span>.window -= chunk.length;
+            <div class="content"><div class='highlight'><pre>    <span class="keyword">this</span>._window -= chunk.length;
   }</pre></div></div>
             
         </li>
@@ -1013,6 +1033,16 @@ the Duplex stream class, that there will be no more calls to <code>_write</code>
             
             <div class="content"><div class='highlight'><pre>  <span class="keyword">else</span> {
     <span class="keyword">this</span>.once(<span class="string">'window_update'</span>, <span class="keyword">this</span>._write.bind(<span class="keyword">this</span>, buffer.slice(sent), encoding, done));
+  }
+};
+
+Stream.prototype._receiveData = <span class="function"><span class="keyword">function</span> <span class="title">_receiveData</span><span class="params">(frame)</span> {</span>
+  <span class="keyword">if</span> (frame.type === <span class="string">'DATA'</span>) {
+    <span class="keyword">this</span>.push(frame.data);
+  }
+
+  <span class="keyword">if</span> (frame.flags.END_STREAM) {
+    <span class="keyword">this</span>.push(<span class="literal">null</span>);
   }
 };</pre></div></div>
             
