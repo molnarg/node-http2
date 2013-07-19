@@ -84,10 +84,10 @@ var test_headers = [{
 }, {
   header: {
     name: 40,
-    value: 'second',
+    value: 'third',
     index: -1
   },
-  buffer: new Buffer('7F0A' + '067365636F6E64', 'hex')
+  buffer: new Buffer('7F0A' + '057468697264', 'hex')
 }];
 
 var test_header_sets = [{
@@ -106,9 +106,16 @@ var test_header_sets = [{
   buffer: concat(test_headers.slice(3, 7).map(function(test) { return test.buffer; }))
 }, {
   headers: {
+    ':path': '/my-example/resources/script.js',
+    'user-agent': 'my-user-agent',
+    'x-my-header': ['second', 'third']
+  },
+  buffer: test_headers[7].buffer
+}, {
+  headers: {
     ':status': '200',
     'user-agent': 'my-user-agent',
-    'cookie': ['first', 'second', 'third'],
+    'cookie': ['first', 'second', 'third', 'third'],
     'verylong': (new Buffer(9000)).toString('hex')
   }
 }];
@@ -192,6 +199,8 @@ describe('compressor.js', function() {
         expect(decompressor.decompress(header_set.buffer)).to.deep.equal(header_set.headers);
         header_set = test_header_sets[1];
         expect(decompressor.decompress(header_set.buffer)).to.deep.equal(header_set.headers);
+        header_set = test_header_sets[2];
+        expect(decompressor.decompress(header_set.buffer)).to.deep.equal(header_set.headers);
       });
     });
   });
@@ -202,7 +211,7 @@ describe('compressor.js', function() {
         var compressor = new Compressor('REQUEST');
         var decompressor = new Decompressor('REQUEST');
         for (var i = 0; i < 10; i++) {
-          var headers = test_header_sets[i%3].headers;
+          var headers = test_header_sets[i%4].headers;
           var compressed = compressor.compress(headers);
           var decompressed = decompressor.decompress(compressed);
           expect(headers).to.deep.equal(decompressed);
@@ -221,12 +230,12 @@ describe('compressor.js', function() {
           compressor.write({
             type: i%2 ? 'HEADERS' : 'PUSH_PROMISE',
             flags: {},
-            headers: test_header_sets[i%3].headers
+            headers: test_header_sets[i%4].headers
           });
         }
         setTimeout(function() {
           for (var j = 0; j < 10; j++) {
-            expect(decompressor.read().headers).to.deep.equal(test_header_sets[j%3].headers);
+            expect(decompressor.read().headers).to.deep.equal(test_header_sets[j%4].headers);
           }
           done();
         }, 10);
@@ -238,6 +247,3 @@ describe('compressor.js', function() {
 // Missing test cases for 100% test coverage:
 // * generateRemoveCommand for an entry not in the working set.
 // * interrupting a compressed frame series with an unrelated frame
-// * shadowed entries
-// * Header Table overflow and dropping entries
-// * compression involving indexes that cannot be stored on one byte
