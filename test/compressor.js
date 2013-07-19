@@ -81,6 +81,13 @@ var test_headers = [{
     index: Infinity
   },
   buffer: new Buffer('5F0A' + '067365636F6E64', 'hex')
+}, {
+  header: {
+    name: 40,
+    value: 'second',
+    index: -1
+  },
+  buffer: new Buffer('7F0A' + '067365636F6E64', 'hex')
 }];
 
 var test_header_sets = [{
@@ -96,7 +103,14 @@ var test_header_sets = [{
     'user-agent': 'my-user-agent',
     'x-my-header': 'second'
   },
-  buffer: concat(test_headers.slice(3).map(function(test) { return test.buffer; }))
+  buffer: concat(test_headers.slice(3, 7).map(function(test) { return test.buffer; }))
+}, {
+  headers: {
+    ':status': '200',
+    'user-agent': 'my-user-agent',
+    'cookie': ['first', 'second', 'third'],
+    'verylong': (new Buffer(9000)).toString('hex')
+  }
 }];
 
 describe('compressor.js', function() {
@@ -188,7 +202,7 @@ describe('compressor.js', function() {
         var compressor = new Compressor('REQUEST');
         var decompressor = new Decompressor('REQUEST');
         for (var i = 0; i < 10; i++) {
-          var headers = test_header_sets[i%2].headers;
+          var headers = test_header_sets[i%3].headers;
           var compressed = compressor.compress(headers);
           var decompressed = decompressor.decompress(compressed);
           expect(headers).to.deep.equal(decompressed);
@@ -205,14 +219,14 @@ describe('compressor.js', function() {
         compressor.pipe(decompressor);
         for (var i = 0; i < 10; i++) {
           compressor.write({
-            type: 'HEADERS',
+            type: i%2 ? 'HEADERS' : 'PUSH_PROMISE',
             flags: {},
-            headers: test_header_sets[i%2].headers
+            headers: test_header_sets[i%3].headers
           });
         }
         setTimeout(function() {
           for (var j = 0; j < 10; j++) {
-            expect(decompressor.read().headers).to.deep.equal(test_header_sets[j%2].headers);
+            expect(decompressor.read().headers).to.deep.equal(test_header_sets[j%3].headers);
           }
           done();
         }, 10);
@@ -222,13 +236,8 @@ describe('compressor.js', function() {
 });
 
 // Missing test cases for 100% test coverage:
-// * very long header sets (more than one frame)
-// * PUSH_PROMISE frame type (instead of HEADERS)
-// * using simple indexed representation to add entry without indexing and substitution
-// * using literal representation without indexing
-// * shadowed entries
 // * generateRemoveCommand for an entry not in the working set.
-// * Header Table overflow and dropping entries
-// * duplicate header names (e.g. two Cookie header)
-// * compression involving indexes that cannot be stored on one byte
 // * interrupting a compressed frame series with an unrelated frame
+// * shadowed entries
+// * Header Table overflow and dropping entries
+// * compression involving indexes that cannot be stored on one byte
