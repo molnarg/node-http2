@@ -1,6 +1,6 @@
 {
   "name": "http2",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "An HTTP/2 server implementation",
   "main": "lib/index.js",
   "engines" : {
