@@ -9,21 +9,15 @@ var settings = {
 };
 
 var url = parse_url(process.argv.pop());
+var server = { host: url.hostname, port: url.port };
 
-var socket = net.connect({
-  host: url.hostname,
-  port: url.port
-}, function() {
+var socket = net.connect(server, function() {
   var client_endpoint = new Endpoint('CLIENT', settings);
   client_endpoint.pipe(socket).pipe(client_endpoint);
 
   var stream = client_endpoint._connection.createStream();
-  stream.open({
-    ':path': url.path
-  });
+  stream.open({ ':path': url.path });
   stream.end();
   stream.pipe(process.stderr);
-  stream.on('end', function() {
-    process.exit();
-  });
+  stream.on('end', process.exit);
 });
