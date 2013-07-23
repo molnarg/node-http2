@@ -105,7 +105,7 @@ format, and can be pretty printed using the [bunyan][7] command line tool.
 For example, running the test client with debug level logging output:
 
 ```
-HTTP2_LOG=debug node ./example/client.js 'http://localhost:8080/server.js' 2>/tmp/server.js | bunyan -o short
+HTTP2_LOG=debug node ./example/client.js 'http://localhost:8080/server.js' 2>/tmp/server.js | bunyan
 ```
 
 License
