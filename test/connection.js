@@ -3,12 +3,17 @@ var log_root = require('../lib/logging').root;
 
 var Connection = require('../lib/connection').Connection;
 
+var settings = {
+  SETTINGS_MAX_CONCURRENT_STREAMS: 100,
+  SETTINGS_INITIAL_WINDOW_SIZE: 100000
+};
+
 describe('connection.js', function() {
   describe('scenario', function() {
     describe('connection setup', function() {
       it('should work as expected', function(done) {
-        var c = new Connection(1, {});
-        var s = new Connection(2, {});
+        var c = new Connection(1, settings);
+        var s = new Connection(2, settings);
 
         c.pipe(s).pipe(c);
 
@@ -20,8 +25,8 @@ describe('connection.js', function() {
     });
     describe('sending/receiving a request', function() {
       it('should work as expected', function(done) {
-        var c = new Connection(1, {}, log_root.child({ role: 'client' }));
-        var s = new Connection(2, {}, log_root.child({ role: 'server' }));
+        var c = new Connection(1, settings, log_root.child({ role: 'client' }));
+        var s = new Connection(2, settings, log_root.child({ role: 'server' }));
 
         c.pipe(s).pipe(c);
 
