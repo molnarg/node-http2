@@ -41,5 +41,9 @@ var server = net.createServer(function(socket) {
   });
 });
 
-server.listen(8080);
-console.error('Listening on localhost:8080, serving up files from', __dirname);
+var port = 8080;
+if ('HTTP2_PORT' in process.env) {
+    port = parseInt(process.env.HTTP2_PORT);
+}
+server.listen(port);
+console.error('Listening on localhost:' + port + ', serving up files from', __dirname);
