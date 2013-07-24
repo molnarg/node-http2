@@ -479,10 +479,13 @@ Endpoint.prototype._write = <span class="function"><span class="keyword">functio
   <span class="keyword">this</span>._connection.on(<span class="string">'error'</span>, <span class="keyword">this</span>._error.bind(<span class="keyword">this</span>, <span class="string">'connection'</span>));
 };
 
-Endpoint.prototype._error = <span class="function"><span class="keyword">function</span> <span class="title">_error</span><span class="params">(component, message)</span> {</span>
+Endpoint.prototype._error = <span class="function"><span class="keyword">function</span> <span class="title">_error</span><span class="params">(component, error)</span> {</span>
   <span class="keyword">this</span>._log.fatal({ component: component, message: message }, <span class="string">'Fatal error, closing connection'</span>);
-  <span class="keyword">this</span>.push(<span class="literal">null</span>);
-  <span class="keyword">this</span>.emit(<span class="string">'error'</span>, component, message);
+  <span class="keyword">this</span>.close(error);
+};
+
+Endpoint.prototype.close = <span class="function"><span class="keyword">function</span> <span class="title">close</span><span class="params">(error)</span> {</span>
+  <span class="keyword">this</span>._connection.close(error);
 };</pre></div></div>
             
         </li>

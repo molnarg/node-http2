@@ -91,7 +91,8 @@
               
             </div>
             
-            <div class="content"><div class='highlight'><pre><span class="keyword">var</span> utils   = require(<span class="string">'./utils'</span>);
+            <div class="content"><div class='highlight'><pre><span class="keyword">var</span> assert  = require(<span class="string">'assert'</span>);
+<span class="keyword">var</span> utils   = require(<span class="string">'./utils'</span>);
 <span class="keyword">var</span> logging = require(<span class="string">'./logging'</span>);
 
 <span class="keyword">var</span> MAX_HTTP_PAYLOAD_SIZE = <span class="number">16383</span>; <span class="comment">// TODO: this is repeated in multiple files</span></pre></div></div>
@@ -276,9 +277,12 @@ state transitions here.</p>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>Stream.prototype.promise = <span class="function"><span class="keyword">function</span> <span class="title">promise</span><span class="params">(headers)</span> {</span>
+            <div class="content"><div class='highlight'><pre>Stream.prototype.promise = <span class="function"><span class="keyword">function</span> <span class="title">_promise</span><span class="params">(promised_stream, headers)</span> {</span>
+  assert(promised_stream.state === <span class="string">'IDLE'</span>);
+  promised_stream.emit(<span class="string">'promise_initiated'</span>);
   <span class="keyword">this</span>._send({
     type: <span class="string">'PUSH_PROMISE'</span>,
+    promised_stream: promised_stream,
     headers: headers
   });
 };
