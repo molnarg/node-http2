@@ -168,20 +168,7 @@ describe('stream.js', function() {
       it('should trigger the appropriate state transitions and outgoing frames');
     });
     describe('receiving push stream', function() {
-      it('should trigger the appropriate state transitions and outgoing frames', function(done) {
-        execute_sequence([
-          { incoming: { type: 'PUSH_PROMISE', flags: { END_STREAM: false }, headers: { ':path': '/' } } },
-          { event   : { name: 'state', data: 'RESERVED_REMOTE' } },
-
-          { wait    : 10 },
-          { incoming: { type: 'HEADERS', flags: { END_STREAM: false }, headers: { ':status': 200 } } },
-          { event   : { name: 'state', data: 'HALF_CLOSED_LOCAL' } },
-
-          { wait    : 10 },
-          { incoming: { type: 'DATA', flags: { END_STREAM: true  }, data: new Buffer(5) } },
-          { event   : { name: 'state', data: 'CLOSED' } }
-        ], done);
-      });
+      it('should trigger the appropriate state transitions and outgoing frames');
     });
   });
 });
