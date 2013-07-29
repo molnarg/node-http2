@@ -2,16 +2,31 @@ var expect = require('chai').expect;
 
 var Stream = require('../lib/stream').Stream;
 
+function callNTimes(limit, done) {
+  var i = 0;
+  return function() {
+    i += 1;
+    if (i === limit) {
+      done();
+    }
+  }
+}
+
 // Execute a list of commands and assertions
-function execute_sequence(sequence, done) {
-  var stream = new Stream();
+var recorded_events = ['state', 'error', 'window_update', 'headers', 'promise']
+function execute_sequence(stream, sequence, done) {
+  if (!done) {
+    done = sequence;
+    sequence = stream;
+    stream = new Stream();
+  }
 
   var outgoing_frames = [];
   stream.upstream.on('sending', outgoing_frames.push.bind(outgoing_frames));
 
   var emit = stream.emit, events = [];
   stream.emit = function(name, data) {
-    if (name === 'state' || name === 'error' || name === 'window_update') {
+    if (recorded_events.indexOf(name) !== -1) {
       events.push({ name: name, data: data });
     }
     return emit.apply(this, arguments);
@@ -61,7 +76,7 @@ function execute_sequence(sequence, done) {
     done();
   }
 
-  execute(check);
+  setImmediate(execute.bind(null, check));
 }
 
 var invalid_frames = {
@@ -137,6 +152,7 @@ describe('stream.js', function() {
           { wait    : 10 },
           { incoming: { type: 'HEADERS', flags: { }, headers: { ':status': 200 } } },
           { incoming: { type: 'DATA'   , flags: { END_STREAM: true  }, data: new Buffer(5) } },
+          { event   : { name: 'headers', data: { ':status': 200 } } },
           { event   : { name: 'state', data: 'CLOSED' } }
         ], done);
       });
@@ -146,6 +162,7 @@ describe('stream.js', function() {
         var payload = new Buffer(5);
         execute_sequence([
           { incoming: { type: 'HEADERS', flags: { }, headers: { ':path': '/' } } },
+          { event   : { name: 'headers', data: { ':path': '/' } } },
           { event   : { name: 'state', data: 'OPEN' } },
 
           { wait    : 5 },
@@ -165,10 +182,97 @@ describe('stream.js', function() {
       });
     });
     describe('sending push stream', function() {
-      it('should trigger the appropriate state transitions and outgoing frames');
+      it('should trigger the appropriate state transitions and outgoing frames', function(done) {
+        var payload = new Buffer(5);
+        var original_stream = new Stream();
+        var promised_stream = new Stream();
+
+        done = callNTimes(2, done);
+
+        execute_sequence(original_stream, [
+          // receiving request
+          { incoming: { type: 'HEADERS', flags: { END_STREAM: true }, headers: { ':path': '/' } } },
+          { event   : { name: 'headers', data: { ':path': '/' } } },
+          { event   : { name: 'state', data: 'OPEN' } },
+          { event   : { name: 'state', data: 'HALF_CLOSED_REMOTE' } },
+
+          // sending response headers
+          { wait    : 5 },
+          { method  : { name: 'open', arguments: [{ ':status': '200' }] } },
+          { outgoing: { type: 'HEADERS', flags: {  }, headers: { ':status': '200' }, priority: undefined } },
+
+          // sending push promise
+          { method  : { name: 'promise', arguments: [promised_stream, { ':path': '/' }] } },
+          { outgoing: { type: 'PUSH_PROMISE', flags: { }, headers: { ':path': '/' }, promised_stream: promised_stream } },
+
+          // sending response data
+          { method  : { name: 'end', arguments: [payload] } },
+          { outgoing: { type: 'DATA', flags: { END_STREAM: true  }, data: payload } },
+          { event   : { name: 'state', data: 'CLOSED' } }
+        ], done);
+
+        execute_sequence(promised_stream, [
+          // initial state of the promised stream
+          { event   : { name: 'state', data: 'RESERVED_LOCAL' } },
+
+          // push headers
+          { wait    : 5 },
+          { method  : { name: 'open', arguments: [{ ':status': '200' }] } },
+          { outgoing: { type: 'HEADERS', flags: { }, headers: { ':status': '200' }, priority: undefined } },
+          { event   : { name: 'state', data: 'HALF_CLOSED_REMOTE' } },
+
+          // push data
+          { method  : { name: 'end', arguments: [payload] } },
+          { outgoing: { type: 'DATA', flags: { END_STREAM: true  }, data: payload } },
+          { event   : { name: 'state', data: 'CLOSED' } }
+        ], done);
+      });
     });
     describe('receiving push stream', function() {
-      it('should trigger the appropriate state transitions and outgoing frames');
+      it('should trigger the appropriate state transitions and outgoing frames', function(done) {
+        var payload = new Buffer(5);
+        var original_stream = new Stream();
+        var promised_stream = new Stream();
+
+        done = callNTimes(2, done);
+
+        execute_sequence(original_stream, [
+          // sending request headers
+          { method  : { name: 'open', arguments: [{ ':path': '/' }] } },
+          { method  : { name: 'end', arguments: [] } },
+          { outgoing: { type: 'HEADERS', flags: { END_STREAM: true  }, headers: { ':path': '/' }, priority: undefined } },
+          { event   : { name: 'state', data: 'OPEN' } },
+          { event   : { name: 'state', data: 'HALF_CLOSED_LOCAL' } },
+
+          // receiving response headers
+          { wait    : 10 },
+          { incoming: { type: 'HEADERS', flags: { }, headers: { ':status': 200 } } },
+          { event   : { name: 'headers', data: { ':status': 200 } } },
+
+          // receiving push promise
+          { incoming: { type: 'PUSH_PROMISE', flags: { }, headers: { ':path': '/2.html' }, promised_stream: promised_stream } },
+          { event   : { name: 'promise', data: { ':path': '/2.html' } } },
+
+          // receiving response data
+          { incoming: { type: 'DATA'   , flags: { END_STREAM: true  }, data: payload } },
+          { event   : { name: 'state', data: 'CLOSED' } }
+        ], done);
+
+        execute_sequence(promised_stream, [
+          // initial state of the promised stream
+          { event   : { name: 'state', data: 'RESERVED_REMOTE' } },
+
+          // push headers
+          { wait    : 10 },
+          { incoming: { type: 'HEADERS', flags: { END_STREAM: false }, headers: { ':status': 200 } } },
+          { event   : { name: 'headers', data: { ':status': 200 } } },
+          { event   : { name: 'state', data: 'HALF_CLOSED_LOCAL' } },
+
+          // push data
+          { incoming: { type: 'DATA', flags: { END_STREAM: true  }, data: payload } },
+          { event   : { name: 'state', data: 'CLOSED' } }
+        ], done);
+      });
     });
   });
 });
