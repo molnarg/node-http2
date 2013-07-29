@@ -83,7 +83,8 @@ var invalid_frames = {
   IDLE: [
     { type: 'DATA', flags: {}, data: new Buffer(5) },
     { type: 'PRIORITY', flags: {}, priority: 1 },
-    { type: 'WINDOW_UPDATE', flags: {}, settings: {} }
+    { type: 'WINDOW_UPDATE', flags: {}, settings: {} },
+    { type: 'PUSH_PROMISE', flags: {}, headers: {} }
   ],
   RESERVED_LOCAL: [
     { type: 'DATA', flags: {}, data: new Buffer(5) },
@@ -144,10 +145,13 @@ describe('stream.js', function() {
       it('should trigger the appropriate state transitions and outgoing frames', function(done) {
         execute_sequence([
           { method  : { name: 'open', arguments: [{ ':path': '/' }] } },
-          { method  : { name: 'end', arguments: [] } },
-          { outgoing: { type: 'HEADERS', flags: { END_STREAM: true  }, headers: { ':path': '/' }, priority: undefined } },
+          { outgoing: { type: 'HEADERS', flags: { }, headers: { ':path': '/' }, priority: undefined } },
           { event   : { name: 'state', data: 'OPEN' } },
+
+          { wait    : 5 },
+          { method  : { name: 'end', arguments: [] } },
           { event   : { name: 'state', data: 'HALF_CLOSED_LOCAL' } },
+          { outgoing: { type: 'DATA', flags: { END_STREAM: true  }, data: new Buffer(0) } },
 
           { wait    : 10 },
           { incoming: { type: 'HEADERS', flags: { }, headers: { ':status': 200 } } },
