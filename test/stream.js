@@ -144,7 +144,7 @@ describe('stream.js', function() {
     describe('sending request', function() {
       it('should trigger the appropriate state transitions and outgoing frames', function(done) {
         execute_sequence([
-          { method  : { name: 'open', arguments: [{ ':path': '/' }] } },
+          { method  : { name: 'headers', arguments: [{ ':path': '/' }] } },
           { outgoing: { type: 'HEADERS', flags: { }, headers: { ':path': '/' }, priority: undefined } },
           { event   : { name: 'state', data: 'OPEN' } },
 
@@ -175,7 +175,7 @@ describe('stream.js', function() {
           { event   : { name: 'state', data: 'HALF_CLOSED_REMOTE' } },
 
           { wait    : 5 },
-          { method  : { name: 'open', arguments: [{ ':status': 200 }] } },
+          { method  : { name: 'headers', arguments: [{ ':status': 200 }] } },
           { outgoing: { type: 'HEADERS', flags: { }, headers: { ':status': 200 }, priority: undefined } },
 
           { wait    : 5 },
@@ -202,7 +202,7 @@ describe('stream.js', function() {
 
           // sending response headers
           { wait    : 5 },
-          { method  : { name: 'open', arguments: [{ ':status': '200' }] } },
+          { method  : { name: 'headers', arguments: [{ ':status': '200' }] } },
           { outgoing: { type: 'HEADERS', flags: {  }, headers: { ':status': '200' }, priority: undefined } },
 
           // sending push promise
@@ -221,7 +221,7 @@ describe('stream.js', function() {
 
           // push headers
           { wait    : 5 },
-          { method  : { name: 'open', arguments: [{ ':status': '200' }] } },
+          { method  : { name: 'headers', arguments: [{ ':status': '200' }] } },
           { outgoing: { type: 'HEADERS', flags: { }, headers: { ':status': '200' }, priority: undefined } },
           { event   : { name: 'state', data: 'HALF_CLOSED_REMOTE' } },
 
@@ -242,7 +242,7 @@ describe('stream.js', function() {
 
         execute_sequence(original_stream, [
           // sending request headers
-          { method  : { name: 'open', arguments: [{ ':path': '/' }] } },
+          { method  : { name: 'headers', arguments: [{ ':path': '/' }] } },
           { method  : { name: 'end', arguments: [] } },
           { outgoing: { type: 'HEADERS', flags: { END_STREAM: true  }, headers: { ':path': '/' }, priority: undefined } },
           { event   : { name: 'state', data: 'OPEN' } },

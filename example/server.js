@@ -24,7 +24,7 @@ var server = net.createServer(function(socket) {
 
       if (fs.existsSync(filename)) {
         console.error('Reading file from disk.');
-        stream.open({
+        stream.headers({
           ':status': '200'
         });
         var filestream = fs.createReadStream(filename);
@@ -32,7 +32,7 @@ var server = net.createServer(function(socket) {
 
       } else {
         console.error('File not found.');
-        stream.open({
+        stream.headers({
           ':status': '404'
         });
         stream.end();

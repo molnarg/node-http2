@@ -16,7 +16,7 @@ var socket = net.connect(server, function() {
   client_endpoint.pipe(socket).pipe(client_endpoint);
 
   var stream = client_endpoint._connection.createStream();
-  stream.open({
+  stream.headers({
     ':method': 'get',
     ':scheme': url.protocol.substr(0, url.protocol.length - 1),
     ':host': url.hostname,

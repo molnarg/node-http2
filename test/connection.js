@@ -45,14 +45,14 @@ describe('connection.js', function() {
         s.on('incoming_stream', function(server_stream) {
           server_stream.on('headers', function(headers) {
             expect(headers).to.deep.equal(request_headers);
-            server_stream.open(response_headers);
+            server_stream.headers(response_headers);
             server_stream.end(response_data);
           });
         });
 
         // Sending request
         var client_stream = c.createStream();
-        client_stream.open(request_headers);
+        client_stream.headers(request_headers);
         client_stream.end(request_data);
 
         // Waiting for answer
