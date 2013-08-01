@@ -42,7 +42,7 @@ describe('connection.js', function() {
         var response_data = new Buffer('12345678', 'hex');
 
         // Setting up server
-        s.on('incoming_stream', function(server_stream) {
+        s.on('stream', function(server_stream) {
           server_stream.on('headers', function(headers) {
             expect(headers).to.deep.equal(request_headers);
             server_stream.headers(response_headers);

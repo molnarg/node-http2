@@ -15,7 +15,7 @@ var server = net.createServer(function(socket) {
   var server_endpoint = new Endpoint('SERVER', settings);
   server_endpoint.pipe(socket).pipe(server_endpoint);
 
-  server_endpoint._connection.on('incoming_stream', function(stream) {
+  server_endpoint._connection.on('stream', function(stream) {
     console.error('Incoming stream.');
 
     stream.on('headers', function(headers) {
