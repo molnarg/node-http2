@@ -9,36 +9,24 @@ var settings = {
   SETTINGS_INITIAL_WINDOW_SIZE: 100000
 };
 
-var server = net.createServer(function(socket) {
-  console.error('Incoming connection.');
+var server = http2.http.createServer({
+  plain: true,
+  settings: settings
+}, function(request, response) {
+  var filename = path.join(__dirname, request.url);
+  console.error('Incoming request:', request.url, '(' + filename + ')');
 
-  var server_endpoint = new Endpoint('SERVER', settings);
-  server_endpoint.pipe(socket).pipe(server_endpoint);
+  if (fs.existsSync(filename)) {
+    console.error('Reading file from disk.');
+    response.writeHead('200');
+    var filestream = fs.createReadStream(filename);
+    filestream.pipe(response);
 
-  server_endpoint._connection.on('stream', function(stream) {
-    console.error('Incoming stream.');
-
-    stream.on('headers', function(headers) {
-      var filename = path.join(__dirname, headers[':path']);
-      console.error('Incoming request:', headers[':path'], '(' + filename + ')');
-
-      if (fs.existsSync(filename)) {
-        console.error('Reading file from disk.');
-        stream.headers({
-          ':status': '200'
-        });
-        var filestream = fs.createReadStream(filename);
-        filestream.pipe(stream);
-
-      } else {
-        console.error('File not found.');
-        stream.headers({
-          ':status': '404'
-        });
-        stream.end();
-      }
-    });
-  });
+  } else {
+    console.error('File not found.');
+    response.writeHead('404');
+    response.end();
+  }
 });
 
 var port = 8080;
