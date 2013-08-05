@@ -73,5 +73,25 @@ describe('connection.js', function() {
         });
       });
     });
+    describe('ping test', function() {
+      it('client ping', function(done) {
+        var c = new Connection(1, settings, log_root.child({ role: 'client' }));
+        var s = new Connection(2, settings, log_root.child({ role: 'server' }));
+
+        c.pipe(s).pipe(c);
+        c.ping(function(id) {
+          done();
+        });
+      });
+      it('server ping', function(done) {
+        var c = new Connection(1, settings, log_root.child({ role: 'client' }));
+        var s = new Connection(2, settings, log_root.child({ role: 'server' }));
+
+        c.pipe(s).pipe(c);
+        s.ping(function(id) {
+          done();
+        });
+      });
+    });
   });
 });
