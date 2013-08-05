@@ -15,7 +15,7 @@ var request = http2.http.request({
   host: url.hostname,
   port: url.port,
   url: url.path,
-  ca: [ fs.readFileSync(path.join(__dirname, '/localhost.crt')) ]
+  rejectUnauthorized: false
 });
 request.end();
 
