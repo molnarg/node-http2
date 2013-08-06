@@ -1,6 +1,15 @@
 Version history
 ===============
 
+### 0.1.0 (2013-08-06) ###
+
+* First release with public API (similar to the standard node HTTPS module)
+* Support for NPN negotiation (no ALPN or Upgrade yet)
+* Stream number limitation is in place
+* Push streams works but not exposed yet in the public API
+* [Blog post](http://gabor.molnar.es/blog/2013/08/05/gsoc-week-number-6-and-number-7/)
+* [Tarball](https://github.com/molnarg/node-http2/archive/node-http2-0.1.0.tar.gz)
+
 ### 0.0.6 (2013-07-19) ###
 
 * `Connection` and `Endpoint` classes are usable, but not yet ready

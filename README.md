@@ -8,8 +8,9 @@ An HTTP/2 server implementation for node.js, developed as a [Google Summer of Co
 Status
 ------
 
-I post weekly status updates [on my blog][2]. Short version: an example server and client can be
-run. A more node-like API, more documentation and tests are coming soon.
+I post weekly status updates [on my blog][2]. Short version: the first version of the public API is
+in place. NPN negotiation works (no ALPN or Upgrade mechanism yet). Main missing items will be
+tracked in the issue tracker.
 
 [2]: http://gabor.molnar.es/blog/categories/google-summer-of-code/
 
@@ -25,23 +26,58 @@ npm install http2
 API
 ---
 
-API documentation is coming later, when the public API becomes usable.
+The API is very similar to the [standard node.js HTTPS API](http://nodejs.org/api/https.html). The
+goal is the perfect API compatibility, with additional HTTP2 related extensions (like server push).
+Currently, basic operations work, server push is not yet exposed to the public API. See the examples
+for more info.
 
 Examples
 --------
 
-An example server (serving up static files from its own directory) and client are available in the
-example directory.
+Using as a server:
 
-Running the server:
+```javascript
+var http2 = require('http2');
+
+var options = {
+  key: fs.readFileSync('./example/localhost.key'),
+  cert: fs.readFileSync('./example/localhost.crt')
+};
+
+http2.http.createServer(options, function(request, response) {
+  response.end('Hello world!');
+}).listen(8080);
+```
+
+Using as a client:
+
+```javascript
+var http2 = require('http2');
+
+var request = http2.request({
+  method: 'get',
+  host: 'gabor.molnar.es',
+  port: 8080,
+  url: '/',
+  rejectUnauthorized: false
+});
+request.end();
+
+request.on('response', function(response) {
+  response.pipe(process.stdout);
+});
+```
+
+An example server (serving up static files from its own directory) and client are available in the
+example directory. Running the server:
 
 ```bash
 $ node ./example/server.js
 Listening on localhost:8080, serving up files from ./example
 ```
 
-Downloading the server's source code from the server (the downloaded content gets pumped out to the
-standard error output):
+An example client is also available. Downloading the server's source code from the server (the
+downloaded content gets pumped out to the standard error output):
 
 ```bash
 $ node ./example/client.js 'http://localhost:8080/server.js' 2>/tmp/server.js
@@ -107,6 +143,12 @@ For example, running the test client with debug level logging output:
 ```
 HTTP2_LOG=debug node ./example/client.js 'http://localhost:8080/server.js' 2>/tmp/server.js | bunyan
 ```
+
+Contributors
+------------
+
+* Nick Hurley
+* Mike Belshe
 
 License
 -------
