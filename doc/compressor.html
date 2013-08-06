@@ -392,29 +392,29 @@ Header Table is shadowed if there&#39;s an entry in the Working Set with the sam
             <div class="content"><div class='highlight'><pre>CompressionContext.prototype.generateAddCommand = <span class="keyword">function</span>(pair) {
   <span class="keyword">var</span> equal = CompressionContext.equal.bind(<span class="literal">null</span>, pair);
 
-  <span class="keyword">var</span> full_match = <span class="keyword">this</span>._table.filter(equal);
-  <span class="keyword">if</span> (full_match.length !== <span class="number">0</span>) {
-    <span class="keyword">var</span> full_index = <span class="keyword">this</span>._table.indexOf(full_match[<span class="number">0</span>]);
-    <span class="keyword">if</span> (!<span class="keyword">this</span>._isShadowed(full_index)) {
+  <span class="keyword">var</span> fullMatch = <span class="keyword">this</span>._table.filter(equal);
+  <span class="keyword">if</span> (fullMatch.length !== <span class="number">0</span>) {
+    <span class="keyword">var</span> fullIndex = <span class="keyword">this</span>._table.indexOf(fullMatch[<span class="number">0</span>]);
+    <span class="keyword">if</span> (!<span class="keyword">this</span>._isShadowed(fullIndex)) {
       <span class="keyword">return</span> {
-        name: full_index,
-        value: full_index,
+        name: fullIndex,
+        value: fullIndex,
         index: -<span class="number">1</span>
       };
     }
   }
 
   <span class="keyword">var</span> name = pair[<span class="number">0</span>].toLowerCase();
-  <span class="keyword">var</span> name_match = <span class="keyword">this</span>._table.filter(<span class="keyword">function</span>(entry) {
+  <span class="keyword">var</span> nameMatch = <span class="keyword">this</span>._table.filter(<span class="keyword">function</span>(entry) {
     <span class="keyword">return</span> entry[<span class="number">0</span>].toLowerCase() === name;
   });
-  <span class="keyword">if</span> (name_match.length !== <span class="number">0</span>) {
-    <span class="keyword">var</span> name_index = <span class="keyword">this</span>._table.indexOf(name_match[<span class="number">0</span>]);
-    <span class="keyword">if</span> (!<span class="keyword">this</span>._isShadowed(name_index)) {
+  <span class="keyword">if</span> (nameMatch.length !== <span class="number">0</span>) {
+    <span class="keyword">var</span> nameIndex = <span class="keyword">this</span>._table.indexOf(nameMatch[<span class="number">0</span>]);
+    <span class="keyword">if</span> (!<span class="keyword">this</span>._isShadowed(nameIndex)) {
       <span class="keyword">return</span> {
-        name: name_index,
+        name: nameIndex,
         value: pair[<span class="number">1</span>],
-        index: name_index
+        index: nameIndex
       };
     }
   }
@@ -521,9 +521,9 @@ The initial value of it&#39;s Header Table depends on which side of the connecti
             <div class="content"><div class='highlight'><pre><span class="function"><span class="keyword">function</span> <span class="title">Decompressor</span><span class="params">(type, log)</span> {</span>
   <span class="keyword">this</span>._log = (log || logging.root).child({ component: <span class="string">'decompressor'</span> });
 
-  <span class="keyword">var</span> initial_table = (type === <span class="string">'REQUEST'</span>) ? CompressionContext.initialRequestTable
-                                           : CompressionContext.initialResponseTable;
-  <span class="keyword">this</span>._context = <span class="keyword">new</span> CompressionContext(initial_table);
+  <span class="keyword">var</span> initialTable = (type === <span class="string">'REQUEST'</span>) ? CompressionContext.initialRequestTable
+                                          : CompressionContext.initialResponseTable;
+  <span class="keyword">this</span>._context = <span class="keyword">new</span> CompressionContext(initialTable);
 
   <span class="keyword">this</span>._initializeStream();
 }
@@ -670,9 +670,9 @@ The initial value of it&#39;s Header Table depends on which side of the connecti
             <div class="content"><div class='highlight'><pre><span class="function"><span class="keyword">function</span> <span class="title">Compressor</span><span class="params">(type, log)</span> {</span>
   <span class="keyword">this</span>._log = (log || logging.root).child({ component: <span class="string">'compressor'</span> });
 
-  <span class="keyword">var</span> initial_table = (type === <span class="string">'REQUEST'</span>) ? CompressionContext.initialRequestTable
-                                           : CompressionContext.initialResponseTable;
-  <span class="keyword">this</span>._context = <span class="keyword">new</span> CompressionContext(initial_table);
+  <span class="keyword">var</span> initialTable = (type === <span class="string">'REQUEST'</span>) ? CompressionContext.initialRequestTable
+                                          : CompressionContext.initialResponseTable;
+  <span class="keyword">this</span>._context = <span class="keyword">new</span> CompressionContext(initialTable);
 
   <span class="keyword">this</span>._initializeStream();
 }
@@ -981,9 +981,9 @@ than 128, it is represented as one byte.</li>
             </div>
             
             <div class="content"><div class='highlight'><pre>Compressor.string = <span class="function"><span class="keyword">function</span> <span class="title">writeString</span><span class="params">(str)</span> {</span>
-  <span class="keyword">var</span> encoded_string = <span class="keyword">new</span> Buffer(str, <span class="string">'utf8'</span>);
-  <span class="keyword">var</span> encoded_length = Compressor.integer(encoded_string.length, <span class="number">0</span>);
-  <span class="keyword">return</span> encoded_length.concat(encoded_string);
+  <span class="keyword">var</span> encodedString = <span class="keyword">new</span> Buffer(str, <span class="string">'utf8'</span>);
+  <span class="keyword">var</span> encodedLength = Compressor.integer(encodedString.length, <span class="number">0</span>);
+  <span class="keyword">return</span> encodedLength.concat(encodedString);
 };
 
 Decompressor.string = <span class="function"><span class="keyword">function</span> <span class="title">readString</span><span class="params">(buffer)</span> {</span>
@@ -1050,8 +1050,8 @@ always represented as a string.</p>
             <div class="content"><div class='highlight'><pre><span class="keyword">var</span> representations = {
   indexed             : { prefix: <span class="number">7</span>, pattern: <span class="number">0x80</span> },
   literal             : { prefix: <span class="number">5</span>, pattern: <span class="number">0x60</span> },
-  literal_incremental : { prefix: <span class="number">5</span>, pattern: <span class="number">0x40</span> },
-  literal_substitution: { prefix: <span class="number">6</span>, pattern: <span class="number">0x00</span> }
+  literalIncremental  : { prefix: <span class="number">5</span>, pattern: <span class="number">0x40</span> },
+  literalSubstitution : { prefix: <span class="number">6</span>, pattern: <span class="number">0x00</span> }
 };
 
 Compressor.header = <span class="function"><span class="keyword">function</span> <span class="title">writeString</span><span class="params">(header)</span> {</span>
@@ -1062,9 +1062,9 @@ Compressor.header = <span class="function"><span class="keyword">function</span>
   } <span class="keyword">else</span> <span class="keyword">if</span> (header.index === -<span class="number">1</span>) {
     representation = representations.literal;
   } <span class="keyword">else</span> <span class="keyword">if</span> (header.index === <span class="literal">Infinity</span>) {
-    representation = representations.literal_incremental;
+    representation = representations.literalIncremental;
   } <span class="keyword">else</span> {
-    representation = representations.literal_substitution;
+    representation = representations.literalSubstitution;
   }
 
   <span class="keyword">if</span> (representation === representations.indexed) {
@@ -1078,7 +1078,7 @@ Compressor.header = <span class="function"><span class="keyword">function</span>
       buffers.push(Compressor.string(header.name));
     }
 
-    <span class="keyword">if</span> (representation === representations.literal_substitution) {
+    <span class="keyword">if</span> (representation === representations.literalSubstitution) {
       buffers.push(Compressor.integer(header.index, <span class="number">0</span>));
     }
 
@@ -1093,17 +1093,17 @@ Compressor.header = <span class="function"><span class="keyword">function</span>
 Decompressor.header = <span class="function"><span class="keyword">function</span> <span class="title">readString</span><span class="params">(buffer)</span> {</span>
   <span class="keyword">var</span> representation, header = {};
 
-  <span class="keyword">var</span> first_byte = buffer[buffer.cursor];
-  <span class="keyword">if</span> (first_byte &amp; <span class="number">0x80</span>) {
+  <span class="keyword">var</span> firstByte = buffer[buffer.cursor];
+  <span class="keyword">if</span> (firstByte &amp; <span class="number">0x80</span>) {
     representation = representations.indexed;
-  } <span class="keyword">else</span> <span class="keyword">if</span> (first_byte &amp; <span class="number">0x40</span>) {
-    <span class="keyword">if</span> (first_byte &amp; <span class="number">0x20</span>) {
+  } <span class="keyword">else</span> <span class="keyword">if</span> (firstByte &amp; <span class="number">0x40</span>) {
+    <span class="keyword">if</span> (firstByte &amp; <span class="number">0x20</span>) {
       representation = representations.literal;
     } <span class="keyword">else</span> {
-      representation = representations.literal_incremental;
+      representation = representations.literalIncremental;
     }
   } <span class="keyword">else</span> {
-    representation = representations.literal_substitution;
+    representation = representations.literalSubstitution;
   }
 
   <span class="keyword">if</span> (representation === representations.indexed) {
@@ -1116,9 +1116,9 @@ Decompressor.header = <span class="function"><span class="keyword">function</spa
       header.name = Decompressor.string(buffer);
     }
 
-    <span class="keyword">if</span> (representation === representations.literal_substitution) {
+    <span class="keyword">if</span> (representation === representations.literalSubstitution) {
       header.index = Decompressor.integer(buffer, <span class="number">0</span>);
-    } <span class="keyword">else</span> <span class="keyword">if</span> (representation === representations.literal_incremental) {
+    } <span class="keyword">else</span> <span class="keyword">if</span> (representation === representations.literalIncremental) {
       header.index = <span class="literal">Infinity</span>;
     } <span class="keyword">else</span> {
       header.index = -<span class="number">1</span>;
@@ -1251,7 +1251,7 @@ Compressor.prototype._transform = <span class="function"><span class="keyword">f
                 <a class="pilcrow" href="#section-45">&#182;</a>
               </div>
               <ul>
-<li>for each <code>chunk</code>, it pushes out a <code>chunk_frame</code> that is identical to the original, except
+<li>for each chunk, it pushes out a chunk frame that is identical to the original, except
 the <code>data</code> property which holds the given chunk, the END_HEADERS/END_PUSH_STREAM flag that
 marks the last frame and the END_STREAM flag which is always false before the end</li>
 </ul>
@@ -1259,7 +1259,7 @@ marks the last frame and the END_STREAM flag which is always false before the en
             </div>
             
             <div class="content"><div class='highlight'><pre>    <span class="keyword">for</span> (<span class="keyword">var</span> i = <span class="number">0</span>; i &lt; chunks.length; i++) {
-      <span class="keyword">var</span> flags = utils.shallow_copy(frame.flags);
+      <span class="keyword">var</span> flags = utils.shallowCopy(frame.flags);
       <span class="keyword">if</span> (i === chunks.length - <span class="number">1</span>) {
         flags[<span class="string">'END_'</span> + frame.type] = <span class="literal">true</span>;
       } <span class="keyword">else</span> {
@@ -1308,7 +1308,7 @@ marks the last frame and the END_STREAM flag which is always false before the en
               </div>
               <p>The Decompressor is a stateful transform stream, since it has to collect multiple frames first,
 and the decoding comes after unifying the payload of those frames.</p>
-<p>If there&#39;s a frame in progress, <code>this._in_progress</code> is <code>true</code>. The frames are collected in
+<p>If there&#39;s a frame in progress, <code>this._inProgress</code> is <code>true</code>. The frames are collected in
 <code>this._frames</code>, and the type of the frame and the stream identifier is stored in <code>this._type</code>
 and <code>this._stream</code> respectively.</p>
 
@@ -1316,7 +1316,7 @@ and <code>this._stream</code> respectively.</p>
             
             <div class="content"><div class='highlight'><pre>Decompressor.prototype._initializeStream = <span class="function"><span class="keyword">function</span> <span class="title">_initializeStream</span><span class="params">()</span> {</span>
   Transform.call(<span class="keyword">this</span>, { objectMode: <span class="literal">true</span> });
-  <span class="keyword">this</span>._in_progress = <span class="literal">false</span>;
+  <span class="keyword">this</span>._inProgress = <span class="literal">false</span>;
   <span class="keyword">this</span>._type = <span class="literal">undefined</span>;
   <span class="keyword">this</span>._stream = <span class="literal">undefined</span>;
   <span class="keyword">this</span>._frames = <span class="literal">undefined</span>;
@@ -1347,14 +1347,14 @@ and <code>this._stream</code> respectively.</p>
                 <a class="pilcrow" href="#section-49">&#182;</a>
               </div>
               <ul>
-<li>and the collection process is already <code>_in_progress</code>, the frame is simply stored, except if
+<li>and the collection process is already <code>_inProgress</code>, the frame is simply stored, except if
 it&#39;s an illegal frame</li>
 </ul>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>  <span class="keyword">if</span> (<span class="keyword">this</span>._in_progress) {
-    <span class="keyword">if</span> (frame.type !== <span class="keyword">this</span>._type || frame.stream !== <span class="keyword">this</span>._stream) {
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">if</span> (<span class="keyword">this</span>._inProgress) {
+    <span class="keyword">if</span> ((frame.type !== <span class="keyword">this</span>._type) || (frame.stream !== <span class="keyword">this</span>._stream)) {
       <span class="keyword">this</span>.emit(<span class="string">'error'</span>, <span class="string">'A series of header frames must not be interleaved with other frames!'</span>);
     }
     <span class="keyword">this</span>._frames.push(frame);
@@ -1370,14 +1370,14 @@ it&#39;s an illegal frame</li>
                 <a class="pilcrow" href="#section-50">&#182;</a>
               </div>
               <ul>
-<li>and the collection process is not <code>_in_progress</code>, but the new frame&#39;s type is HEADERS or
+<li>and the collection process is not <code>_inProgress</code>, but the new frame&#39;s type is HEADERS or
 PUSH_PROMISE, a new collection process begins</li>
 </ul>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>  <span class="keyword">else</span> <span class="keyword">if</span> (frame.type === <span class="string">'HEADERS'</span> || frame.type === <span class="string">'PUSH_PROMISE'</span>) {
-    <span class="keyword">this</span>._in_progress = <span class="literal">true</span>;
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">else</span> <span class="keyword">if</span> ((frame.type === <span class="string">'HEADERS'</span>) || (frame.type === <span class="string">'PUSH_PROMISE'</span>)) {
+    <span class="keyword">this</span>._inProgress = <span class="literal">true</span>;
     <span class="keyword">this</span>._type = frame.type;
     <span class="keyword">this</span>._stream = frame.stream;
     <span class="keyword">this</span>._frames = [frame];
@@ -1417,7 +1417,7 @@ decompressed headers.</p>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>  <span class="keyword">if</span> (<span class="keyword">this</span>._in_progress &amp;&amp; (frame.flags.END_HEADERS || frame.flags.END_PUSH_PROMISE)) {
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">if</span> (<span class="keyword">this</span>._inProgress &amp;&amp; (frame.flags.END_HEADERS || frame.flags.END_PUSH_PROMISE)) {
     <span class="keyword">var</span> buffer = utils.concat(<span class="keyword">this</span>._frames.map(<span class="keyword">function</span>(frame) {
       <span class="keyword">return</span> frame.data;
     }));
@@ -1429,7 +1429,7 @@ decompressed headers.</p>
       priority: frame.priority,
       headers: headers
     });
-    <span class="keyword">this</span>._in_progress = <span class="literal">false</span>;
+    <span class="keyword">this</span>._inProgress = <span class="literal">false</span>;
   }
 
   done();

@@ -93,7 +93,8 @@ the Serializer and the Deserializer</p>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre><span class="keyword">var</span> logging = require(<span class="string">'./logging'</span>);
+            <div class="content"><div class='highlight'><pre><span class="keyword">var</span> assert = process.env.HTTP2_ASSERT ? require(<span class="string">'assert'</span>) : <span class="function"><span class="keyword">function</span> <span class="title">noop</span><span class="params">()</span> {</span>};
+<span class="keyword">var</span> logging = require(<span class="string">'./logging'</span>);
 
 <span class="keyword">var</span> Transform = require(<span class="string">'stream'</span>).Transform;
 
@@ -156,9 +157,7 @@ frame types (like the length of the payload).</p>
             <div class="content"><div class='highlight'><pre>Serializer.prototype._transform = <span class="function"><span class="keyword">function</span> <span class="title">_transform</span><span class="params">(frame, encoding, done)</span> {</span>
   <span class="keyword">this</span>._log.debug({ frame: frame }, <span class="string">'Outgoing frame'</span>);
 
-  <span class="keyword">if</span> (!(frame.type <span class="keyword">in</span> Serializer)) {
-    <span class="keyword">throw</span> <span class="keyword">new</span> Error(<span class="string">'Unknown frame type: '</span> + frame.type);
-  }
+  assert(frame.type <span class="keyword">in</span> Serializer, <span class="string">'Unknown frame type: '</span> + frame.type);
 
   <span class="keyword">var</span> buffers = [];
   Serializer[frame.type](frame, buffers);
@@ -221,7 +220,7 @@ Deserializer.prototype = Object.create(Transform.prototype, { constructor: { val
                 <a class="pilcrow" href="#section-7">&#182;</a>
               </div>
               <p>The Deserializer is stateful, and it&#39;s two main alternating states are: <em>waiting for header</em> and
-<em>waiting for payload</em>. The state is stored in the boolean property <code>_waiting_for_header</code>.</p>
+<em>waiting for payload</em>. The state is stored in the boolean property <code>_waitingForHeader</code>.</p>
 <p>When entering a new state, a <code>_buffer</code> is created that will hold the accumulated data (header or
 payload). The <code>_cursor</code> is used to track the progress.</p>
 
@@ -230,8 +229,8 @@ payload). The <code>_cursor</code> is used to track the progress.</p>
             <div class="content"><div class='highlight'><pre>Deserializer.prototype._next = <span class="keyword">function</span>(size) {
   <span class="keyword">this</span>._cursor = <span class="number">0</span>;
   <span class="keyword">this</span>._buffer = <span class="keyword">new</span> Buffer(size);
-  <span class="keyword">this</span>._waiting_for_header = !<span class="keyword">this</span>._waiting_for_header;
-  <span class="keyword">if</span> (<span class="keyword">this</span>._waiting_for_header) {
+  <span class="keyword">this</span>._waitingForHeader = !<span class="keyword">this</span>._waitingForHeader;
+  <span class="keyword">if</span> (<span class="keyword">this</span>._waitingForHeader) {
     <span class="keyword">this</span>._frame = {};
   }
 };</pre></div></div>
@@ -271,10 +270,10 @@ chunk, then only a part of it is copied.</p>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>    <span class="keyword">var</span> to_copy = Math.min(chunk.length - cursor, <span class="keyword">this</span>._buffer.length - <span class="keyword">this</span>._cursor);
-    chunk.copy(<span class="keyword">this</span>._buffer, <span class="keyword">this</span>._cursor, cursor, cursor + to_copy);
-    <span class="keyword">this</span>._cursor += to_copy;
-    cursor += to_copy;</pre></div></div>
+            <div class="content"><div class='highlight'><pre>    <span class="keyword">var</span> toCopy = Math.min(chunk.length - cursor, <span class="keyword">this</span>._buffer.length - <span class="keyword">this</span>._cursor);
+    chunk.copy(<span class="keyword">this</span>._buffer, <span class="keyword">this</span>._cursor, cursor, cursor + toCopy);
+    <span class="keyword">this</span>._cursor += toCopy;
+    cursor += toCopy;</pre></div></div>
             
         </li>
         
@@ -292,7 +291,7 @@ deserializer waits for the specified length payload.</p>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>    <span class="keyword">if</span> (<span class="keyword">this</span>._cursor === <span class="keyword">this</span>._buffer.length &amp;&amp; <span class="keyword">this</span>._waiting_for_header) {
+            <div class="content"><div class='highlight'><pre>    <span class="keyword">if</span> ((<span class="keyword">this</span>._cursor === <span class="keyword">this</span>._buffer.length) &amp;&amp; <span class="keyword">this</span>._waitingForHeader) {
       Deserializer.commonHeader(<span class="keyword">this</span>._buffer, <span class="keyword">this</span>._frame);
       <span class="keyword">this</span>._next(<span class="keyword">this</span>._frame.length);
     }</pre></div></div>
@@ -313,7 +312,7 @@ will also run.</p>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>    <span class="keyword">if</span> (<span class="keyword">this</span>._cursor === <span class="keyword">this</span>._buffer.length &amp;&amp; !<span class="keyword">this</span>._waiting_for_header) {
+            <div class="content"><div class='highlight'><pre>    <span class="keyword">if</span> ((<span class="keyword">this</span>._cursor === <span class="keyword">this</span>._buffer.length) &amp;&amp; !<span class="keyword">this</span>._waitingForHeader) {
       <span class="keyword">if</span> (<span class="keyword">this</span>._frame.type) {
         <span class="keyword">try</span> {
           Deserializer[<span class="keyword">this</span>._frame.type](<span class="keyword">this</span>._buffer, <span class="keyword">this</span>._frame);
@@ -399,59 +398,53 @@ associated with the connection as a whole as opposed to an individual stream.</p
             <div class="content"><div class='highlight'><pre><span class="keyword">var</span> COMMON_HEADER_SIZE = <span class="number">8</span>;
 <span class="keyword">var</span> MAX_PAYLOAD_SIZE = <span class="number">65535</span>;
 
-<span class="keyword">var</span> frame_types = [];
+<span class="keyword">var</span> frameTypes = [];
 
-<span class="keyword">var</span> frame_flags = {};
+<span class="keyword">var</span> frameFlags = {};
 
-<span class="keyword">var</span> generic_attributes = [<span class="string">'length'</span>, <span class="string">'type'</span>, <span class="string">'flags'</span>, <span class="string">'stream'</span>];
+<span class="keyword">var</span> genericAttributes = [<span class="string">'length'</span>, <span class="string">'type'</span>, <span class="string">'flags'</span>, <span class="string">'stream'</span>];
 
-<span class="keyword">var</span> type_specific_attributes = {};
+<span class="keyword">var</span> typeSpecificAttributes = {};
 
 Serializer.commonHeader = <span class="function"><span class="keyword">function</span> <span class="title">writeCommonHeader</span><span class="params">(frame, buffers)</span> {</span>
-  <span class="keyword">var</span> header_buffer = <span class="keyword">new</span> Buffer(COMMON_HEADER_SIZE);
+  <span class="keyword">var</span> headerBuffer = <span class="keyword">new</span> Buffer(COMMON_HEADER_SIZE);
 
   <span class="keyword">var</span> size = <span class="number">0</span>;
   <span class="keyword">for</span> (<span class="keyword">var</span> i = <span class="number">0</span>; i &lt; buffers.length; i++) {
     size += buffers[i].length;
   }
-  <span class="keyword">if</span> (size &gt; MAX_PAYLOAD_SIZE) {
-    <span class="keyword">throw</span> <span class="keyword">new</span> Error(<span class="string">'Too large frame: '</span> + size + <span class="string">' bytes'</span>);
-  }
-  header_buffer.writeUInt16BE(size, <span class="number">0</span>);
+  assert(size &lt; MAX_PAYLOAD_SIZE, <span class="string">'Too large frame: '</span> + size + <span class="string">' bytes'</span>);
+  headerBuffer.writeUInt16BE(size, <span class="number">0</span>);
 
-  <span class="keyword">var</span> type_id = frame_types.indexOf(frame.type);  <span class="comment">// If we are here then the type is valid for sure</span>
-  header_buffer.writeUInt8(type_id, <span class="number">2</span>);
+  <span class="keyword">var</span> typeId = frameTypes.indexOf(frame.type);  <span class="comment">// If we are here then the type is valid for sure</span>
+  headerBuffer.writeUInt8(typeId, <span class="number">2</span>);
 
-  <span class="keyword">var</span> flag_byte = <span class="number">0</span>;
+  <span class="keyword">var</span> flagByte = <span class="number">0</span>;
   <span class="keyword">for</span> (<span class="keyword">var</span> flag <span class="keyword">in</span> frame.flags) {
-    <span class="keyword">var</span> position = frame_flags[frame.type].indexOf(flag);
-    <span class="keyword">if</span> (position === -<span class="number">1</span>) {
-      <span class="keyword">throw</span> <span class="keyword">new</span> Error(<span class="string">'Unknown flag for frame type '</span> + frame.type + <span class="string">': '</span> + flag);
-    }
+    <span class="keyword">var</span> position = frameFlags[frame.type].indexOf(flag);
+    assert(position !== -<span class="number">1</span>, <span class="string">'Unknown flag for frame type '</span> + frame.type + <span class="string">': '</span> + flag);
     <span class="keyword">if</span> (frame.flags[flag]) {
-      flag_byte |= (<span class="number">1</span> &lt;<span class="xml"><span class="tag">&lt; <span class="attribute">position</span>);
+      flagByte |= (<span class="number">1</span> &lt;<span class="xml"><span class="tag">&lt; <span class="attribute">position</span>);
     }
   }
-  <span class="attribute">header_buffer.writeUInt8</span>(<span class="attribute">flag_byte</span>, <span class="attribute">3</span>);
+  <span class="attribute">headerBuffer.writeUInt8</span>(<span class="attribute">flagByte</span>, <span class="attribute">3</span>);
 
-  <span class="attribute">if</span> (<span class="attribute">frame.stream</span> &gt;</span> 0x7fffffff) {
-    throw new Error('Too large stream ID: ' + frame.stream);
-  }
-  header_buffer.writeUInt32BE(frame.stream || 0, 4);
+  <span class="attribute">assert</span>(<span class="attribute">frame.stream</span> &lt; <span class="attribute">0x7fffffff</span>, '<span class="attribute">Too</span> <span class="attribute">large</span> <span class="attribute">stream</span> <span class="attribute">ID:</span> ' + <span class="attribute">frame.stream</span>);
+  <span class="attribute">headerBuffer.writeUInt32BE</span>(<span class="attribute">frame.stream</span> || <span class="attribute">0</span>, <span class="attribute">4</span>);
 
-  buffers.unshift(header_buffer);
+  <span class="attribute">buffers.unshift</span>(<span class="attribute">headerBuffer</span>);
 };
 
-Deserializer.commonHeader = function readCommonHeader(buffer, frame) {
-  frame.length = buffer.readUInt16BE(0);
+<span class="attribute">Deserializer.commonHeader</span> = <span class="attribute">function</span> <span class="attribute">readCommonHeader</span>(<span class="attribute">buffer</span>, <span class="attribute">frame</span>) {
+  <span class="attribute">frame.length</span> = <span class="attribute">buffer.readUInt16BE</span>(<span class="attribute">0</span>);
 
-  frame.type = frame_types[buffer.readUInt8(2)];
+  <span class="attribute">frame.type</span> = <span class="attribute">frameTypes</span>[<span class="attribute">buffer.readUInt8</span>(<span class="attribute">2</span>)];
 
-  frame.flags = {};
-  var flag_byte = buffer.readUInt8(3);
-  var defined_flags = frame_flags[frame.type];
-  for (var i = 0; i <span class="tag">&lt; <span class="attribute">defined_flags.length</span>; <span class="attribute">i</span>++) {
-    <span class="attribute">frame.flags</span>[<span class="attribute">defined_flags</span>[<span class="attribute">i</span>]] = <span class="attribute">Boolean</span>(<span class="attribute">flag_byte</span> &amp; (<span class="attribute">1</span> &lt;&lt; <span class="attribute">i</span>));
+  <span class="attribute">frame.flags</span> = {};
+  <span class="attribute">var</span> <span class="attribute">flagByte</span> = <span class="attribute">buffer.readUInt8</span>(<span class="attribute">3</span>);
+  <span class="attribute">var</span> <span class="attribute">definedFlags</span> = <span class="attribute">frameFlags</span>[<span class="attribute">frame.type</span>];
+  <span class="attribute">for</span> (<span class="attribute">var</span> <span class="attribute">i</span> = <span class="attribute">0</span>; <span class="attribute">i</span> &lt; <span class="attribute">definedFlags.length</span>; <span class="attribute">i</span>++) {
+    <span class="attribute">frame.flags</span>[<span class="attribute">definedFlags</span>[<span class="attribute">i</span>]] = <span class="attribute">Boolean</span>(<span class="attribute">flagByte</span> &amp; (<span class="attribute">1</span> &lt;&lt; <span class="attribute">i</span>));
   }
 
   <span class="attribute">frame.stream</span> = <span class="attribute">buffer.readUInt32BE</span>(<span class="attribute">4</span>) &amp; <span class="attribute">0x7fffffff</span>;
@@ -483,9 +476,9 @@ Deserializer.commonHeader = function readCommonHeader(buffer, frame) {
               </div>
               <p>Every frame type is registered in the following places:</p>
 <ul>
-<li><code>frame_types</code>: a register of frame type codes (used by <code>commonHeader()</code>)</li>
-<li><code>frame_flags</code>: a register of valid flags for frame types (used by <code>commonHeader()</code>)</li>
-<li><code>type_specific_attributes</code>: a register of frame specific frame object attributes (used by
+<li><code>frameTypes</code>: a register of frame type codes (used by <code>commonHeader()</code>)</li>
+<li><code>frameFlags</code>: a register of valid flags for frame types (used by <code>commonHeader()</code>)</li>
+<li><code>typeSpecificAttributes</code>: a register of frame specific frame object attributes (used by
 logging code and also serves as documentation for frame objects)</li>
 </ul>
 <h2><a href="http://http2.github.io/http2-spec/#DataFrames">DATA Frames</a></h2>
@@ -514,11 +507,11 @@ Bit 2 is reserved for future use.</li>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>frame_types[<span class="number">0x0</span>] = <span class="string">'DATA'</span>;
+            <div class="content"><div class='highlight'><pre>frameTypes[<span class="number">0x0</span>] = <span class="string">'DATA'</span>;
 
-frame_flags.DATA = [<span class="string">'END_STREAM'</span>, <span class="string">'RESERVED'</span>];
+frameFlags.DATA = [<span class="string">'END_STREAM'</span>, <span class="string">'RESERVED'</span>];
 
-type_specific_attributes.DATA = [<span class="string">'data'</span>];
+typeSpecificAttributes.DATA = [<span class="string">'data'</span>];
 
 Serializer.DATA = <span class="function"><span class="keyword">function</span> <span class="title">writeData</span><span class="params">(frame, buffers)</span> {</span>
   buffers.push(frame.data);
@@ -568,11 +561,11 @@ bit and a 31-bit priority.</li>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>frame_types[<span class="number">0x1</span>] = <span class="string">'HEADERS'</span>;
+            <div class="content"><div class='highlight'><pre>frameTypes[<span class="number">0x1</span>] = <span class="string">'HEADERS'</span>;
 
-frame_flags.HEADERS = [<span class="string">'END_STREAM'</span>, <span class="string">'RESERVED'</span>, <span class="string">'END_HEADERS'</span>, <span class="string">'PRIORITY'</span>];
+frameFlags.HEADERS = [<span class="string">'END_STREAM'</span>, <span class="string">'RESERVED'</span>, <span class="string">'END_HEADERS'</span>, <span class="string">'PRIORITY'</span>];
 
-type_specific_attributes.HEADERS = [<span class="string">'priority'</span>, <span class="string">'headers'</span>, <span class="string">'data'</span>];</pre></div></div>
+typeSpecificAttributes.HEADERS = [<span class="string">'priority'</span>, <span class="string">'headers'</span>, <span class="string">'data'</span>];</pre></div></div>
             
         </li>
         
@@ -639,11 +632,11 @@ Deserializer.HEADERS = <span class="function"><span class="keyword">function</sp
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>frame_types[<span class="number">0x2</span>] = <span class="string">'PRIORITY'</span>;
+            <div class="content"><div class='highlight'><pre>frameTypes[<span class="number">0x2</span>] = <span class="string">'PRIORITY'</span>;
 
-frame_flags.PRIORITY = [];
+frameFlags.PRIORITY = [];
 
-type_specific_attributes.PRIORITY = [<span class="string">'priority'</span>];</pre></div></div>
+typeSpecificAttributes.PRIORITY = [<span class="string">'priority'</span>];</pre></div></div>
             
         </li>
         
@@ -700,11 +693,11 @@ Deserializer.PRIORITY = <span class="function"><span class="keyword">function</s
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>frame_types[<span class="number">0x3</span>] = <span class="string">'RST_STREAM'</span>;
+            <div class="content"><div class='highlight'><pre>frameTypes[<span class="number">0x3</span>] = <span class="string">'RST_STREAM'</span>;
 
-frame_flags.RST_STREAM = [];
+frameFlags.RST_STREAM = [];
 
-type_specific_attributes.RST_STREAM = [<span class="string">'error'</span>];</pre></div></div>
+typeSpecificAttributes.RST_STREAM = [<span class="string">'error'</span>];</pre></div></div>
             
         </li>
         
@@ -727,12 +720,12 @@ code (see Error Codes). The error code indicates why the stream is being termina
             
             <div class="content"><div class='highlight'><pre>Serializer.RST_STREAM = <span class="function"><span class="keyword">function</span> <span class="title">writeRstStream</span><span class="params">(frame, buffers)</span> {</span>
   <span class="keyword">var</span> buffer = <span class="keyword">new</span> Buffer(<span class="number">4</span>);
-  buffer.writeUInt32BE(error_codes.indexOf(frame.error), <span class="number">0</span>);
+  buffer.writeUInt32BE(errorCodes.indexOf(frame.error), <span class="number">0</span>);
   buffers.push(buffer);
 };
 
 Deserializer.RST_STREAM = <span class="function"><span class="keyword">function</span> <span class="title">readRstStream</span><span class="params">(buffer, frame)</span> {</span>
-  frame.error = error_codes[buffer.readUInt32BE(<span class="number">0</span>)];
+  frame.error = errorCodes[buffer.readUInt32BE(<span class="number">0</span>)];
 };</pre></div></div>
             
         </li>
@@ -763,11 +756,11 @@ communicate.</p>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>frame_types[<span class="number">0x4</span>] = <span class="string">'SETTINGS'</span>;
+            <div class="content"><div class='highlight'><pre>frameTypes[<span class="number">0x4</span>] = <span class="string">'SETTINGS'</span>;
 
-frame_flags.SETTINGS = [];
+frameFlags.SETTINGS = [];
 
-type_specific_attributes.SETTINGS = [<span class="string">'settings'</span>];</pre></div></div>
+typeSpecificAttributes.SETTINGS = [<span class="string">'settings'</span>];</pre></div></div>
             
         </li>
         
@@ -797,17 +790,15 @@ one.</p>
             </div>
             
             <div class="content"><div class='highlight'><pre>Serializer.SETTINGS = <span class="function"><span class="keyword">function</span> <span class="title">writeSettings</span><span class="params">(frame, buffers)</span> {</span>
-  <span class="keyword">var</span> settings = [], settings_left = Object.keys(frame.settings);
-  defined_settings.forEach(<span class="keyword">function</span>(setting, id) {
+  <span class="keyword">var</span> settings = [], settingsLeft = Object.keys(frame.settings);
+  definedSettings.forEach(<span class="keyword">function</span>(setting, id) {
     <span class="keyword">if</span> (setting.name <span class="keyword">in</span> frame.settings) {
-      settings_left.splice(settings_left.indexOf(setting.name), <span class="number">1</span>);
+      settingsLeft.splice(settingsLeft.indexOf(setting.name), <span class="number">1</span>);
       <span class="keyword">var</span> value = frame.settings[setting.name];
       settings.push({ id: id, value: setting.flag ? Boolean(value) : value });
     }
   });
-  <span class="keyword">if</span> (settings_left.length !== <span class="number">0</span>) {
-    <span class="keyword">throw</span> <span class="keyword">new</span> Error(<span class="string">'Unknown settings: '</span> + settings_left.join(<span class="string">', '</span>));
-  }
+  assert(settingsLeft.length === <span class="number">0</span>, <span class="string">'Unknown settings: '</span> + settingsLeft.join(<span class="string">', '</span>));
 
   <span class="keyword">var</span> buffer = <span class="keyword">new</span> Buffer(settings.length * <span class="number">8</span>);
   <span class="keyword">for</span> (<span class="keyword">var</span> i = <span class="number">0</span>; i &lt; settings.length; i++) {
@@ -826,15 +817,13 @@ Deserializer.SETTINGS = <span class="function"><span class="keyword">function</s
   }
   <span class="keyword">for</span> (<span class="keyword">var</span> i = <span class="number">0</span>; i &lt; buffer.length / <span class="number">8</span>; i++) {
     <span class="keyword">var</span> id = buffer.readUInt32BE(i*<span class="number">8</span>) &amp; <span class="number">0xffffff</span>;
-    <span class="keyword">var</span> setting = defined_settings[id];
+    <span class="keyword">var</span> setting = definedSettings[id];
     <span class="keyword">var</span> value = buffer.readUInt32BE(i*<span class="number">8</span> + <span class="number">4</span>);
-    <span class="keyword">if</span> (!setting || setting.name <span class="keyword">in</span> frame.settings) {
+    <span class="keyword">if</span> (!setting || (setting.name <span class="keyword">in</span> frame.settings)) {
       <span class="keyword">continue</span>;
     }
     frame.settings[setting.name] = setting.flag ? Boolean(value &amp; <span class="number">0x1</span>) : value;
   }
-
-  <span class="keyword">return</span> frame;
 };</pre></div></div>
             
         </li>
@@ -850,7 +839,7 @@ Deserializer.SETTINGS = <span class="function"><span class="keyword">function</s
 
             </div>
             
-            <div class="content"><div class='highlight'><pre><span class="keyword">var</span> defined_settings = [];</pre></div></div>
+            <div class="content"><div class='highlight'><pre><span class="keyword">var</span> definedSettings = [];</pre></div></div>
             
         </li>
         
@@ -868,7 +857,7 @@ indicates the maximum number of concurrent streams that the sender will allow.</
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>defined_settings[<span class="number">4</span>] = { name: <span class="string">'SETTINGS_MAX_CONCURRENT_STREAMS'</span>, flag: <span class="literal">false</span> };</pre></div></div>
+            <div class="content"><div class='highlight'><pre>definedSettings[<span class="number">4</span>] = { name: <span class="string">'SETTINGS_MAX_CONCURRENT_STREAMS'</span>, flag: <span class="literal">false</span> };</pre></div></div>
             
         </li>
         
@@ -886,7 +875,7 @@ indicates the sender&#39;s initial stream window size (in bytes) for new streams
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>defined_settings[<span class="number">7</span>] = { name: <span class="string">'SETTINGS_INITIAL_WINDOW_SIZE'</span>, flag: <span class="literal">false</span> };</pre></div></div>
+            <div class="content"><div class='highlight'><pre>definedSettings[<span class="number">7</span>] = { name: <span class="string">'SETTINGS_INITIAL_WINDOW_SIZE'</span>, flag: <span class="literal">false</span> };</pre></div></div>
             
         </li>
         
@@ -906,7 +895,7 @@ bits are reserved.</li>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>defined_settings[<span class="number">10</span>] = { name: <span class="string">'SETTINGS_FLOW_CONTROL_OPTIONS'</span>, flag: <span class="literal">true</span> };</pre></div></div>
+            <div class="content"><div class='highlight'><pre>definedSettings[<span class="number">10</span>] = { name: <span class="string">'SETTINGS_FLOW_CONTROL_OPTIONS'</span>, flag: <span class="literal">true</span> };</pre></div></div>
             
         </li>
         
@@ -941,11 +930,11 @@ provide a complete set of headers.</li>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>frame_types[<span class="number">0x5</span>] = <span class="string">'PUSH_PROMISE'</span>;
+            <div class="content"><div class='highlight'><pre>frameTypes[<span class="number">0x5</span>] = <span class="string">'PUSH_PROMISE'</span>;
 
-frame_flags.PUSH_PROMISE = [<span class="string">'END_PUSH_PROMISE'</span>];
+frameFlags.PUSH_PROMISE = [<span class="string">'END_PUSH_PROMISE'</span>];
 
-type_specific_attributes.PUSH_PROMISE = [<span class="string">'promised_stream'</span>, <span class="string">'headers'</span>, <span class="string">'data'</span>];</pre></div></div>
+typeSpecificAttributes.PUSH_PROMISE = [<span class="string">'promised_stream'</span>, <span class="string">'headers'</span>, <span class="string">'data'</span>];</pre></div></div>
             
         </li>
         
@@ -1013,11 +1002,11 @@ Bit 2 being set indicates that this PING frame is a PING response.</li>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>frame_types[<span class="number">0x6</span>] = <span class="string">'PING'</span>;
+            <div class="content"><div class='highlight'><pre>frameTypes[<span class="number">0x6</span>] = <span class="string">'PING'</span>;
 
-frame_flags.PING = [<span class="string">'PONG'</span>];
+frameFlags.PING = [<span class="string">'PONG'</span>];
 
-type_specific_attributes.PING = [<span class="string">'data'</span>];</pre></div></div>
+typeSpecificAttributes.PING = [<span class="string">'data'</span>];</pre></div></div>
             
         </li>
         
@@ -1033,9 +1022,7 @@ type_specific_attributes.PING = [<span class="string">'data'</span>];</pre></div
             </div>
             
             <div class="content"><div class='highlight'><pre>Serializer.PING = <span class="function"><span class="keyword">function</span> <span class="title">writePing</span><span class="params">(frame, buffers)</span> {</span>
-  <span class="keyword">if</span> (!frame.data || frame.data.length !== <span class="number">8</span>) {
-    <span class="keyword">throw</span> <span class="keyword">new</span> Error(<span class="string">'PING frames must carry an 8 byte payload.'</span>);
-  }
+  assert((<span class="string">'data'</span> <span class="keyword">in</span> frame) &amp;&amp; (frame.data.length === <span class="number">8</span>), <span class="string">'PING frames must carry an 8 byte payload.'</span>);
   buffers.push(frame.data);
 };
 
@@ -1073,11 +1060,11 @@ Deserializer.PING = <span class="function"><span class="keyword">function</span>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>frame_types[<span class="number">0x7</span>] = <span class="string">'GOAWAY'</span>;
+            <div class="content"><div class='highlight'><pre>frameTypes[<span class="number">0x7</span>] = <span class="string">'GOAWAY'</span>;
 
-frame_flags.GOAWAY = [];
+frameFlags.GOAWAY = [];
 
-type_specific_attributes.GOAWAY = [<span class="string">'last_stream'</span>, <span class="string">'error'</span>];</pre></div></div>
+typeSpecificAttributes.GOAWAY = [<span class="string">'last_stream'</span>, <span class="string">'error'</span>];</pre></div></div>
             
         </li>
         
@@ -1106,13 +1093,13 @@ closing the connection.</p>
             <div class="content"><div class='highlight'><pre>Serializer.GOAWAY = <span class="function"><span class="keyword">function</span> <span class="title">writeGoaway</span><span class="params">(frame, buffers)</span> {</span>
   <span class="keyword">var</span> buffer = <span class="keyword">new</span> Buffer(<span class="number">8</span>);
   buffer.writeUInt32BE(frame.last_stream &amp; <span class="number">0x7fffffff</span>, <span class="number">0</span>);
-  buffer.writeUInt32BE(error_codes.indexOf(frame.error), <span class="number">4</span>);
+  buffer.writeUInt32BE(errorCodes.indexOf(frame.error), <span class="number">4</span>);
   buffers.push(buffer);
 };
 
 Deserializer.GOAWAY = <span class="function"><span class="keyword">function</span> <span class="title">readGoaway</span><span class="params">(buffer, frame)</span> {</span>
   frame.last_stream = buffer.readUInt32BE(<span class="number">0</span>) &amp; <span class="number">0x7fffffff</span>;
-  frame.error = error_codes[buffer.readUInt32BE(<span class="number">4</span>)];
+  frame.error = errorCodes[buffer.readUInt32BE(<span class="number">4</span>)];
 };</pre></div></div>
             
         </li>
@@ -1147,11 +1134,11 @@ or connection has been ended; subsequent frames do not need to be flow controlle
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>frame_types[<span class="number">0x9</span>] = <span class="string">'WINDOW_UPDATE'</span>;
+            <div class="content"><div class='highlight'><pre>frameTypes[<span class="number">0x9</span>] = <span class="string">'WINDOW_UPDATE'</span>;
 
-frame_flags.WINDOW_UPDATE = [<span class="string">'END_FLOW_CONTROL'</span>];
+frameFlags.WINDOW_UPDATE = [<span class="string">'END_FLOW_CONTROL'</span>];
 
-type_specific_attributes.WINDOW_UPDATE = [<span class="string">'window_size'</span>];</pre></div></div>
+typeSpecificAttributes.WINDOW_UPDATE = [<span class="string">'window_size'</span>];</pre></div></div>
             
         </li>
         
@@ -1204,7 +1191,7 @@ Deserializer.WINDOW_UPDATE = <span class="function"><span class="keyword">functi
               
             </div>
             
-            <div class="content"><div class='highlight'><pre><span class="keyword">var</span> error_codes = [
+            <div class="content"><div class='highlight'><pre><span class="keyword">var</span> errorCodes = [
   <span class="string">'NO_ERROR'</span>,
   <span class="string">'PROTOCOL_ERROR'</span>,
   <span class="string">'INTERNAL_ERROR'</span>,
@@ -1249,20 +1236,20 @@ flags that are not present.</li>
             </div>
             
             <div class="content"><div class='highlight'><pre>logging.serializers.frame = <span class="keyword">function</span>(frame) {
-  <span class="keyword">var</span> log_entry = {};
-  generic_attributes.concat(type_specific_attributes[frame.type]).forEach(<span class="keyword">function</span>(name) {
-    log_entry[name] = frame[name];
+  <span class="keyword">var</span> logEntry = {};
+  genericAttributes.concat(typeSpecificAttributes[frame.type]).forEach(<span class="keyword">function</span>(name) {
+    logEntry[name] = frame[name];
   });
 
   <span class="keyword">if</span> (frame.data <span class="keyword">instanceof</span> Buffer) {
-    log_entry.data = frame.data.toString(<span class="string">'hex'</span>);
+    logEntry.data = frame.data.toString(<span class="string">'hex'</span>);
   }
 
-  log_entry.flags = Object.keys(frame.flags || {}).filter(<span class="keyword">function</span>(name) {
+  logEntry.flags = Object.keys(frame.flags || {}).filter(<span class="keyword">function</span>(name) {
     <span class="keyword">return</span> frame.flags[name] === <span class="literal">true</span>;
   });
 
-  <span class="keyword">return</span> log_entry;
+  <span class="keyword">return</span> logEntry;
 };</pre></div></div>
             
         </li>
