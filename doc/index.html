@@ -89,10 +89,14 @@
                 <a class="pilcrow" href="#section-1">&#182;</a>
               </div>
               <p><a href="https://github.com/molnarg/node-http2">node-http2</a> consists of the following components:</p>
+<ul>
+<li><a href="http.html">http.js</a>: public node-http2 API</li>
+</ul>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre><span class="keyword">var</span> http2 = exports;</pre></div></div>
+            <div class="content"><div class='highlight'><pre><span class="keyword">var</span> http2        = require(<span class="string">'./http'</span>);
+module.exports = http2;</pre></div></div>
             
         </li>
         
@@ -215,40 +219,6 @@ streams) and part of the handshake process</li>
             </div>
             
             <div class="content"><div class='highlight'><pre>http2.endpoint   = require(<span class="string">'./endpoint'</span>);</pre></div></div>
-            
-        </li>
-        
-        
-        <li id="section-9">
-            <div class="annotation">
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-9">&#182;</a>
-              </div>
-              <ul>
-<li><a href="http.html">http.js</a>: public node-http2 API for unencrypted connections</li>
-</ul>
-
-            </div>
-            
-            <div class="content"><div class='highlight'><pre>http2.http       = require(<span class="string">'./http'</span>);</pre></div></div>
-            
-        </li>
-        
-        
-        <li id="section-10">
-            <div class="annotation">
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-10">&#182;</a>
-              </div>
-              <ul>
-<li><a href="https.html">https.js</a>: public node-http2 API for SSL/TLS encrypted connections</li>
-</ul>
-
-            </div>
-            
-            <div class="content"><div class='highlight'><pre>http2.https      = require(<span class="string">'./https'</span>);</pre></div></div>
             
         </li>
         
