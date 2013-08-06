@@ -1,8 +1,8 @@
 var fs = require('fs');
 var path = require('path');
-var http2 = require('../lib/index');
+var http2 = require('..');
 
-var server = http2.http.createServer({
+var server = http2.createServer({
   key: fs.readFileSync(path.join(__dirname, './localhost.key')),
   cert: fs.readFileSync(path.join(__dirname, '/localhost.crt'))
 }, function(request, response) {

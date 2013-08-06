@@ -1,7 +1,6 @@
 var parse_url = require('url').parse;
-var fs = require('fs');
 var path = require('path');
-var http2 = require('../lib/index');
+var http2 = require('..');
 
 var settings = {
   SETTINGS_MAX_CONCURRENT_STREAMS: 1,
@@ -10,7 +9,7 @@ var settings = {
 
 var url = parse_url(process.argv.pop());
 
-var request = http2.http.request({
+var request = http2.request({
   method: 'get',
   host: url.hostname,
   port: url.port,
