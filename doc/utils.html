@@ -123,9 +123,9 @@
   <span class="keyword">var</span> chunks = [];
   <span class="keyword">var</span> cursor = <span class="number">0</span>;
   <span class="keyword">do</span> {
-    <span class="keyword">var</span> chunk_size = Math.min(size, buffer.length - cursor);
-    chunks.push(buffer.slice(cursor, cursor + chunk_size));
-    cursor += chunk_size;
+    <span class="keyword">var</span> chunkSize = Math.min(size, buffer.length - cursor);
+    chunks.push(buffer.slice(cursor, cursor + chunkSize));
+    cursor += chunkSize;
   } <span class="keyword">while</span>(cursor &lt; buffer.length);
   <span class="keyword">return</span> chunks;
 };</pre></div></div>
@@ -143,7 +143,7 @@
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>exports.shallow_copy = <span class="function"><span class="keyword">function</span> <span class="title">shallow_copy</span><span class="params">(object)</span> {</span>
+            <div class="content"><div class='highlight'><pre>exports.shallowCopy = <span class="function"><span class="keyword">function</span> <span class="title">shallowCopy</span><span class="params">(object)</span> {</span>
   <span class="keyword">var</span> clone = {};
   <span class="keyword">for</span> (<span class="keyword">var</span> key <span class="keyword">in</span> object) {
     clone[key] = object[key];

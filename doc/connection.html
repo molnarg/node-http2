@@ -91,10 +91,9 @@
               
             </div>
             
-            <div class="content"><div class='highlight'><pre><span class="keyword">var</span> utils   = require(<span class="string">'./utils'</span>);
-<span class="keyword">var</span> logging = require(<span class="string">'./logging'</span>);
-<span class="keyword">var</span> Stream  = require(<span class="string">'./stream'</span>).Stream;
-<span class="keyword">var</span> Duplex  = require(<span class="string">'stream'</span>).Duplex;</pre></div></div>
+            <div class="content"><div class='highlight'><pre><span class="keyword">var</span> assert  = require(<span class="string">'assert'</span>);
+<span class="keyword">var</span> utils   = require(<span class="string">'./utils'</span>);
+<span class="keyword">var</span> logging = require(<span class="string">'./logging'</span>);</pre></div></div>
             
         </li>
         
@@ -105,7 +104,7 @@
               <div class="pilwrap for-h2">
                 <a class="pilcrow" href="#section-2">&#182;</a>
               </div>
-              <h2>Overview</h2>
+              <h2>Connection</h2>
 
             </div>
             
@@ -117,6 +116,157 @@
               
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-3">&#182;</a>
+              </div>
+              <p>The Connection class manages HTTP/2 connections. Each instance corresponds to one transport
+stream (TCP stream). It operates by sending and receiving frames and is implemented as an
+<a href="http://nodejs.org/api/stream.html#stream_new_stream_readable_options">object mode</a> <a href="http://nodejs.org/api/stream.html#stream_class_stream_duplex">Duplex stream</a>.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="keyword">var</span> Duplex  = require(<span class="string">'stream'</span>).Duplex;
+
+exports.Connection = Connection;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-4">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-4">&#182;</a>
+              </div>
+              <p>The main aspects of managing the connection are:</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="function"><span class="keyword">function</span> <span class="title">Connection</span><span class="params">(firstStreamId, settings, log)</span> {</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-5">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-5">&#182;</a>
+              </div>
+              <ul>
+<li>handling IO, particularly multiplexing/demultiplexing incoming and outgoing frames</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  Duplex.call(<span class="keyword">this</span>, { objectMode: <span class="literal">true</span> });</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-6">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-6">&#182;</a>
+              </div>
+              <ul>
+<li>logging: every method uses the common logger object</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">this</span>._log = (log || logging.root).child({ component: <span class="string">'connection'</span> });</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-7">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-7">&#182;</a>
+              </div>
+              <ul>
+<li>stream management</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">this</span>._initializeStreamManagement(firstStreamId);</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-8">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-8">&#182;</a>
+              </div>
+              <ul>
+<li>settings management</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">this</span>._initializeSettingsManagement(settings);</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-9">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-9">&#182;</a>
+              </div>
+              <ul>
+<li>lifecycle management</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">this</span>._initializeLifecycleManagement();</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-10">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-10">&#182;</a>
+              </div>
+              <ul>
+<li>flow control</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">this</span>._initializeFlowControl();
+}
+Connection.prototype = Object.create(Duplex.prototype, { constructor: { value: Connection } });</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-11">
+            <div class="annotation">
+              
+              <div class="pilwrap for-h2">
+                <a class="pilcrow" href="#section-11">&#182;</a>
+              </div>
+              <h2>Overview</h2>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-12">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-12">&#182;</a>
               </div>
               <pre><code>         |    ^             |    ^
          v    |             v    |
@@ -145,153 +295,7 @@
                             |     ^
                      read() |     | write()
                             v     |</code></pre>
-<h2>Connection</h2>
-
-            </div>
-            
-        </li>
-        
-        
-        <li id="section-4">
-            <div class="annotation">
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-4">&#182;</a>
-              </div>
-              
-            </div>
-            
-            <div class="content"><div class='highlight'><pre>exports.Connection = Connection;</pre></div></div>
-            
-        </li>
-        
-        
-        <li id="section-5">
-            <div class="annotation">
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-5">&#182;</a>
-              </div>
-              <p>The main aspects of managing the connection are:</p>
-
-            </div>
-            
-            <div class="content"><div class='highlight'><pre><span class="function"><span class="keyword">function</span> <span class="title">Connection</span><span class="params">(firstStreamId, settings, log)</span> {</span></pre></div></div>
-            
-        </li>
-        
-        
-        <li id="section-6">
-            <div class="annotation">
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-6">&#182;</a>
-              </div>
-              <ul>
-<li>handling IO, particularly multiplexing/demultiplexing incoming and outgoing frames</li>
-</ul>
-
-            </div>
-            
-            <div class="content"><div class='highlight'><pre>  Duplex.call(<span class="keyword">this</span>, { objectMode: <span class="literal">true</span> });</pre></div></div>
-            
-        </li>
-        
-        
-        <li id="section-7">
-            <div class="annotation">
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-7">&#182;</a>
-              </div>
-              <ul>
-<li>logging: every method uses the common logger object</li>
-</ul>
-
-            </div>
-            
-            <div class="content"><div class='highlight'><pre>  <span class="keyword">this</span>._log = (log || logging.root).child({ component: <span class="string">'connection'</span> });</pre></div></div>
-            
-        </li>
-        
-        
-        <li id="section-8">
-            <div class="annotation">
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-8">&#182;</a>
-              </div>
-              <ul>
-<li>stream management</li>
-</ul>
-
-            </div>
-            
-            <div class="content"><div class='highlight'><pre>  <span class="keyword">this</span>._initializeStreamManagement(firstStreamId);</pre></div></div>
-            
-        </li>
-        
-        
-        <li id="section-9">
-            <div class="annotation">
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-9">&#182;</a>
-              </div>
-              <ul>
-<li>settings management</li>
-</ul>
-
-            </div>
-            
-            <div class="content"><div class='highlight'><pre>  <span class="keyword">this</span>._initializeSettingsManagement(settings);</pre></div></div>
-            
-        </li>
-        
-        
-        <li id="section-10">
-            <div class="annotation">
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-10">&#182;</a>
-              </div>
-              <ul>
-<li>lifecycle management</li>
-</ul>
-
-            </div>
-            
-            <div class="content"><div class='highlight'><pre>  <span class="keyword">this</span>._initializeLifecycleManagement();</pre></div></div>
-            
-        </li>
-        
-        
-        <li id="section-11">
-            <div class="annotation">
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-11">&#182;</a>
-              </div>
-              <ul>
-<li>flow control</li>
-</ul>
-
-            </div>
-            
-            <div class="content"><div class='highlight'><pre>  <span class="keyword">this</span>._initializeFlowControl();
-}
-Connection.prototype = Object.create(Duplex.prototype, { constructor: { value: Connection } });</pre></div></div>
-            
-        </li>
-        
-        
-        <li id="section-12">
-            <div class="annotation">
-              
-              <div class="pilwrap for-h2">
-                <a class="pilcrow" href="#section-12">&#182;</a>
-              </div>
-              <h2>Stream management</h2>
+<h2>Stream management</h2>
 
             </div>
             
@@ -307,32 +311,7 @@ Connection.prototype = Object.create(Duplex.prototype, { constructor: { value: C
               
             </div>
             
-            <div class="content"><div class='highlight'><pre>Connection.prototype._initializeStreamManagement = <span class="function"><span class="keyword">function</span> <span class="title">_initializeStreamManagement</span><span class="params">(firstStreamId)</span> {</span>
-  <span class="keyword">this</span>._control = <span class="keyword">new</span> Duplex({ objectMode: <span class="literal">true</span> });
-  <span class="keyword">this</span>._control._write = <span class="keyword">function</span>(frame, encoding, done) {
-    <span class="keyword">this</span>.emit(frame.type, frame);
-    done();
-  };
-  <span class="keyword">this</span>._control._read = utils.noop;
-  <span class="keyword">this</span>._control.on(<span class="string">'readable'</span>, <span class="keyword">this</span>.emit.bind(<span class="keyword">this</span>, <span class="string">'stream_readable'</span>));
-
-  <span class="keyword">this</span>.streams = [{ upstream: <span class="keyword">this</span>._control }];
-  <span class="keyword">this</span>._next_stream_id = firstStreamId;
-};
-
-Connection.prototype._newStream = <span class="function"><span class="keyword">function</span> <span class="title">_newStream</span><span class="params">(id)</span> {</span>
-  <span class="keyword">var</span> stream = <span class="keyword">new</span> Stream(<span class="keyword">this</span>._log.child({ stream: id }));
-  <span class="keyword">this</span>._log.trace({ id: id }, <span class="string">'Adding new stream.'</span>);
-  <span class="keyword">this</span>.streams[id] = stream;
-  stream.upstream.on(<span class="string">'readable'</span>, <span class="keyword">this</span>.emit.bind(<span class="keyword">this</span>, <span class="string">'stream_readable'</span>));
-  <span class="keyword">return</span> stream;
-};
-
-Connection.prototype.createStream = <span class="function"><span class="keyword">function</span> <span class="title">createStream</span><span class="params">()</span> {</span>
-  <span class="keyword">var</span> id = <span class="keyword">this</span>._next_stream_id;
-  <span class="keyword">this</span>._next_stream_id += <span class="number">2</span>;
-  <span class="keyword">return</span> <span class="keyword">this</span>._newStream(id);
-};</pre></div></div>
+            <div class="content"><div class='highlight'><pre><span class="keyword">var</span> Stream  = require(<span class="string">'./stream'</span>).Stream;</pre></div></div>
             
         </li>
         
@@ -340,12 +319,14 @@ Connection.prototype.createStream = <span class="function"><span class="keyword"
         <li id="section-14">
             <div class="annotation">
               
-              <div class="pilwrap for-h2">
+              <div class="pilwrap ">
                 <a class="pilcrow" href="#section-14">&#182;</a>
               </div>
-              <h2>Multiplexing</h2>
+              <p>Initialization:</p>
 
             </div>
+            
+            <div class="content"><div class='highlight'><pre>Connection.prototype._initializeStreamManagement = <span class="function"><span class="keyword">function</span> <span class="title">_initializeStreamManagement</span><span class="params">(firstStreamId)</span> {</span></pre></div></div>
             
         </li>
         
@@ -356,53 +337,24 @@ Connection.prototype.createStream = <span class="function"><span class="keyword"
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-15">&#182;</a>
               </div>
-              
+              <ul>
+<li><p>streams are stored in two data structures:</p>
+<ul>
+<li><p><code>_streamsIds</code> is the primary registry of streams. It&#39;s a sparse array that serves as an
+id -&gt; stream map.</p>
+</li>
+<li><p><code>_streamPriorities</code> is an ordered set of streams that are allowed to send data. The order
+is determined by stream priorities. (currently, it&#39;s order of creation)</p>
+</li>
+</ul>
+</li>
+</ul>
+
             </div>
             
-            <div class="content"><div class='highlight'><pre>Connection.prototype._read = <span class="function"><span class="keyword">function</span> <span class="title">_read</span><span class="params">()</span> {</span> <span class="comment">// TODO: prioritization</span>
-  <span class="keyword">this</span>._log.trace(<span class="string">'Starting forwarding frames from streams.'</span>);
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">this</span>._streamsIds = [];
 
-  <span class="keyword">var</span> more_needed = <span class="literal">true</span>, stream, frame;
-  <span class="keyword">for</span> (<span class="keyword">var</span> id = <span class="number">0</span>; id &lt; <span class="keyword">this</span>.streams.length &amp;&amp; more_needed; id++) {
-    stream = <span class="keyword">this</span>.streams[id];
-    <span class="keyword">if</span> (stream) {
-      <span class="keyword">while</span> (frame = stream.upstream.read()) {
-        frame.stream = id;
-        more_needed = <span class="keyword">this</span>._send(frame);
-      }
-    }
-  }
-
-  <span class="keyword">if</span> (more_needed === <span class="literal">true</span>) {
-    <span class="keyword">this</span>._log.trace(<span class="string">'More chunk is needed, but we could not provide more.'</span>);
-    <span class="keyword">this</span>.once(<span class="string">'stream_readable'</span>, <span class="keyword">this</span>._read.bind(<span class="keyword">this</span>));
-  }
-
-  <span class="keyword">else</span> <span class="keyword">if</span> (more_needed === <span class="literal">null</span>) {
-    <span class="keyword">this</span>._log.trace(<span class="string">'We could not send more because of insufficient flow control window.'</span>); <span class="comment">// TODO: push back frame</span>
-    <span class="keyword">this</span>.once(<span class="string">'window_update'</span>, <span class="keyword">this</span>._read.bind(<span class="keyword">this</span>));
-  }
-
-  <span class="keyword">else</span> {
-    <span class="keyword">this</span>._log.trace(<span class="string">'No more chunk needed, stopping forwarding.'</span>);
-  }
-};
-
-Connection.prototype._write = <span class="function"><span class="keyword">function</span> <span class="title">write</span><span class="params">(frame, encoding, done)</span> {</span>
-  <span class="keyword">var</span> stream = <span class="keyword">this</span>.streams[frame.stream];
-
-  <span class="keyword">if</span> (!stream) {
-    stream = <span class="keyword">this</span>._newStream(frame.stream);
-    <span class="keyword">this</span>.emit(<span class="string">'incoming_stream'</span>, stream);
-    <span class="keyword">this</span>._log.debug({ id: frame.stream }, <span class="string">'New incoming stream.'</span>);
-  }
-
-  <span class="keyword">this</span>.emit(<span class="string">'receiving'</span>, frame);
-
-  stream.upstream.write(frame);
-
-  done();
-};</pre></div></div>
+  <span class="keyword">this</span>._streamPriorities = [];</pre></div></div>
             
         </li>
         
@@ -410,12 +362,16 @@ Connection.prototype._write = <span class="function"><span class="keyword">funct
         <li id="section-16">
             <div class="annotation">
               
-              <div class="pilwrap for-h2">
+              <div class="pilwrap ">
                 <a class="pilcrow" href="#section-16">&#182;</a>
               </div>
-              <h2>Settings management</h2>
+              <ul>
+<li>The next outbound stream ID is stored in <code>this._nextStreamId</code></li>
+</ul>
 
             </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">this</span>._nextStreamId = firstStreamId;</pre></div></div>
             
         </li>
         
@@ -426,31 +382,17 @@ Connection.prototype._write = <span class="function"><span class="keyword">funct
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-17">&#182;</a>
               </div>
-              
+              <ul>
+<li>Creating the <code>_control</code> stream that corresponds to stream ID 0 (connection level frames).</li>
+</ul>
+
             </div>
             
-            <div class="content"><div class='highlight'><pre>Connection.prototype._initializeSettingsManagement = <span class="function"><span class="keyword">function</span> <span class="title">_initializeSettingsManagement</span><span class="params">(settings)</span> {</span>
-  <span class="keyword">this</span>._settings = settings;
-
-  <span class="keyword">this</span>._log.info(<span class="string">'Sending the first SETTINGS frame as part of the connection header.'</span>);
-  <span class="keyword">this</span>._control.push({
-    type: <span class="string">'SETTINGS'</span>,
-    settings: <span class="keyword">this</span>._settings
-  });
-
-  <span class="keyword">this</span>.once(<span class="string">'receiving'</span>, <span class="keyword">function</span>(frame) {
-    <span class="keyword">if</span> (frame.stream === <span class="number">0</span> &amp;&amp; frame.type === <span class="string">'SETTINGS'</span>) {
-      <span class="keyword">this</span>._log.info(<span class="string">'Receiving the first SETTINGS frame as part of the connection header.'</span>);
-    } <span class="keyword">else</span> {
-      <span class="keyword">this</span>.reset();
-    }
-  });
-
-  <span class="keyword">this</span>._control.on(<span class="string">'SETTINGS'</span>, <span class="keyword">this</span>._receiveSettings.bind(<span class="keyword">this</span>));
-};
-
-Connection.prototype._receiveSettings = <span class="function"><span class="keyword">function</span> <span class="title">_receiveSettings</span><span class="params">(frame)</span> {</span>
-};</pre></div></div>
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">this</span>._control = <span class="keyword">new</span> Duplex({ objectMode: <span class="literal">true</span> });
+  <span class="keyword">this</span>._control._write = <span class="keyword">this</span>._writeControlFrame.bind(<span class="keyword">this</span>);
+  <span class="keyword">this</span>._control._read = utils.noop;
+  <span class="keyword">this</span>._control.on(<span class="string">'readable'</span>, <span class="keyword">this</span>.emit.bind(<span class="keyword">this</span>, <span class="string">'stream_readable'</span>));
+  <span class="keyword">this</span>._streamsIds[<span class="number">0</span>] = <span class="keyword">this</span>._streamPriorities[<span class="number">0</span>] = { upstream: <span class="keyword">this</span>._control, priority: -<span class="number">1</span> };</pre></div></div>
             
         </li>
         
@@ -458,12 +400,24 @@ Connection.prototype._receiveSettings = <span class="function"><span class="keyw
         <li id="section-18">
             <div class="annotation">
               
-              <div class="pilwrap for-h2">
+              <div class="pilwrap ">
                 <a class="pilcrow" href="#section-18">&#182;</a>
               </div>
-              <h2>Lifecycle management</h2>
+              <ul>
+<li>By default, the number of concurrent outbound streams is not limited. The <code>_streamLimit</code> can
+be set by the SETTINGS_MAX_CONCURRENT_STREAMS setting.</li>
+</ul>
 
             </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">this</span>._streamCount = <span class="number">0</span>;
+  <span class="keyword">this</span>._streamLimit = <span class="literal">Infinity</span>;
+  <span class="keyword">this</span>._control.on(<span class="string">'SETTINGS_MAX_CONCURRENT_STREAMS'</span>, <span class="keyword">this</span>._updateStreamLimit.bind(<span class="keyword">this</span>));
+};
+
+Connection.prototype.getIdOf = <span class="function"><span class="keyword">function</span> <span class="title">getIdOf</span><span class="params">(stream)</span> {</span>
+  <span class="keyword">return</span> <span class="keyword">this</span>._streamsIds.indexOf(stream);
+};</pre></div></div>
             
         </li>
         
@@ -474,67 +428,14 @@ Connection.prototype._receiveSettings = <span class="function"><span class="keyw
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-19">&#182;</a>
               </div>
-              
+              <p><code>_writeControlFrame</code> is called when there&#39;s an incoming frame in the <code>_control</code> stream. It
+broadcasts the message by creating an event on it.</p>
+
             </div>
             
-            <div class="content"><div class='highlight'><pre>Connection.prototype._initializeLifecycleManagement = <span class="function"><span class="keyword">function</span> <span class="title">_initializeLifecycleManagement</span><span class="params">()</span> {</span>
-  <span class="keyword">this</span>._pings = {};
-  <span class="keyword">this</span>._control.on(<span class="string">'PING'</span>, <span class="keyword">this</span>._receivePing.bind(<span class="keyword">this</span>));
-  <span class="keyword">this</span>._control.on(<span class="string">'GOAWAY'</span>, <span class="keyword">this</span>._receiveGoaway.bind(<span class="keyword">this</span>));
-};
-
-Connection.prototype._generatePingId = <span class="function"><span class="keyword">function</span> <span class="title">_generatePingId</span><span class="params">()</span> {</span>
-  <span class="keyword">do</span> {
-    <span class="keyword">var</span> id = <span class="string">''</span>;
-    <span class="keyword">for</span> (<span class="keyword">var</span> i = <span class="number">0</span>; i &lt; <span class="number">16</span>; i++) {
-      id += Math.floor(Math.random()*<span class="number">16</span>).toString(<span class="number">16</span>);
-    }
-  } <span class="keyword">while</span>(!(id <span class="keyword">in</span> <span class="keyword">this</span>._pings));
-  <span class="keyword">return</span> id;
-};
-
-Connection.prototype.ping = <span class="function"><span class="keyword">function</span> <span class="title">ping</span><span class="params">(callback)</span> {</span>
-  <span class="keyword">var</span> id = <span class="keyword">this</span>._generatePingId();
-  <span class="keyword">var</span> data = <span class="keyword">new</span> Buffer(id, <span class="string">'hex'</span>);
-  <span class="keyword">this</span>._pings[id] = callback;
-
-  <span class="keyword">this</span>._log.debug({ data: data }, <span class="string">'Sending PING.'</span>)
-  <span class="keyword">this</span>._control.push({
-    type: <span class="string">'PING'</span>,
-    flags: {
-      PONG: <span class="literal">false</span>
-    },
-    data: <span class="keyword">new</span> Buffer(id, <span class="string">'hex'</span>)
-  });
-};
-
-Connection.prototype._receivePing = <span class="function"><span class="keyword">function</span> <span class="title">_receivePing</span><span class="params">(frame)</span> {</span>
-  <span class="keyword">if</span> (frame.flags.PONG) {
-    <span class="keyword">var</span> id = frame.data.toString(<span class="string">'hex'</span>);
-    <span class="keyword">if</span> (id <span class="keyword">in</span> <span class="keyword">this</span>._pings) {
-      <span class="keyword">this</span>._log.debug({ data: frame.data }, <span class="string">'Receiving answer for a PING.'</span>);
-      <span class="keyword">this</span>._pings[id]();
-      <span class="keyword">delete</span> <span class="keyword">this</span>._pings[id];
-    } <span class="keyword">else</span> {
-      <span class="keyword">this</span>._log.warning({ data: frame.data }, <span class="string">'Unsolicited PING answer.'</span>);
-    }
-
-  } <span class="keyword">else</span> {
-    <span class="keyword">this</span>._log.debug({ data: frame.data }, <span class="string">'Answering PING.'</span>)
-    <span class="keyword">this</span>._control.push({
-      type: <span class="string">'PING'</span>,
-      flags: {
-        PONG: <span class="literal">true</span>
-      },
-      data: frame.data
-    });
-  }
-};
-
-Connection.prototype.reset = <span class="function"><span class="keyword">function</span> <span class="title">reset</span><span class="params">()</span> {</span>
-};
-
-Connection.prototype._receiveGoaway = <span class="function"><span class="keyword">function</span> <span class="title">_receiveGoaway</span><span class="params">(frame)</span> {</span>
+            <div class="content"><div class='highlight'><pre>Connection.prototype._writeControlFrame = <span class="function"><span class="keyword">function</span> <span class="title">_writeControlFrame</span><span class="params">(frame, encoding, done)</span> {</span>
+  <span class="keyword">this</span>._control.emit(frame.type, frame);
+  done();
 };</pre></div></div>
             
         </li>
@@ -543,12 +444,17 @@ Connection.prototype._receiveGoaway = <span class="function"><span class="keywor
         <li id="section-20">
             <div class="annotation">
               
-              <div class="pilwrap for-h2">
+              <div class="pilwrap ">
                 <a class="pilcrow" href="#section-20">&#182;</a>
               </div>
-              <h2>Flow control</h2>
+              <p>Changing the stream count limit</p>
 
             </div>
+            
+            <div class="content"><div class='highlight'><pre>Connection.prototype._updateStreamLimit = <span class="function"><span class="keyword">function</span> <span class="title">_updateStreamLimit</span><span class="params">(newStreamLimit)</span> {</span>
+  <span class="keyword">this</span>._streamLimit = newStreamLimit;
+  <span class="keyword">this</span>.emit(<span class="string">'stream_slot_change'</span>);
+};</pre></div></div>
             
         </li>
         
@@ -559,10 +465,14 @@ Connection.prototype._receiveGoaway = <span class="function"><span class="keywor
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-21">&#182;</a>
               </div>
-              
+              <p>Freeing a slot in the stream pool</p>
+
             </div>
             
-            <div class="content"><div class='highlight'><pre>Connection.prototype._initializeFlowControl = <span class="function"><span class="keyword">function</span> <span class="title">_initializeFlowControl</span><span class="params">()</span> {</span></pre></div></div>
+            <div class="content"><div class='highlight'><pre>Connection.prototype._decreaseStreamCount = <span class="function"><span class="keyword">function</span> <span class="title">_decreaseStreamCount</span><span class="params">()</span> {</span>
+  <span class="keyword">this</span>._streamCount -= <span class="number">1</span>;
+  <span class="keyword">this</span>.emit(<span class="string">'stream_slot_change'</span>);
+};</pre></div></div>
             
         </li>
         
@@ -573,7 +483,751 @@ Connection.prototype._receiveGoaway = <span class="function"><span class="keywor
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-22">&#182;</a>
               </div>
-              <p>Turning off flow control for incoming frames (not yet supported):</p>
+              <p>Creating a new <em>inbound or outbound</em> stream with the given <code>id</code> consists of two steps:</p>
+<ol>
+<li><code>var newstream = this._newStream(id);</code><ul>
+<li>creates the new stream and registers it in <code>this._streamsIds</code></li>
+</ul>
+</li>
+<li><code>this._activateStream(newstream);</code><ul>
+<li>adds it to <code>_streamPriorities</code> (in the appropriate position)</li>
+<li>transforms &#39;readable&#39; events on the stream to &#39;stream_readable&#39; events on the connection</li>
+</ul>
+</li>
+</ol>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>Connection.prototype._newStream = <span class="function"><span class="keyword">function</span> <span class="title">_newStream</span><span class="params">(id)</span> {</span>
+  <span class="keyword">this</span>._log.trace({ id: id }, <span class="string">'Adding new stream.'</span>);
+  <span class="keyword">var</span> stream = <span class="keyword">new</span> Stream(<span class="keyword">this</span>._log.child({ stream: id }));
+  <span class="keyword">this</span>._streamsIds[id] = stream;
+  <span class="keyword">return</span> stream;
+};
+
+Connection.prototype._activateStream = <span class="function"><span class="keyword">function</span> <span class="title">_activateStream</span><span class="params">(stream)</span> {</span>
+  <span class="keyword">this</span>._log.trace({ id: <span class="keyword">this</span>.getIdOf(stream) }, <span class="string">'Activating stream.'</span>);
+  <span class="keyword">this</span>._streamPriorities.push(stream);
+  stream.upstream.on(<span class="string">'readable'</span>, <span class="keyword">this</span>.emit.bind(<span class="keyword">this</span>, <span class="string">'stream_readable'</span>));
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-23">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-23">&#182;</a>
+              </div>
+              <p>Creating an <em>inbound</em> stream with the given ID. It is called when there&#39;s an incoming frame to
+a previously nonexistent stream.</p>
+<ul>
+<li>creating and activating the stream</li>
+<li>emitting &#39;stream&#39; event with the new stream</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>Connection.prototype._incomingStream = <span class="function"><span class="keyword">function</span> <span class="title">_incomingStream</span><span class="params">(id)</span> {</span>
+  <span class="keyword">this</span>._log.debug({ id: id }, <span class="string">'New incoming stream.'</span>);
+  <span class="keyword">var</span> stream = <span class="keyword">this</span>._newStream(id);
+  <span class="keyword">this</span>._activateStream(stream);
+  <span class="keyword">this</span>.emit(<span class="string">'stream'</span>, stream, id);
+  <span class="keyword">return</span> stream;
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-24">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-24">&#182;</a>
+              </div>
+              <p>Creating an <em>outbound</em> stream with the next available ID</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>Connection.prototype.createStream = <span class="function"><span class="keyword">function</span> <span class="title">createStream</span><span class="params">()</span> {</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-25">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-25">&#182;</a>
+              </div>
+              <ul>
+<li>Allocating a new ID with the appropriate parity.</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">var</span> id = <span class="keyword">this</span>._nextStreamId;
+  <span class="keyword">this</span>._nextStreamId += <span class="number">2</span>;
+
+  <span class="keyword">this</span>._log.trace({ id: id }, <span class="string">'Creating new outbound stream.'</span>);</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-26">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-26">&#182;</a>
+              </div>
+              <ul>
+<li>Creating a new Stream.</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">var</span> stream = <span class="keyword">this</span>._newStream(id);</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-27">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-27">&#182;</a>
+              </div>
+              <ul>
+<li>Activating the created stream is only possible when there&#39;s enough space in the stream pool.
+<code>tryToActivate</code> tries to activate the stream until it finally succeeds.</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">var</span> self = <span class="keyword">this</span>;
+  <span class="function"><span class="keyword">function</span> <span class="title">tryToActivate</span><span class="params">()</span> {</span>
+    <span class="keyword">if</span> (self._streamCount &gt;= self._streamLimit) {
+      self.once(<span class="string">'stream_slot_change'</span>, tryToActivate);
+    } <span class="keyword">else</span> {
+      self._activateStream(stream);
+    }
+  }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-28">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-28">&#182;</a>
+              </div>
+              <ul>
+<li>Starting activation process when<ul>
+<li>it becomes &#39;active&#39; (tries to send a frame)</li>
+<li>and if it is a promised stream, the PUSH_PROMISE is sent</li>
+</ul>
+</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">var</span> promisePending = <span class="literal">false</span>;
+  stream.once(<span class="string">'promise_initiated'</span>, <span class="keyword">function</span>() {
+    promisePending = <span class="literal">true</span>;
+    stream.once(<span class="string">'promise_sent'</span>, <span class="keyword">function</span>() {
+      promisePending = <span class="literal">false</span>;
+    });
+  });
+
+  stream.once(<span class="string">'active'</span>, <span class="keyword">function</span>() {
+    <span class="keyword">if</span> (promisePending) {
+      stream.once(<span class="string">'promise_sent'</span>, tryToActivate);
+    } <span class="keyword">else</span> {
+      tryToActivate();
+    }
+  });</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-29">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-29">&#182;</a>
+              </div>
+              <ul>
+<li>When the stream becomes inactive, decreasing the <code>_streamCount</code></li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  stream.once(<span class="string">'inactive'</span>, <span class="keyword">this</span>._decreaseStreamCount.bind(<span class="keyword">this</span>));
+
+  <span class="keyword">return</span> stream;
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-30">
+            <div class="annotation">
+              
+              <div class="pilwrap for-h2">
+                <a class="pilcrow" href="#section-30">&#182;</a>
+              </div>
+              <h2>Multiplexing</h2>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-31">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-31">&#182;</a>
+              </div>
+              <p>The <code>_read</code> method is a <a href="http://nodejs.org/api/stream.html#stream_readable_read_size">virtual method of the Duplex class</a> that has to be implemented by
+child classes. It reads frames from streams and pushes them to the output buffer.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>Connection.prototype._read = <span class="function"><span class="keyword">function</span> <span class="title">_read</span><span class="params">()</span> {</span>
+  <span class="keyword">this</span>._log.trace(<span class="string">'Starting forwarding frames from streams.'</span>);</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-32">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-32">&#182;</a>
+              </div>
+              <ul>
+<li>Looping through the active streams in priority order, forwarding until:</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">var</span> moreNeeded = <span class="literal">true</span>, stream, id, frame;
+  <span class="keyword">for</span> (<span class="keyword">var</span> i = <span class="number">0</span>; i &lt; <span class="keyword">this</span>._streamPriorities.length &amp;&amp; moreNeeded; i++) {
+    stream = <span class="keyword">this</span>._streamPriorities[i];
+    id = <span class="keyword">this</span>.getIdOf(stream);
+    <span class="keyword">while</span> (frame = stream.upstream.read()) {
+      frame.stream = id;
+      <span class="keyword">if</span> (frame.type === <span class="string">'PUSH_PROMISE'</span>) {
+        frame.promised_stream.emit(<span class="string">'promise_sent'</span>);
+        frame.promised_stream = <span class="keyword">this</span>.getIdOf(frame.promised_stream);
+      }
+      moreNeeded = <span class="keyword">this</span>._send(frame);
+    }
+  }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-33">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-33">&#182;</a>
+              </div>
+              <ul>
+<li>there are no more frames in the buffers of the streams, but more would be needed<ul>
+<li>coming back once a stream becomes readable again</li>
+</ul>
+</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">if</span> (i === <span class="keyword">this</span>._streamPriorities.length) {
+    <span class="keyword">this</span>._log.trace(<span class="string">'More chunk is needed, but we could not provide more.'</span>);
+    <span class="keyword">this</span>.once(<span class="string">'stream_readable'</span>, <span class="keyword">this</span>._read.bind(<span class="keyword">this</span>));
+  }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-34">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-34">&#182;</a>
+              </div>
+              <ul>
+<li>it&#39;s not possible to send more because of flow control<ul>
+<li>coming back once flow control window is updated</li>
+</ul>
+</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">else</span> <span class="keyword">if</span> (moreNeeded === <span class="literal">null</span>) {
+    <span class="keyword">this</span>._log.trace(<span class="string">'We could not send more because of insufficient flow control window.'</span>);
+    <span class="keyword">this</span>.once(<span class="string">'window_update'</span>, <span class="keyword">this</span>._read.bind(<span class="keyword">this</span>));
+  }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-35">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-35">&#182;</a>
+              </div>
+              <ul>
+<li>no more chunk needed<ul>
+<li>coming back only when <code>_read</code> is called again by Duplex</li>
+</ul>
+</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">else</span> <span class="keyword">if</span> (moreNeeded === <span class="literal">false</span>) {
+    <span class="keyword">this</span>._log.trace(<span class="string">'No more chunk needed, stopping forwarding.'</span>);
+  }
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-36">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-36">&#182;</a>
+              </div>
+              <p>The <code>_write</code> method is another <a href="http://nodejs.org/api/stream.html#stream_writable_write_chunk_encoding_callback">virtual method of the Duplex class</a> that has to be implemented
+by child classes. It forwards the given frame to the appropriate stream:</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>Connection.prototype._write = <span class="function"><span class="keyword">function</span> <span class="title">write</span><span class="params">(frame, encoding, done)</span> {</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-37">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-37">&#182;</a>
+              </div>
+              <ul>
+<li>gets the appropriate stream from the stream registry</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">var</span> stream = <span class="keyword">this</span>._streamsIds[frame.stream];</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-38">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-38">&#182;</a>
+              </div>
+              <ul>
+<li>or creates one if it&#39;s not in <code>this.streams</code></li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">if</span> (!stream) {
+    stream = <span class="keyword">this</span>._incomingStream(frame.stream);
+  }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-39">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-39">&#182;</a>
+              </div>
+              <ul>
+<li>in case of PUSH_PROMISE, replaces the promised stream id with a new incoming stream</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">if</span> (frame.type === <span class="string">'PUSH_PROMISE'</span>) {
+    frame.promised_stream = <span class="keyword">this</span>._incomingStream(frame.promised_stream);
+  }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-40">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-40">&#182;</a>
+              </div>
+              <ul>
+<li>tells the world that there&#39;s an incoming frame</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">this</span>.emit(<span class="string">'receiving'</span>, frame);</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-41">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-41">&#182;</a>
+              </div>
+              <ul>
+<li>and writes it to the <code>stream</code>&#39;s <code>upstream</code></li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  stream.upstream.write(frame);
+
+  done();
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-42">
+            <div class="annotation">
+              
+              <div class="pilwrap for-h2">
+                <a class="pilcrow" href="#section-42">&#182;</a>
+              </div>
+              <h2>Settings management</h2>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-43">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-43">&#182;</a>
+              </div>
+              <p>Settings management initialization:</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>Connection.prototype._initializeSettingsManagement = <span class="function"><span class="keyword">function</span> <span class="title">_initializeSettingsManagement</span><span class="params">(settings)</span> {</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-44">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-44">&#182;</a>
+              </div>
+              <ul>
+<li>Sending the initial settings.</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">this</span>._log.info(<span class="string">'Sending the first SETTINGS frame as part of the connection header.'</span>);
+  assert(<span class="string">'SETTINGS_MAX_CONCURRENT_STREAMS'</span> <span class="keyword">in</span> settings);
+  assert(<span class="string">'SETTINGS_INITIAL_WINDOW_SIZE'</span> <span class="keyword">in</span> settings);
+  <span class="keyword">this</span>.set(settings);</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-45">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-45">&#182;</a>
+              </div>
+              <ul>
+<li>Checking that the first frame the other endpoint sends is SETTINGS</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">this</span>.once(<span class="string">'receiving'</span>, <span class="keyword">function</span>(frame) {
+    <span class="keyword">if</span> ((frame.stream === <span class="number">0</span>) &amp;&amp; (frame.type === <span class="string">'SETTINGS'</span>)) {
+      <span class="keyword">this</span>._log.info(<span class="string">'Receiving the first SETTINGS frame as part of the connection header.'</span>);
+    } <span class="keyword">else</span> {
+      <span class="keyword">this</span>._log.fatal({ frame: frame }, <span class="string">'Invalid connection header: first frame is not SETTINGS.'</span>);
+      <span class="keyword">this</span>.emit(<span class="string">'error'</span>);
+    }
+  });</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-46">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-46">&#182;</a>
+              </div>
+              <ul>
+<li>Forwarding SETTINGS frames to the <code>_receiveSettings</code> method</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">this</span>._control.on(<span class="string">'SETTINGS'</span>, <span class="keyword">this</span>._receiveSettings.bind(<span class="keyword">this</span>));
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-47">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-47">&#182;</a>
+              </div>
+              <p>Handling of incoming SETTINGS frames.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>Connection.prototype._receiveSettings = <span class="function"><span class="keyword">function</span> <span class="title">_receiveSettings</span><span class="params">(frame)</span> {</span>
+  <span class="keyword">for</span> (<span class="keyword">var</span> name <span class="keyword">in</span> frame.settings) {
+    <span class="keyword">this</span>._control.emit(name, frame.settings[name]);
+  }
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-48">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-48">&#182;</a>
+              </div>
+              <p>Changing one or more settings value and sending out a SETTINGS frame</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>Connection.prototype.set = <span class="function"><span class="keyword">function</span> <span class="title">set</span><span class="params">(settings)</span> {</span>
+  <span class="keyword">this</span>._control.push({
+    type: <span class="string">'SETTINGS'</span>,
+    settings: settings
+  });
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-49">
+            <div class="annotation">
+              
+              <div class="pilwrap for-h2">
+                <a class="pilcrow" href="#section-49">&#182;</a>
+              </div>
+              <h2>Lifecycle management</h2>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-50">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-50">&#182;</a>
+              </div>
+              <p>The main responsibilities of lifecycle management code:</p>
+<ul>
+<li>keeping the connection alive by<ul>
+<li>sending PINGs when the connection is idle</li>
+<li>answering PINGs</li>
+</ul>
+</li>
+<li>ending the connection</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>Connection.prototype._initializeLifecycleManagement = <span class="function"><span class="keyword">function</span> <span class="title">_initializeLifecycleManagement</span><span class="params">()</span> {</span>
+  <span class="keyword">this</span>._pings = {};
+  <span class="keyword">this</span>._control.on(<span class="string">'PING'</span>, <span class="keyword">this</span>._receivePing.bind(<span class="keyword">this</span>));
+  <span class="keyword">this</span>._control.on(<span class="string">'GOAWAY'</span>, <span class="keyword">this</span>._receiveGoaway.bind(<span class="keyword">this</span>));
+  <span class="keyword">this</span>._lastIncomingStream = <span class="number">0</span>;
+  <span class="keyword">this</span>.on(<span class="string">'stream'</span>, <span class="keyword">function</span>(stream, id) {
+    <span class="keyword">this</span>._lastIncomingStream = id;
+  }.bind(<span class="keyword">this</span>));
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-51">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-51">&#182;</a>
+              </div>
+              <p>Generating a string of length 16 with random hexadecimal digits</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>Connection.prototype._generatePingId = <span class="function"><span class="keyword">function</span> <span class="title">_generatePingId</span><span class="params">()</span> {</span>
+  <span class="keyword">do</span> {
+    <span class="keyword">var</span> id = <span class="string">''</span>;
+    <span class="keyword">for</span> (<span class="keyword">var</span> i = <span class="number">0</span>; i &lt; <span class="number">16</span>; i++) {
+      id += Math.floor(Math.random()*<span class="number">16</span>).toString(<span class="number">16</span>);
+    }
+  } <span class="keyword">while</span>(id <span class="keyword">in</span> <span class="keyword">this</span>._pings);
+  <span class="keyword">return</span> id;
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-52">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-52">&#182;</a>
+              </div>
+              <p>Sending a ping and calling <code>callback</code> when the answer arrives</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>Connection.prototype.ping = <span class="function"><span class="keyword">function</span> <span class="title">ping</span><span class="params">(callback)</span> {</span>
+  <span class="keyword">var</span> id = <span class="keyword">this</span>._generatePingId();
+  <span class="keyword">var</span> data = <span class="keyword">new</span> Buffer(id, <span class="string">'hex'</span>);
+  <span class="keyword">this</span>._pings[id] = callback;
+
+  <span class="keyword">this</span>._log.debug({ data: data }, <span class="string">'Sending PING.'</span>);
+  <span class="keyword">this</span>._control.push({
+    type: <span class="string">'PING'</span>,
+    flags: {
+      PONG: <span class="literal">false</span>
+    },
+    data: <span class="keyword">new</span> Buffer(id, <span class="string">'hex'</span>)
+  });
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-53">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-53">&#182;</a>
+              </div>
+              <p>Answering pings</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>Connection.prototype._receivePing = <span class="function"><span class="keyword">function</span> <span class="title">_receivePing</span><span class="params">(frame)</span> {</span>
+  <span class="keyword">if</span> (frame.flags.PONG) {
+    <span class="keyword">var</span> id = frame.data.toString(<span class="string">'hex'</span>);
+    <span class="keyword">if</span> (id <span class="keyword">in</span> <span class="keyword">this</span>._pings) {
+      <span class="keyword">this</span>._log.debug({ data: frame.data }, <span class="string">'Receiving answer for a PING.'</span>);
+      <span class="keyword">this</span>._pings[id]();
+      <span class="keyword">delete</span> <span class="keyword">this</span>._pings[id];
+    } <span class="keyword">else</span> {
+      <span class="keyword">this</span>._log.warn({ data: frame.data }, <span class="string">'Unsolicited PING answer.'</span>);
+    }
+
+  } <span class="keyword">else</span> {
+    <span class="keyword">this</span>._log.debug({ data: frame.data }, <span class="string">'Answering PING.'</span>);
+    <span class="keyword">this</span>._control.push({
+      type: <span class="string">'PING'</span>,
+      flags: {
+        PONG: <span class="literal">true</span>
+      },
+      data: frame.data
+    });
+  }
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-54">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-54">&#182;</a>
+              </div>
+              <p>Terminating the connection</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>Connection.prototype.close = <span class="function"><span class="keyword">function</span> <span class="title">close</span><span class="params">(error)</span> {</span>
+  <span class="keyword">this</span>.push({
+    type: <span class="string">'GOAWAY'</span>,
+    last_stream: <span class="keyword">this</span>._lastIncomingStream,
+    error: error || <span class="string">'NO_ERROR'</span>
+  });
+  <span class="keyword">this</span>.push(<span class="literal">null</span>);
+};
+
+Connection.prototype._receiveGoaway = <span class="function"><span class="keyword">function</span> <span class="title">_receiveGoaway</span><span class="params">(frame)</span> {</span>
+  <span class="keyword">this</span>.push(<span class="literal">null</span>);
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-55">
+            <div class="annotation">
+              
+              <div class="pilwrap for-h2">
+                <a class="pilcrow" href="#section-55">&#182;</a>
+              </div>
+              <h2>Flow control</h2>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-56">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-56">&#182;</a>
+              </div>
+              
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>Connection.prototype._initializeFlowControl = <span class="function"><span class="keyword">function</span> <span class="title">_initializeFlowControl</span><span class="params">()</span> {</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-57">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-57">&#182;</a>
+              </div>
+              <p>Turning off flow control for incoming frames (not yet supported).</p>
 
             </div>
             
@@ -588,11 +1242,11 @@ Connection.prototype._receiveGoaway = <span class="function"><span class="keywor
         </li>
         
         
-        <li id="section-23">
+        <li id="section-58">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-23">&#182;</a>
+                <a class="pilcrow" href="#section-58">&#182;</a>
               </div>
               <p>Initializing flow control for outgoing frames</p>
 
@@ -605,11 +1259,11 @@ Connection.prototype._receiveGoaway = <span class="function"><span class="keywor
         </li>
         
         
-        <li id="section-24">
+        <li id="section-59">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-24">&#182;</a>
+                <a class="pilcrow" href="#section-59">&#182;</a>
               </div>
               <p>When a HTTP/2.0 connection is first established, new streams are created with an initial flow
 control window size of 65535 bytes.</p>
@@ -621,11 +1275,11 @@ control window size of 65535 bytes.</p>
         </li>
         
         
-        <li id="section-25">
+        <li id="section-60">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-25">&#182;</a>
+                <a class="pilcrow" href="#section-60">&#182;</a>
               </div>
               <p>A SETTINGS frame can alter the initial flow control window size for all current streams. When the
 value of SETTINGS_INITIAL_WINDOW_SIZE changes, a receiver MUST adjust the size of all stream by
@@ -642,11 +1296,11 @@ between the new value and the old value.</p>
         </li>
         
         
-        <li id="section-26">
+        <li id="section-61">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-26">&#182;</a>
+                <a class="pilcrow" href="#section-61">&#182;</a>
               </div>
               <p>Flow control can be disabled for all streams on the connection using the <code>disableFlowControl</code>
 method. This may happen when there&#39;s a SETTINGS frame received with the
@@ -661,11 +1315,11 @@ SETTINGS_FLOW_CONTROL_OPTIONS setting.</p>
         </li>
         
         
-        <li id="section-27">
+        <li id="section-62">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-27">&#182;</a>
+                <a class="pilcrow" href="#section-62">&#182;</a>
               </div>
               <p>The <code>_updateWindow</code> method gets called every time there&#39;s an incoming WINDOW_UPDATE frame. It
 modifies the modifies the flow control window:</p>
@@ -689,7 +1343,7 @@ specified in the frame.</li>
 };
 
 Connection.prototype._send = <span class="function"><span class="keyword">function</span> <span class="title">_send</span><span class="params">(frame)</span> {</span>
-  <span class="keyword">if</span> (frame &amp;&amp; frame.type === <span class="string">'DATA'</span>) {
+  <span class="keyword">if</span> (frame &amp;&amp; (frame.type === <span class="string">'DATA'</span>)) {
     <span class="keyword">if</span> (frame.data.length &gt; <span class="keyword">this</span>._window) {
       <span class="keyword">return</span> <span class="literal">null</span>;
     }
@@ -698,6 +1352,59 @@ Connection.prototype._send = <span class="function"><span class="keyword">functi
 
   <span class="keyword">return</span> <span class="keyword">this</span>.push(frame);
 };</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-63">
+            <div class="annotation">
+              
+              <div class="pilwrap for-h2">
+                <a class="pilcrow" href="#section-63">&#182;</a>
+              </div>
+              <h2>TODO list</h2>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-64">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-64">&#182;</a>
+              </div>
+              <ul>
+<li>Stream management<ul>
+<li>check if the stream initiated by the peer has a stream id with appropriate parity</li>
+<li>check for invalid frame types on the control stream</li>
+<li>_activateStream:<ul>
+<li>respect priority when inserting</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Multiplexing<ul>
+<li>prioritization</li>
+<li>if we are on the flow control limit, it&#39;s still possible to send non-DATA frames</li>
+</ul>
+</li>
+<li>Settings management<ul>
+<li>storing and broadcasting the incoming settings</li>
+</ul>
+</li>
+<li>Lifecycle management<ul>
+<li>implementing connection tear down procedure</li>
+</ul>
+</li>
+<li>Flow control<ul>
+<li>setting the initial window size of streams (based on SETTINGS_INITIAL_WINDOW_SIZE)</li>
+</ul>
+</li>
+</ul>
+
+            </div>
             
         </li>
         
