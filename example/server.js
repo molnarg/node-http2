@@ -2,15 +2,9 @@ var fs = require('fs');
 var path = require('path');
 var http2 = require('../lib/index');
 
-var settings = {
-  SETTINGS_MAX_CONCURRENT_STREAMS: 10,
-  SETTINGS_INITIAL_WINDOW_SIZE: 100000
-};
-
 var server = http2.http.createServer({
   key: fs.readFileSync(path.join(__dirname, './localhost.key')),
-  cert: fs.readFileSync(path.join(__dirname, '/localhost.crt')),
-  settings: settings
+  cert: fs.readFileSync(path.join(__dirname, '/localhost.crt'))
 }, function(request, response) {
   var filename = path.join(__dirname, request.url);
   console.error('Incoming request:', request.url, '(' + filename + ')');
