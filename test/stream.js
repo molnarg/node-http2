@@ -9,11 +9,11 @@ function callNTimes(limit, done) {
     if (i === limit) {
       done();
     }
-  }
+  };
 }
 
 // Execute a list of commands and assertions
-var recorded_events = ['state', 'error', 'window_update', 'headers', 'promise']
+var recorded_events = ['state', 'error', 'window_update', 'headers', 'promise'];
 function execute_sequence(stream, sequence, done) {
   if (!done) {
     done = sequence;
@@ -22,7 +22,7 @@ function execute_sequence(stream, sequence, done) {
   }
 
   var outgoing_frames = [];
-  stream.upstream.on('sending', outgoing_frames.push.bind(outgoing_frames));
+  //stream.upstream.on('sending', outgoing_frames.push.bind(outgoing_frames));
 
   var emit = stream.emit, events = [];
   stream.emit = function(name, data) {
@@ -34,9 +34,11 @@ function execute_sequence(stream, sequence, done) {
 
   var commands = [], checks = [];
   sequence.forEach(function(step) {
-    if ('method' in step || 'incoming' in step || 'wait' in step || 'set_state' in step) {
+    if ('method' in step || 'incoming' in step || 'outgoing' in step || 'wait' in step || 'set_state' in step) {
       commands.push(step);
-    } else {
+    }
+
+    if ('outgoing' in step || 'event' in step) {
       checks.push(step);
     }
   });
@@ -49,6 +51,9 @@ function execute_sequence(stream, sequence, done) {
         execute(callback);
       } else if ('incoming' in command) {
         stream.upstream.write(command.incoming);
+        execute(callback);
+      } else if ('outgoing' in command) {
+        outgoing_frames.push(stream.upstream.read());
         execute(callback);
       } else if ('set_state' in command) {
         stream.state = command.set_state;
