@@ -118,7 +118,7 @@ describe('stream.js', function() {
   describe('Stream class', function() {
     describe('._transition(sending, frame) method', function() {
       Object.keys(invalid_frames).forEach(function(state) {
-        it('should answer RST_STREAM for invalid incoming frames in ' + state + ' state', function(done) {
+        it('should emit error, and answer RST_STREAM for invalid incoming frames in ' + state + ' state', function(done) {
           var left = invalid_frames[state].length + 1;
           function one_done() {
             left -= 1;
@@ -129,12 +129,20 @@ describe('stream.js', function() {
           one_done();
 
           invalid_frames[state].forEach(function(invalid_frame) {
-            execute_sequence([
+            var stream = new Stream();
+            var error_emitted = false;
+            stream.on('error', function() {
+              error_emitted = true;
+            });
+            execute_sequence(stream, [
               { set_state: state },
               { incoming : invalid_frame },
               { wait     : 10 },
               { outgoing : { type: 'RST_STREAM', flags: {}, error: 'PROTOCOL_ERROR' } }
-            ], one_done);
+            ], function sequence_ready() {
+              expect(error_emitted).to.equal(true);
+              one_done();
+            });
           });
         });
       });
