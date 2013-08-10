@@ -94,7 +94,6 @@ var invalid_frames = {
   RESERVED_LOCAL: [
     { type: 'DATA', flags: {}, data: new Buffer(5) },
     { type: 'HEADERS', flags: {}, headers: {}, priority: undefined },
-    { type: 'PRIORITY', flags: {}, priority: 1 },
     { type: 'PUSH_PROMISE', flags: {}, headers: {} },
     { type: 'WINDOW_UPDATE', flags: {}, settings: {} }
   ],
@@ -111,9 +110,7 @@ var invalid_frames = {
   HALF_CLOSED_REMOTE: [
     { type: 'DATA', flags: {}, data: new Buffer(5) },
     { type: 'HEADERS', flags: {}, headers: {}, priority: undefined },
-    { type: 'PRIORITY', flags: {}, priority: 1 },
     { type: 'PUSH_PROMISE', flags: {}, headers: {} },
-    { type: 'WINDOW_UPDATE', flags: {}, settings: {} }
   ],
   CLOSED: [ // TODO
   ]
