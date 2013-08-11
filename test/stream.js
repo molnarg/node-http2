@@ -22,7 +22,6 @@ function execute_sequence(stream, sequence, done) {
   }
 
   var outgoing_frames = [];
-  //stream.upstream.on('sending', outgoing_frames.push.bind(outgoing_frames));
 
   var emit = stream.emit, events = [];
   stream.emit = function(name, data) {
@@ -110,7 +109,7 @@ var invalid_frames = {
   HALF_CLOSED_REMOTE: [
     { type: 'DATA', flags: {}, data: new Buffer(5) },
     { type: 'HEADERS', flags: {}, headers: {}, priority: undefined },
-    { type: 'PUSH_PROMISE', flags: {}, headers: {} },
+    { type: 'PUSH_PROMISE', flags: {}, headers: {} }
   ],
   CLOSED: [ // TODO
   ]
