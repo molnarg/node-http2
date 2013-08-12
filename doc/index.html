@@ -34,6 +34,11 @@
               </a>
             
               
+              <a class="source" href="flow.html">
+                flow.js
+              </a>
+            
+              
               <a class="source" href="framer.html">
                 framer.js
               </a>
@@ -41,11 +46,6 @@
               
               <a class="source" href="http.html">
                 http.js
-              </a>
-            
-              
-              <a class="source" href="https.html">
-                https.js
               </a>
             
               
@@ -61,11 +61,6 @@
               
               <a class="source" href="stream.html">
                 stream.js
-              </a>
-            
-              
-              <a class="source" href="utils.html">
-                utils.js
               </a>
             
           </div>
@@ -108,23 +103,6 @@ module.exports = http2;</pre></div></div>
                 <a class="pilcrow" href="#section-2">&#182;</a>
               </div>
               <ul>
-<li><a href="utils.html">utils.js</a>: common utility functions, like concatenating buffers</li>
-</ul>
-
-            </div>
-            
-            <div class="content"><div class='highlight'><pre>http2.utils      = require(<span class="string">'./utils'</span>);</pre></div></div>
-            
-        </li>
-        
-        
-        <li id="section-3">
-            <div class="annotation">
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-3">&#182;</a>
-              </div>
-              <ul>
 <li><a href="logging.html">logging.js</a>: a default logger object and a registry of log formatter functions</li>
 </ul>
 
@@ -135,11 +113,11 @@ module.exports = http2;</pre></div></div>
         </li>
         
         
-        <li id="section-4">
+        <li id="section-3">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-4">&#182;</a>
+                <a class="pilcrow" href="#section-3">&#182;</a>
               </div>
               <ul>
 <li><a href="framer.html">framer.js</a>: the lowest layer in the stack that transforms between the binary and
@@ -153,11 +131,11 @@ the JavaScript object representation of HTTP/2 frames</li>
         </li>
         
         
-        <li id="section-5">
+        <li id="section-4">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-5">&#182;</a>
+                <a class="pilcrow" href="#section-4">&#182;</a>
               </div>
               <ul>
 <li><a href="compressor.html">compressor.js</a>: compression and decompression of HEADER frames</li>
@@ -170,11 +148,11 @@ the JavaScript object representation of HTTP/2 frames</li>
         </li>
         
         
-        <li id="section-6">
+        <li id="section-5">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-6">&#182;</a>
+                <a class="pilcrow" href="#section-5">&#182;</a>
               </div>
               <ul>
 <li><a href="stream.html">stream.js</a>: implementation of the HTTP/2 stream concept</li>
@@ -187,11 +165,11 @@ the JavaScript object representation of HTTP/2 frames</li>
         </li>
         
         
-        <li id="section-7">
+        <li id="section-6">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-7">&#182;</a>
+                <a class="pilcrow" href="#section-6">&#182;</a>
               </div>
               <ul>
 <li><a href="connection.html">connection.js</a>: multiplexes streams, manages the identifiers of them and
@@ -205,11 +183,11 @@ repsonsible for connection level flow control</li>
         </li>
         
         
-        <li id="section-8">
+        <li id="section-7">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-8">&#182;</a>
+                <a class="pilcrow" href="#section-7">&#182;</a>
               </div>
               <ul>
 <li><a href="endpoint.html">endpoint.js</a>: manages other components (framer, compressor, connection,
