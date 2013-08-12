@@ -8,11 +8,12 @@ An HTTP/2 server implementation for node.js, developed as a [Google Summer of Co
 Status
 ------
 
-I post weekly status updates [on my blog][2]. Short version: the first version of the public API is
-in place. NPN negotiation works (no ALPN or Upgrade mechanism yet). Main missing items will be
-tracked in the issue tracker.
+I post weekly status updates [on my blog][1]. Short version: the first version of the public API is
+in place, server push is not exposed yet, prioritization and ALPN support is not yet done. Main
+missing items will be tracked in the issue tracker under the label [feature][2].
 
-[2]: http://gabor.molnar.es/blog/categories/google-summer-of-code/
+[1]: http://gabor.molnar.es/blog/categories/google-summer-of-code/
+[2]: https://github.com/molnarg/node-http2/issues?labels=feature&state=open
 
 Installation
 ------------
@@ -44,7 +45,7 @@ var options = {
   cert: fs.readFileSync('./example/localhost.crt')
 };
 
-http2.http.createServer(options, function(request, response) {
+http2.createServer(options, function(request, response) {
   response.end('Hello world!');
 }).listen(8080);
 ```
@@ -94,17 +95,17 @@ dependencies.
 
 Used libraries:
 
-* [mocha][3] for tests
-* [chai][4] for assertions
-* [istanbul][5] for code coverage analysis
-* [docco][6] for developer documentation
-* [bunyan][7] for logging
+* [mocha][1] for tests
+* [chai][2] for assertions
+* [istanbul][3] for code coverage analysis
+* [docco][4] for developer documentation
+* [bunyan][5] for logging
 
-[3]: http://visionmedia.github.io/mocha/
-[4]: http://chaijs.com/
-[5]: https://github.com/gotwarlost/istanbul
-[6]: http://jashkenas.github.io/docco/
-[7]: https://github.com/trentm/node-bunyan
+[1]: http://visionmedia.github.io/mocha/
+[2]: http://chaijs.com/
+[3]: https://github.com/gotwarlost/istanbul
+[4]: http://jashkenas.github.io/docco/
+[5]: https://github.com/trentm/node-bunyan
 
 ### Developer documentation ###
 
@@ -128,9 +129,9 @@ Functions    : 88.03% ( 103/117 )
 Lines        : 91.18% ( 775/850 )
 ```
 
-There's a hosted version of the detailed (line-by-line) coverage report [here][8].
+There's a hosted version of the detailed (line-by-line) coverage report [here][1].
 
-[8]: http://molnarg.github.io/node-http2/coverage/lcov-report/lib/
+[1]: http://molnarg.github.io/node-http2/coverage/lcov-report/lib/
 
 ### Logging ###
 

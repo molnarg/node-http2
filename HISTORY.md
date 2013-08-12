@@ -1,6 +1,14 @@
 Version history
 ===============
 
+### 0.1.1 (2013-08-12) ###
+
+* Lots of bugfixes
+* Proper flow control for outgoing frames
+* Basic flow control for incoming frames
+* [Blog post](http://gabor.molnar.es/blog/2013/08/12/gsoc-week-number-8/)
+* [Tarball](https://github.com/molnarg/node-http2/archive/node-http2-0.1.1.tar.gz)
+
 ### 0.1.0 (2013-08-06) ###
 
 * First release with public API (similar to the standard node HTTPS module)
