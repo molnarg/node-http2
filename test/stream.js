@@ -12,13 +12,20 @@ function callNTimes(limit, done) {
   };
 }
 
+function createStream() {
+  var stream = new Stream();
+  stream.upstream._window = Infinity;
+  stream.upstream._remoteFlowControlDisabled = true;
+  return stream;
+}
+
 // Execute a list of commands and assertions
 var recorded_events = ['state', 'error', 'window_update', 'headers', 'promise'];
 function execute_sequence(stream, sequence, done) {
   if (!done) {
     done = sequence;
     sequence = stream;
-    stream = new Stream();
+    stream = createStream();
   }
 
   var outgoing_frames = [];
@@ -130,7 +137,7 @@ describe('stream.js', function() {
           one_done();
 
           invalid_frames[state].forEach(function(invalid_frame) {
-            var stream = new Stream();
+            var stream = createStream();
             var error_emitted = false;
             stream.on('error', function() {
               error_emitted = true;
@@ -175,8 +182,8 @@ describe('stream.js', function() {
         var payload = new Buffer(5);
         execute_sequence([
           { incoming: { type: 'HEADERS', flags: { }, headers: { ':path': '/' } } },
-          { event   : { name: 'headers', data: { ':path': '/' } } },
           { event   : { name: 'state', data: 'OPEN' } },
+          { event   : { name: 'headers', data: { ':path': '/' } } },
 
           { wait    : 5 },
           { incoming: { type: 'DATA', flags: { }, data: new Buffer(5) } },
@@ -197,17 +204,17 @@ describe('stream.js', function() {
     describe('sending push stream', function() {
       it('should trigger the appropriate state transitions and outgoing frames', function(done) {
         var payload = new Buffer(5);
-        var original_stream = new Stream();
-        var promised_stream = new Stream();
+        var original_stream = createStream();
+        var promised_stream = createStream();
 
         done = callNTimes(2, done);
 
         execute_sequence(original_stream, [
           // receiving request
           { incoming: { type: 'HEADERS', flags: { END_STREAM: true }, headers: { ':path': '/' } } },
-          { event   : { name: 'headers', data: { ':path': '/' } } },
           { event   : { name: 'state', data: 'OPEN' } },
           { event   : { name: 'state', data: 'HALF_CLOSED_REMOTE' } },
+          { event   : { name: 'headers', data: { ':path': '/' } } },
 
           // sending response headers
           { wait    : 5 },
@@ -244,8 +251,8 @@ describe('stream.js', function() {
     describe('receiving push stream', function() {
       it('should trigger the appropriate state transitions and outgoing frames', function(done) {
         var payload = new Buffer(5);
-        var original_stream = new Stream();
-        var promised_stream = new Stream();
+        var original_stream = createStream();
+        var promised_stream = createStream();
 
         done = callNTimes(2, done);
 
@@ -278,8 +285,8 @@ describe('stream.js', function() {
           // push headers
           { wait    : 10 },
           { incoming: { type: 'HEADERS', flags: { END_STREAM: false }, headers: { ':status': 200 } } },
-          { event   : { name: 'headers', data: { ':status': 200 } } },
           { event   : { name: 'state', data: 'HALF_CLOSED_LOCAL' } },
+          { event   : { name: 'headers', data: { ':status': 200 } } },
 
           // push data
           { incoming: { type: 'DATA', flags: { END_STREAM: true  }, data: payload } },
