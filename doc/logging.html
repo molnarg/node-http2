@@ -34,6 +34,11 @@
               </a>
             
               
+              <a class="source" href="flow.html">
+                flow.js
+              </a>
+            
+              
               <a class="source" href="framer.html">
                 framer.js
               </a>
@@ -41,11 +46,6 @@
               
               <a class="source" href="http.html">
                 http.js
-              </a>
-            
-              
-              <a class="source" href="https.html">
-                https.js
               </a>
             
               
@@ -61,11 +61,6 @@
               
               <a class="source" href="stream.html">
                 stream.js
-              </a>
-            
-              
-              <a class="source" href="utils.html">
-                utils.js
               </a>
             
           </div>
@@ -91,8 +86,7 @@
               
             </div>
             
-            <div class="content"><div class='highlight'><pre><span class="keyword">var</span> utils = require(<span class="string">'./utils'</span>);
-<span class="keyword">var</span> logging = exports;
+            <div class="content"><div class='highlight'><pre><span class="keyword">var</span> logging = exports;
 
 <span class="keyword">if</span> (process.env.HTTP2_LOG) {
   <span class="keyword">var</span> bunyan = require(<span class="string">'bunyan'</span>);
@@ -106,13 +100,14 @@
   logging.serializers = logging.root.serializers;
 
 } <span class="keyword">else</span> {
+  <span class="function"><span class="keyword">function</span> <span class="title">noop</span><span class="params">()</span> {</span>}
   logging.root = {
-    fatal: utils.noop,
-    error: utils.noop,
-    warn : utils.noop,
-    info : utils.noop,
-    debug: utils.noop,
-    trace: utils.noop,
+    fatal: noop,
+    error: noop,
+    warn : noop,
+    info : noop,
+    debug: noop,
+    trace: noop,
 
     child: <span class="keyword">function</span>() { <span class="keyword">return</span> <span class="keyword">this</span>; }
   };

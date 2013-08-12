@@ -34,6 +34,11 @@
               </a>
             
               
+              <a class="source" href="flow.html">
+                flow.js
+              </a>
+            
+              
               <a class="source" href="framer.html">
                 framer.js
               </a>
@@ -41,11 +46,6 @@
               
               <a class="source" href="http.html">
                 http.js
-              </a>
-            
-              
-              <a class="source" href="https.html">
-                https.js
               </a>
             
               
@@ -61,11 +61,6 @@
               
               <a class="source" href="stream.html">
                 stream.js
-              </a>
-            
-              
-              <a class="source" href="utils.html">
-                utils.js
               </a>
             
           </div>
@@ -100,8 +95,7 @@ it remains in a valid state.</p>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre><span class="keyword">var</span> utils = require(<span class="string">'../lib/utils'</span>);
-<span class="keyword">var</span> logging = require(<span class="string">'./logging'</span>);
+            <div class="content"><div class='highlight'><pre><span class="keyword">var</span> logging = require(<span class="string">'./logging'</span>);
 <span class="keyword">var</span> Transform = require(<span class="string">'stream'</span>).Transform;
 
 exports.CompressionContext = CompressionContext;
@@ -810,7 +804,7 @@ the reference set and the working set has to be reinitialized.</li>
     buffers.push(Compressor.header(commands[i]));
   }
 
-  <span class="keyword">var</span> buffer = utils.concat(Array.prototype.concat.apply([], buffers)); <span class="comment">// [[bufs]] -&gt; [bufs] -&gt; buf</span>
+  <span class="keyword">var</span> buffer = concat(Array.prototype.concat.apply([], buffers)); <span class="comment">// [[bufs]] -&gt; [bufs] -&gt; buf</span>
 
   <span class="keyword">this</span>._log.trace({ data: buffer }, <span class="string">'Header compression is done'</span>);
   <span class="keyword">return</span> buffer;
@@ -1239,7 +1233,7 @@ Compressor.prototype._transform = <span class="function"><span class="keyword">f
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>    <span class="keyword">var</span> chunks = utils.cut(buffer, MAX_HTTP_PAYLOAD_SIZE);</pre></div></div>
+            <div class="content"><div class='highlight'><pre>    <span class="keyword">var</span> chunks = cut(buffer, MAX_HTTP_PAYLOAD_SIZE);</pre></div></div>
             
         </li>
         
@@ -1259,7 +1253,7 @@ marks the last frame and the END_STREAM flag which is always false before the en
             </div>
             
             <div class="content"><div class='highlight'><pre>    <span class="keyword">for</span> (<span class="keyword">var</span> i = <span class="number">0</span>; i &lt; chunks.length; i++) {
-      <span class="keyword">var</span> flags = utils.shallowCopy(frame.flags);
+      <span class="keyword">var</span> flags = shallowCopy(frame.flags);
       <span class="keyword">if</span> (i === chunks.length - <span class="number">1</span>) {
         flags[<span class="string">'END_'</span> + frame.type] = <span class="literal">true</span>;
       } <span class="keyword">else</span> {
@@ -1418,7 +1412,7 @@ decompressed headers.</p>
             </div>
             
             <div class="content"><div class='highlight'><pre>  <span class="keyword">if</span> (<span class="keyword">this</span>._inProgress &amp;&amp; (frame.flags.END_HEADERS || frame.flags.END_PUSH_PROMISE)) {
-    <span class="keyword">var</span> buffer = utils.concat(<span class="keyword">this</span>._frames.map(<span class="keyword">function</span>(frame) {
+    <span class="keyword">var</span> buffer = concat(<span class="keyword">this</span>._frames.map(<span class="keyword">function</span>(frame) {
       <span class="keyword">return</span> frame.data;
     }));
     <span class="keyword">var</span> headers = <span class="keyword">this</span>.decompress(buffer);
@@ -1538,6 +1532,91 @@ CompressionContext.initialResponseTable = [
   [ <span class="string">'warning'</span>                     , <span class="string">''</span>      ],
   [ <span class="string">'www-authenticate'</span>            , <span class="string">''</span>      ]
 ];</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-55">
+            <div class="annotation">
+              
+              <div class="pilwrap for-h2">
+                <a class="pilcrow" href="#section-55">&#182;</a>
+              </div>
+              <h2>Helper functions</h2>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-56">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-56">&#182;</a>
+              </div>
+              <p>Concatenate an array of buffers into a new buffer</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="function"><span class="keyword">function</span> <span class="title">concat</span><span class="params">(buffers)</span> {</span>
+  <span class="keyword">var</span> size = <span class="number">0</span>;
+  <span class="keyword">for</span> (<span class="keyword">var</span> i = <span class="number">0</span>; i &lt; buffers.length; i++) {
+    size += buffers[i].length;
+  }
+
+  <span class="keyword">var</span> concatenated = <span class="keyword">new</span> Buffer(size);
+  <span class="keyword">for</span> (<span class="keyword">var</span> cursor = <span class="number">0</span>, j = <span class="number">0</span>; j &lt; buffers.length; cursor += buffers[j].length, j++) {
+    buffers[j].copy(concatenated, cursor);
+  }
+
+  <span class="keyword">return</span> concatenated;
+}</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-57">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-57">&#182;</a>
+              </div>
+              <p>Cut <code>buffer</code> into chunks not larger than <code>size</code></p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="function"><span class="keyword">function</span> <span class="title">cut</span><span class="params">(buffer, size)</span> {</span>
+  <span class="keyword">var</span> chunks = [];
+  <span class="keyword">var</span> cursor = <span class="number">0</span>;
+  <span class="keyword">do</span> {
+    <span class="keyword">var</span> chunkSize = Math.min(size, buffer.length - cursor);
+    chunks.push(buffer.slice(cursor, cursor + chunkSize));
+    cursor += chunkSize;
+  } <span class="keyword">while</span>(cursor &lt; buffer.length);
+  <span class="keyword">return</span> chunks;
+}</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-58">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-58">&#182;</a>
+              </div>
+              <p>Shallow copy inspired by underscore&#39;s <a href="http://underscorejs.org/#clone">clone</a></p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="function"><span class="keyword">function</span> <span class="title">shallowCopy</span><span class="params">(object)</span> {</span>
+  <span class="keyword">var</span> clone = {};
+  <span class="keyword">for</span> (<span class="keyword">var</span> key <span class="keyword">in</span> object) {
+    clone[key] = object[key];
+  }
+  <span class="keyword">return</span> clone;
+}</pre></div></div>
             
         </li>
         

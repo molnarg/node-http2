@@ -34,6 +34,11 @@
               </a>
             
               
+              <a class="source" href="flow.html">
+                flow.js
+              </a>
+            
+              
               <a class="source" href="framer.html">
                 framer.js
               </a>
@@ -41,11 +46,6 @@
               
               <a class="source" href="http.html">
                 http.js
-              </a>
-            
-              
-              <a class="source" href="https.html">
-                https.js
               </a>
             
               
@@ -61,11 +61,6 @@
               
               <a class="source" href="stream.html">
                 stream.js
-              </a>
-            
-              
-              <a class="source" href="utils.html">
-                utils.js
               </a>
             
           </div>
@@ -446,16 +441,14 @@ and call it with the remaining part of the current chunk</li>
 
   <span class="keyword">this</span>._connection.pipe(<span class="keyword">this</span>._compressor).pipe(<span class="keyword">this</span>._serializer);
   <span class="keyword">this</span>._deserializer.pipe(<span class="keyword">this</span>._decompressor).pipe(<span class="keyword">this</span>._connection);
+
+  <span class="keyword">this</span>._serializer.on(<span class="string">'readable'</span>, <span class="keyword">this</span>._read.bind(<span class="keyword">this</span>));
 };
 
-Endpoint.prototype._read = <span class="function"><span class="keyword">function</span> <span class="title">_read</span><span class="params">(size)</span> {</span>
+Endpoint.prototype._read = <span class="function"><span class="keyword">function</span> <span class="title">_read</span><span class="params">()</span> {</span>
   <span class="keyword">var</span> moreNeeded = <span class="literal">true</span>, chunk;
-  <span class="keyword">while</span> (moreNeeded &amp;&amp; (chunk = <span class="keyword">this</span>._serializer.read(size))) {
+  <span class="keyword">while</span> (moreNeeded &amp;&amp; (chunk = <span class="keyword">this</span>._serializer.read())) {
     moreNeeded = <span class="keyword">this</span>.push(chunk);
-  }
-
-  <span class="keyword">if</span> (moreNeeded) {
-    <span class="keyword">this</span>._serializer.once(<span class="string">'readable'</span>, <span class="keyword">this</span>._read.bind(<span class="keyword">this</span>));
   }
 };
 

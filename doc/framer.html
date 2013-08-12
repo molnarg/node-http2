@@ -34,6 +34,11 @@
               </a>
             
               
+              <a class="source" href="flow.html">
+                flow.js
+              </a>
+            
+              
               <a class="source" href="framer.html">
                 framer.js
               </a>
@@ -41,11 +46,6 @@
               
               <a class="source" href="http.html">
                 http.js
-              </a>
-            
-              
-              <a class="source" href="https.html">
-                https.js
               </a>
             
               
@@ -61,11 +61,6 @@
               
               <a class="source" href="stream.html">
                 stream.js
-              </a>
-            
-              
-              <a class="source" href="utils.html">
-                utils.js
               </a>
             
           </div>
@@ -320,7 +315,7 @@ will also run.</p>
           <span class="keyword">this</span>.push(<span class="keyword">this</span>._frame);
         } <span class="keyword">catch</span>(error) {
           <span class="keyword">this</span>._log.error({ err: error }, <span class="string">'Incoming frame parsing error'</span>);
-          <span class="keyword">this</span>.emit(<span class="string">'error'</span>, error);
+          <span class="keyword">this</span>.emit(<span class="string">'error'</span>, <span class="string">'PROTOCOL_ERROR'</span>);
         }
       } <span class="keyword">else</span> {
         <span class="keyword">this</span>._log.warn({ frame: <span class="keyword">this</span>._frame }, <span class="string">'Unknown type incoming frame'</span>);
@@ -590,7 +585,8 @@ typeSpecificAttributes.HEADERS = [<span class="string">'priority'</span>, <span 
             <div class="content"><div class='highlight'><pre>Serializer.HEADERS = <span class="function"><span class="keyword">function</span> <span class="title">writeHeadersPriority</span><span class="params">(frame, buffers)</span> {</span>
   <span class="keyword">if</span> (frame.flags.PRIORITY) {
     <span class="keyword">var</span> buffer = <span class="keyword">new</span> Buffer(<span class="number">4</span>);
-    buffer.writeUInt32BE(frame.priority &amp; <span class="number">0x7fffffff</span>, <span class="number">0</span>);
+    assert((<span class="number">0</span> &lt;= frame.priority) &amp;&amp; (frame.priority &lt;= <span class="number">0xffffffff</span>));
+    buffer.writeUInt32BE(frame.priority, <span class="number">0</span>);
     buffers.push(buffer);
   }
   buffers.push(frame.data);
@@ -720,7 +716,9 @@ code (see Error Codes). The error code indicates why the stream is being termina
             
             <div class="content"><div class='highlight'><pre>Serializer.RST_STREAM = <span class="function"><span class="keyword">function</span> <span class="title">writeRstStream</span><span class="params">(frame, buffers)</span> {</span>
   <span class="keyword">var</span> buffer = <span class="keyword">new</span> Buffer(<span class="number">4</span>);
-  buffer.writeUInt32BE(errorCodes.indexOf(frame.error), <span class="number">0</span>);
+  <span class="keyword">var</span> code = errorCodes.indexOf(frame.error);
+  assert((<span class="number">0</span> &lt;= code) &amp;&amp; (code &lt;= <span class="number">0xffffffff</span>));
+  buffer.writeUInt32BE(code, <span class="number">0</span>);
   buffers.push(buffer);
 };
 
@@ -960,7 +958,8 @@ additional context for the stream.</p>
             
             <div class="content"><div class='highlight'><pre>Serializer.PUSH_PROMISE = <span class="function"><span class="keyword">function</span> <span class="title">writePushPromise</span><span class="params">(frame, buffers)</span> {</span>
   <span class="keyword">var</span> buffer = <span class="keyword">new</span> Buffer(<span class="number">4</span>);
-  buffer.writeUInt32BE(frame.promised_stream &amp; <span class="number">0x7fffffff</span>, <span class="number">0</span>);
+  assert((<span class="number">0</span> &lt;= frame.promised_stream) &amp;&amp; (frame.promised_stream &lt;= <span class="number">0x7fffffff</span>));
+  buffer.writeUInt32BE(frame.promised_stream, <span class="number">0</span>);
   buffers.push(buffer);
   buffers.push(frame.data);
 };
@@ -1092,8 +1091,14 @@ closing the connection.</p>
             
             <div class="content"><div class='highlight'><pre>Serializer.GOAWAY = <span class="function"><span class="keyword">function</span> <span class="title">writeGoaway</span><span class="params">(frame, buffers)</span> {</span>
   <span class="keyword">var</span> buffer = <span class="keyword">new</span> Buffer(<span class="number">8</span>);
-  buffer.writeUInt32BE(frame.last_stream &amp; <span class="number">0x7fffffff</span>, <span class="number">0</span>);
-  buffer.writeUInt32BE(errorCodes.indexOf(frame.error), <span class="number">4</span>);
+
+  assert((<span class="number">0</span> &lt;= frame.last_stream) &amp;&amp; (frame.last_stream &lt;= <span class="number">0x7fffffff</span>));
+  buffer.writeUInt32BE(frame.last_stream, <span class="number">0</span>);
+
+  <span class="keyword">var</span> code = errorCodes.indexOf(frame.error);
+  assert((<span class="number">0</span> &lt;= code) &amp;&amp; (code &lt;= <span class="number">0xffffffff</span>));
+  buffer.writeUInt32BE(code, <span class="number">4</span>);
+
   buffers.push(buffer);
 };
 
@@ -1158,7 +1163,8 @@ reserved.</p>
             
             <div class="content"><div class='highlight'><pre>Serializer.WINDOW_UPDATE = <span class="function"><span class="keyword">function</span> <span class="title">writeWindowUpdate</span><span class="params">(frame, buffers)</span> {</span>
   <span class="keyword">var</span> buffer = <span class="keyword">new</span> Buffer(<span class="number">4</span>);
-  buffer.writeUInt32BE(frame.window_size &amp; <span class="number">0x7fffffff</span>, <span class="number">0</span>);
+  assert((<span class="number">0</span> &lt;= frame.window_size) &amp;&amp; (frame.window_size &lt;= <span class="number">0x7fffffff</span>));
+  buffer.writeUInt32BE(frame.window_size, <span class="number">0</span>);
   buffers.push(buffer);
 };
 
@@ -1242,7 +1248,11 @@ flags that are not present.</li>
   });
 
   <span class="keyword">if</span> (frame.data <span class="keyword">instanceof</span> Buffer) {
-    logEntry.data = frame.data.toString(<span class="string">'hex'</span>);
+    <span class="keyword">if</span> (logEntry.data.length &gt; <span class="number">50</span>) {
+      logEntry.data = frame.data.slice(<span class="number">0</span>, <span class="number">47</span>).toString(<span class="string">'hex'</span>) + <span class="string">'...'</span>;
+    } <span class="keyword">else</span> {
+      logEntry.data = frame.data.toString(<span class="string">'hex'</span>);
+    }
   }
 
   logEntry.flags = Object.keys(frame.flags || {}).filter(<span class="keyword">function</span>(name) {
