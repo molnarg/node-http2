@@ -376,15 +376,13 @@ Server.prototype.close = <span class="function"><span class="keyword">function</
     request.on(<span class="string">'response'</span>, callback);
   }
 
-  <span class="keyword">var</span> httpsRequest = https.request(options, callback);
-
-  <span class="keyword">var</span> tlsOptions = {
+  <span class="keyword">var</span> tls_options = {
     host: options.hostname || options.host,
     port: options.port || <span class="number">80</span>,
     NPNProtocols: [implementedVersion, <span class="string">'http/1.1'</span>, <span class="string">'http/1.0'</span>]
   };
 
-  <span class="keyword">var</span> optionsToForward = [
+  <span class="keyword">var</span> options_to_forward = [
     <span class="string">'pfx'</span>,
     <span class="string">'key'</span>,
     <span class="string">'passphrase'</span>,
@@ -394,13 +392,14 @@ Server.prototype.close = <span class="function"><span class="keyword">function</
     <span class="string">'rejectUnauthorized'</span>,
     <span class="string">'secureProtocol'</span>
   ];
-  optionsToForward.forEach(<span class="keyword">function</span>(option) {
-    <span class="keyword">if</span> (option <span class="keyword">in</span> options) {
-      tlsOptions[option] = options[option];
+  <span class="keyword">for</span> (<span class="keyword">var</span> i = <span class="number">0</span>; i &lt; options_to_forward.length; i++) {
+    <span class="keyword">var</span> key = options_to_forward[i];
+    <span class="keyword">if</span> (key <span class="keyword">in</span> options) {
+      tls_options[key] = options[key];
     }
-  });
+  }
 
-  <span class="keyword">var</span> socket = tls.connect(tlsOptions, <span class="keyword">function</span>() {</pre></div></div>
+  <span class="keyword">var</span> socket = tls.connect(tls_options, <span class="keyword">function</span>() {</pre></div></div>
             
         </li>
         
@@ -455,7 +454,7 @@ http2.get = <span class="function"><span class="keyword">function</span> <span c
               <div class="pilwrap for-h2">
                 <a class="pilcrow" href="#section-18">&#182;</a>
               </div>
-              <h2>Agent</h2>
+              <h2>Common IncomingMessage class</h2>
 
             </div>
             
@@ -467,35 +466,6 @@ http2.get = <span class="function"><span class="keyword">function</span> <span c
               
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-19">&#182;</a>
-              </div>
-              
-            </div>
-            
-            <div class="content"><div class='highlight'><pre><span class="function"><span class="keyword">function</span> <span class="title">Agent</span><span class="params">(options)</span> {</span>
-
-}</pre></div></div>
-            
-        </li>
-        
-        
-        <li id="section-20">
-            <div class="annotation">
-              
-              <div class="pilwrap for-h2">
-                <a class="pilcrow" href="#section-20">&#182;</a>
-              </div>
-              <h2>Common IncomingMessage class</h2>
-
-            </div>
-            
-        </li>
-        
-        
-        <li id="section-21">
-            <div class="annotation">
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-21">&#182;</a>
               </div>
               
             </div>
@@ -532,11 +502,11 @@ IncomingMessage.prototype._onHeaders = <span class="function"><span class="keywo
         </li>
         
         
-        <li id="section-22">
+        <li id="section-20">
             <div class="annotation">
               
               <div class="pilwrap for-h2">
-                <a class="pilcrow" href="#section-22">&#182;</a>
+                <a class="pilcrow" href="#section-20">&#182;</a>
               </div>
               <h2>ServerResponse</h2>
 
@@ -545,11 +515,11 @@ IncomingMessage.prototype._onHeaders = <span class="function"><span class="keywo
         </li>
         
         
-        <li id="section-23">
+        <li id="section-21">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-23">&#182;</a>
+                <a class="pilcrow" href="#section-21">&#182;</a>
               </div>
               
             </div>
@@ -578,11 +548,11 @@ ServerResponse.prototype.writeHead = <span class="function"><span class="keyword
         </li>
         
         
-        <li id="section-24">
+        <li id="section-22">
             <div class="annotation">
               
               <div class="pilwrap for-h2">
-                <a class="pilcrow" href="#section-24">&#182;</a>
+                <a class="pilcrow" href="#section-22">&#182;</a>
               </div>
               <h2>ClientRequest</h2>
 
@@ -591,11 +561,11 @@ ServerResponse.prototype.writeHead = <span class="function"><span class="keyword
         </li>
         
         
-        <li id="section-25">
+        <li id="section-23">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-25">&#182;</a>
+                <a class="pilcrow" href="#section-23">&#182;</a>
               </div>
               
             </div>
@@ -636,11 +606,11 @@ ClientRequest.prototype._fallback = <span class="function"><span class="keyword"
         </li>
         
         
-        <li id="section-26">
+        <li id="section-24">
             <div class="annotation">
               
               <div class="pilwrap for-h2">
-                <a class="pilcrow" href="#section-26">&#182;</a>
+                <a class="pilcrow" href="#section-24">&#182;</a>
               </div>
               <h2>Agent</h2>
 
@@ -649,11 +619,11 @@ ClientRequest.prototype._fallback = <span class="function"><span class="keyword"
         </li>
         
         
-        <li id="section-27">
+        <li id="section-25">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-27">&#182;</a>
+                <a class="pilcrow" href="#section-25">&#182;</a>
               </div>
               <p><a href="http://nodejs.org/api/http.html#http_class_http_agent">HTTP agents</a> are not yet supported,
 so every client request will create a new TCP stream.</p>
