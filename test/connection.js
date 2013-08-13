@@ -149,5 +149,48 @@ describe('connection.js', function() {
         });
       });
     });
+    describe('creating two streams and then using them in reverse order', function() {
+      it('should not result in non-monotonous local ID ordering', function() {
+        var c = new Connection(1, settings, log_root.child({ role: 'client' }));
+        var s = new Connection(2, settings, log_root.child({ role: 'server' }));
+
+        c.pipe(s).pipe(c);
+
+        var s1 = c.createStream();
+        var s2 = c.createStream();
+        s2.headers({ ':method': 'get', ':path': '/' });
+        s1.headers({ ':method': 'get', ':path': '/' });
+      });
+    });
+    describe('creating two promises and then using them in reverse order', function() {
+      it('should not result in ID ordering error on the other side', function(done) {
+        var c = new Connection(1, settings, log_root.child({ role: 'client' }));
+        var s = new Connection(2, settings, log_root.child({ role: 'server' }));
+
+        c.pipe(s).pipe(c);
+
+        s.on('stream', function(response) {
+          response.headers({ ':status': '200' });
+
+          // Creating push streams
+          var p1 = s.createStream();
+          var p2 = s.createStream();
+          response.promise(p1, { ':method': 'get', ':path': '/p1' });
+          response.promise(p2, { ':method': 'get', ':path': '/p2' });
+
+          // Using them in reverse order
+          p2.headers({ ':status': '200' });
+          p1.headers({ ':status': '200' });
+        });
+
+        var request = c.createStream();
+        request.headers({ ':method': 'get', ':path': '/' });
+
+        done = callNTimes(2, done);
+        request.on('promise', function() {
+          done();
+        });
+      });
+    });
   });
 });
