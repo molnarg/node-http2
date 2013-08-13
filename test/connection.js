@@ -9,7 +9,7 @@ var settings = {
 };
 
 describe('connection.js', function() {
-  describe('scenario', function() {
+  describe('test scenario', function() {
     describe('connection setup', function() {
       it('should work as expected', function(done) {
         var c = new Connection(1, settings);
@@ -73,22 +73,24 @@ describe('connection.js', function() {
         });
       });
     });
-    describe('ping test', function() {
-      it('client ping', function(done) {
+    describe('ping from client', function() {
+      it('should work as expected', function(done) {
         var c = new Connection(1, settings, log_root.child({ role: 'client' }));
         var s = new Connection(2, settings, log_root.child({ role: 'server' }));
 
         c.pipe(s).pipe(c);
-        c.ping(function(id) {
+        c.ping(function() {
           done();
         });
       });
-      it('server ping', function(done) {
+    });
+    describe('ping from server', function() {
+      it('should work as expected', function(done) {
         var c = new Connection(1, settings, log_root.child({ role: 'client' }));
         var s = new Connection(2, settings, log_root.child({ role: 'server' }));
 
         c.pipe(s).pipe(c);
-        s.ping(function(id) {
+        s.ping(function() {
           done();
         });
       });
