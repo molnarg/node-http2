@@ -163,7 +163,7 @@ describe('connection.js', function() {
       });
     });
     describe('creating two promises and then using them in reverse order', function() {
-      it('should not result in ID ordering error on the other side', function(done) {
+      it('should not result in non-monotonous local ID ordering', function(done) {
         var c = new Connection(1, settings, log_root.child({ role: 'client' }));
         var s = new Connection(2, settings, log_root.child({ role: 'server' }));
 
@@ -172,13 +172,10 @@ describe('connection.js', function() {
         s.on('stream', function(response) {
           response.headers({ ':status': '200' });
 
-          // Creating push streams
           var p1 = s.createStream();
           var p2 = s.createStream();
-          response.promise(p1, { ':method': 'get', ':path': '/p1' });
           response.promise(p2, { ':method': 'get', ':path': '/p2' });
-
-          // Using them in reverse order
+          response.promise(p1, { ':method': 'get', ':path': '/p1' });
           p2.headers({ ':status': '200' });
           p1.headers({ ':status': '200' });
         });
