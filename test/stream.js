@@ -275,7 +275,7 @@ describe('stream.js', function() {
 
           // receiving push promise
           { incoming: { type: 'PUSH_PROMISE', flags: { }, headers: { ':path': '/2.html' }, promised_stream: promised_stream } },
-          { event   : { name: 'promise', data: [{ ':path': '/2.html' }] } },
+          { event   : { name: 'promise', data: [promised_stream, { ':path': '/2.html' }] } },
 
           // receiving response data
           { incoming: { type: 'DATA'   , flags: { END_STREAM: true  }, data: payload } },

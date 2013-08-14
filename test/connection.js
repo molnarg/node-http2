@@ -114,7 +114,7 @@ describe('connection.js', function() {
           expect(request.read()).to.deep.equal(response_content);
           done();
         });
-        request.on('promise', function(headers, pushed) {
+        request.on('promise', function(pushed, headers) {
           expect(headers).to.deep.equal(push_request_headers);
           pushed.on('headers', function(headers) {
             expect(headers).to.deep.equal(response_headers);
