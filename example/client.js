@@ -1,18 +1,10 @@
 var fs = require('fs');
-var parse_url = require('url').parse;
 var path = require('path');
 var http2 = require('..');
 
-var url = parse_url(process.argv.pop());
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 
-var request = http2.request({
-  method: 'get',
-  host: url.hostname,
-  port: url.port,
-  url: url.path,
-  rejectUnauthorized: false
-});
-request.end();
+var request = http2.get(process.argv.pop());
 
 var push_count = 0;
 var finished = 0;
