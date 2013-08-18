@@ -16,7 +16,7 @@ function finish() {
 }
 
 request.on('response', function(response) {
-  response._stream.on('promise', function(pushed, headers) {
+  response.stream.on('promise', function(pushed, headers) {
     var filename = path.join(__dirname, '/push-' + (push_count));
     push_count += 1;
     console.log('Receiving pushed resource: ' + headers[':path'] + ' -> ' + filename);
