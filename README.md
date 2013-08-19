@@ -32,13 +32,14 @@ API
 
 The API is very similar to the [standard node.js HTTPS API](http://nodejs.org/api/https.html). The
 goal is the perfect API compatibility, with additional HTTP2 related extensions (like server push).
-Currently, basic operations work, server push is not yet exposed to the public API. See the examples
-for more info.
+
+Detailed API documentation is maintained in the `lib/http.js` file and is [available as HTML]
+(http://molnarg.github.io/node-http2/doc/http.html) as well.
 
 Examples
 --------
 
-Using as a server:
+### Using as a server ###
 
 ```javascript
 var http2 = require('http2');
@@ -53,39 +54,42 @@ http2.createServer(options, function(request, response) {
 }).listen(8080);
 ```
 
-Using as a client:
+### Using as a client ###
 
 ```javascript
 var http2 = require('http2');
 
-var request = http2.request({
-  method: 'get',
-  host: 'gabor.molnar.es',
-  port: 8080,
-  url: '/',
-  rejectUnauthorized: false
-});
-request.end();
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
+
+var request = http2.get('https://gabor.molnar.es:8080/');
 
 request.on('response', function(response) {
   response.pipe(process.stdout);
 });
 ```
 
-An example server (serving up static files from its own directory) and client are available in the
-example directory. Running the server:
+### Simple static file server ###
+
+An simple static file server serving up content from its own directory is available in the `example`
+directory. Running the server:
 
 ```bash
 $ node ./example/server.js
 Listening on localhost:8080, serving up files from ./example
 ```
 
-An example client is also available. Downloading the server's source code from the server (the
-downloaded content gets pumped out to the standard error output):
+### Simple command line client ###
+
+An example client is also available. Downloading the server's own source code from the server:
 
 ```bash
-$ node ./example/client.js 'http://localhost:8080/server.js' 2>/tmp/server.js
+$ node ./example/client.js 'https://localhost:8080/server.js' 2>/tmp/server.js
 ```
+
+### Server push ###
+
+For a server push example, see the source code of the example
+[server](blob/master/example/server.js) and [client](blob/master/example/client.js).
 
 Development
 -----------
@@ -93,8 +97,8 @@ Development
 ### Development dependencies ###
 
 There's a few library you will need to have installed to do anything described in the following
-sections. After installing node-http2, run `npm install` in its directory to install development
-dependencies.
+sections. After installing/cloning node-http2, run `npm install` in its directory to install
+development dependencies.
 
 Used libraries:
 
@@ -103,6 +107,8 @@ Used libraries:
 * [istanbul](https://github.com/gotwarlost/istanbul) for code coverage analysis
 * [docco](http://jashkenas.github.io/docco/) for developer documentation
 * [bunyan](https://github.com/trentm/node-bunyan) for logging
+
+For pretty printing logs, you will also need a global install of bunyan (`npm install -g bunyan`).
 
 ### Developer documentation ###
 
