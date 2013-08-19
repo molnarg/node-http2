@@ -1,23 +1,22 @@
 node-http2
 ==========
 
-An HTTP/2 server implementation for node.js, developed as a [Google Summer of Code project][1].
-
-[1]: https://google-melange.appspot.com/gsoc/project/google/gsoc2013/molnarg/5001
+An HTTP/2 server implementation for node.js, developed as a
+[Google Summer of Code project](https://google-melange.appspot.com/gsoc/project/google/gsoc2013/molnarg/5001).
 
 Status
 ------
 
-I post weekly status updates [on my blog][1]. Short version: main missing items are:
-* prioritization (issue [#19][2] and [#20][3])
-* ALPN support for negotiating HTTP/2 over TLS (it's done with NPN for now) (issue [#5][4])
-* Upgrade mechanism to start HTTP/2 over unencrypted channel (issue [#4][5])
+I post weekly status updates [on my blog](http://gabor.molnar.es/blog/categories/google-summer-of-code/).
+Short version: main missing items are:
 
-[1]: http://gabor.molnar.es/blog/categories/google-summer-of-code/
-[2]: https://github.com/molnarg/node-http2/issues/19
-[3]: https://github.com/molnarg/node-http2/issues/20
-[4]: https://github.com/molnarg/node-http2/issues/5
-[5]: https://github.com/molnarg/node-http2/issues/4
+* prioritization
+  (issue [#19](https://github.com/molnarg/node-http2/issues/19)
+  and [#20](https://github.com/molnarg/node-http2/issues/20))
+* ALPN support for negotiating HTTP/2 over TLS (it's done with NPN for now)
+  (issue [#5](https://github.com/molnarg/node-http2/issues/5))
+* Upgrade mechanism to start HTTP/2 over unencrypted channel
+  (issue [#4](https://github.com/molnarg/node-http2/issues/4))
 
 Installation
 ------------
@@ -99,17 +98,11 @@ dependencies.
 
 Used libraries:
 
-* [mocha][1] for tests
-* [chai][2] for assertions
-* [istanbul][3] for code coverage analysis
-* [docco][4] for developer documentation
-* [bunyan][5] for logging
-
-[1]: http://visionmedia.github.io/mocha/
-[2]: http://chaijs.com/
-[3]: https://github.com/gotwarlost/istanbul
-[4]: http://jashkenas.github.io/docco/
-[5]: https://github.com/trentm/node-bunyan
+* [mocha](http://visionmedia.github.io/mocha/) for tests
+* [chai](http://chaijs.com/) for assertions
+* [istanbul](https://github.com/gotwarlost/istanbul) for code coverage analysis
+* [docco](http://jashkenas.github.io/docco/) for developer documentation
+* [bunyan](https://github.com/trentm/node-bunyan) for logging
 
 ### Developer documentation ###
 
@@ -133,9 +126,8 @@ Functions    : 88.03% ( 103/117 )
 Lines        : 91.18% ( 775/850 )
 ```
 
-There's a hosted version of the detailed (line-by-line) coverage report [here][1].
-
-[1]: http://molnarg.github.io/node-http2/coverage/lcov-report/lib/
+There's a hosted version of the detailed (line-by-line) coverage report
+[here](http://molnarg.github.io/node-http2/coverage/lcov-report/lib/).
 
 ### Logging ###
 
