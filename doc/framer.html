@@ -150,7 +150,7 @@ frame types (like the length of the payload).</p>
             </div>
             
             <div class="content"><div class='highlight'><pre>Serializer.prototype._transform = <span class="function"><span class="keyword">function</span> <span class="title">_transform</span><span class="params">(frame, encoding, done)</span> {</span>
-  <span class="keyword">this</span>._log.debug({ frame: frame }, <span class="string">'Outgoing frame'</span>);
+  <span class="keyword">this</span>._log.trace({ frame: frame }, <span class="string">'Outgoing frame'</span>);
 
   assert(frame.type <span class="keyword">in</span> Serializer, <span class="string">'Unknown frame type: '</span> + frame.type);
 
@@ -159,7 +159,7 @@ frame types (like the length of the payload).</p>
   Serializer.commonHeader(frame, buffers);
 
   <span class="keyword">for</span> (<span class="keyword">var</span> i = <span class="number">0</span>; i &lt; buffers.length; i++) {
-    <span class="keyword">this</span>._log.trace({ data: buffers[i] }, <span class="string">'Outgoing data.'</span>);
+    <span class="keyword">this</span>._log.trace({ data: buffers[i] }, <span class="string">'Outgoing data'</span>);
     <span class="keyword">this</span>.push(buffers[i]);
   }
 
@@ -247,7 +247,7 @@ large enough. A <code>cursor</code> is used to track the progress in parsing the
             <div class="content"><div class='highlight'><pre>Deserializer.prototype._transform = <span class="function"><span class="keyword">function</span> <span class="title">_transform</span><span class="params">(chunk, encoding, done)</span> {</span>
   <span class="keyword">var</span> cursor = <span class="number">0</span>;
 
-  <span class="keyword">this</span>._log.trace({ data: chunk }, <span class="string">'Incoming data.'</span>);
+  <span class="keyword">this</span>._log.trace({ data: chunk }, <span class="string">'Incoming data'</span>);
 
   <span class="keyword">while</span>(cursor &lt; chunk.length) {</pre></div></div>
             
@@ -309,13 +309,13 @@ will also run.</p>
             
             <div class="content"><div class='highlight'><pre>    <span class="keyword">if</span> ((<span class="keyword">this</span>._cursor === <span class="keyword">this</span>._buffer.length) &amp;&amp; !<span class="keyword">this</span>._waitingForHeader) {
       <span class="keyword">if</span> (<span class="keyword">this</span>._frame.type) {
-        <span class="keyword">try</span> {
-          Deserializer[<span class="keyword">this</span>._frame.type](<span class="keyword">this</span>._buffer, <span class="keyword">this</span>._frame);
-          <span class="keyword">this</span>._log.debug({ frame: <span class="keyword">this</span>._frame }, <span class="string">'Incoming frame'</span>);
-          <span class="keyword">this</span>.push(<span class="keyword">this</span>._frame);
-        } <span class="keyword">catch</span>(error) {
-          <span class="keyword">this</span>._log.error({ err: error }, <span class="string">'Incoming frame parsing error'</span>);
+        <span class="keyword">var</span> error = Deserializer[<span class="keyword">this</span>._frame.type](<span class="keyword">this</span>._buffer, <span class="keyword">this</span>._frame);
+        <span class="keyword">if</span> (error) {
+          <span class="keyword">this</span>._log.error(<span class="string">'Incoming frame parsing error'</span>);
           <span class="keyword">this</span>.emit(<span class="string">'error'</span>, <span class="string">'PROTOCOL_ERROR'</span>);
+        } <span class="keyword">else</span> {
+          <span class="keyword">this</span>._log.trace({ frame: <span class="keyword">this</span>._frame }, <span class="string">'Incoming frame'</span>);
+          <span class="keyword">this</span>.push(<span class="keyword">this</span>._frame);
         }
       } <span class="keyword">else</span> {
         <span class="keyword">this</span>._log.warn({ frame: <span class="keyword">this</span>._frame }, <span class="string">'Unknown type incoming frame'</span>);
@@ -811,7 +811,7 @@ Deserializer.SETTINGS = <span class="function"><span class="keyword">function</s
   frame.settings = {};
 
   <span class="keyword">if</span> (buffer.length % <span class="number">8</span> !== <span class="number">0</span>) {
-    <span class="keyword">throw</span> <span class="keyword">new</span> Error(<span class="string">'Invalid SETTINGS frame.'</span>);
+    <span class="keyword">return</span> <span class="string">'Invalid SETTINGS frame'</span>;
   }
   <span class="keyword">for</span> (<span class="keyword">var</span> i = <span class="number">0</span>; i &lt; buffer.length / <span class="number">8</span>; i++) {
     <span class="keyword">var</span> id = buffer.readUInt32BE(i*<span class="number">8</span>) &amp; <span class="number">0xffffff</span>;
@@ -1021,13 +1021,13 @@ typeSpecificAttributes.PING = [<span class="string">'data'</span>];</pre></div><
             </div>
             
             <div class="content"><div class='highlight'><pre>Serializer.PING = <span class="function"><span class="keyword">function</span> <span class="title">writePing</span><span class="params">(frame, buffers)</span> {</span>
-  assert((<span class="string">'data'</span> <span class="keyword">in</span> frame) &amp;&amp; (frame.data.length === <span class="number">8</span>), <span class="string">'PING frames must carry an 8 byte payload.'</span>);
+  assert((<span class="string">'data'</span> <span class="keyword">in</span> frame) &amp;&amp; (frame.data.length === <span class="number">8</span>), <span class="string">'PING frames must carry an 8 byte payload'</span>);
   buffers.push(frame.data);
 };
 
 Deserializer.PING = <span class="function"><span class="keyword">function</span> <span class="title">readPing</span><span class="params">(buffer, frame)</span> {</span>
   <span class="keyword">if</span> (buffer.length !== <span class="number">8</span>) {
-    <span class="keyword">throw</span> <span class="keyword">new</span> Error(<span class="string">'Invalid size PING frame.'</span>);
+    <span class="keyword">return</span> <span class="string">'Invalid size PING frame'</span>;
   }
   frame.data = buffer;
 };</pre></div></div>
@@ -1241,8 +1241,20 @@ flags that are not present.</li>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>logging.serializers.frame = <span class="keyword">function</span>(frame) {
-  <span class="keyword">var</span> logEntry = {};
+            <div class="content"><div class='highlight'><pre><span class="keyword">var</span> frameCounter = <span class="number">0</span>;
+logging.serializers.frame = <span class="keyword">function</span>(frame) {
+  <span class="keyword">if</span> (!frame) {
+    <span class="keyword">return</span> <span class="literal">null</span>;
+  }
+
+  <span class="keyword">if</span> (<span class="string">'id'</span> <span class="keyword">in</span> frame) {
+    <span class="keyword">return</span> frame.id;
+  }
+
+  frame.id = frameCounter;
+  frameCounter += <span class="number">1</span>;
+
+  <span class="keyword">var</span> logEntry = { id: frame.id };
   genericAttributes.concat(typeSpecificAttributes[frame.type]).forEach(<span class="keyword">function</span>(name) {
     logEntry[name] = frame[name];
   });
@@ -1252,6 +1264,10 @@ flags that are not present.</li>
       logEntry.data = frame.data.slice(<span class="number">0</span>, <span class="number">47</span>).toString(<span class="string">'hex'</span>) + <span class="string">'...'</span>;
     } <span class="keyword">else</span> {
       logEntry.data = frame.data.toString(<span class="string">'hex'</span>);
+    }
+
+    <span class="keyword">if</span> (!(<span class="string">'length'</span> <span class="keyword">in</span> logEntry)) {
+      logEntry.length = frame.data.length;
     }
   }
 

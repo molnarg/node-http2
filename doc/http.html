@@ -2,7 +2,7 @@
 
 <html>
 <head>
-  <title>http.js</title>
+  <title>Public API</title>
   <meta http-equiv="content-type" content="text/html; charset=UTF-8">
   <meta name="viewport" content="width=device-width, target-densitydpi=160dpi, initial-scale=1.0; maximum-scale=1.0; user-scalable=0;">
   <link rel="stylesheet" media="all" href="docco.css" />
@@ -69,28 +69,17 @@
     
     <ul class="sections">
         
-          <li id="title">
-              <div class="annotation">
-                  <h1>http.js</h1>
-              </div>
-          </li>
-        
         
         
         <li id="section-1">
             <div class="annotation">
               
-              <div class="pilwrap ">
+              <div class="pilwrap for-h1">
                 <a class="pilcrow" href="#section-1">&#182;</a>
               </div>
-              
+              <h1>Public API</h1>
+
             </div>
-            
-            <div class="content"><div class='highlight'><pre><span class="keyword">var</span> tls = require(<span class="string">'tls'</span>);
-<span class="keyword">var</span> net = require(<span class="string">'net'</span>);
-<span class="keyword">var</span> EventEmitter = require(<span class="string">'events'</span>).EventEmitter;
-<span class="keyword">var</span> PassThrough = require(<span class="string">'stream'</span>).PassThrough;
-<span class="keyword">var</span> Endpoint = require(<span class="string">'./endpoint'</span>).Endpoint;</pre></div></div>
             
         </li>
         
@@ -101,11 +90,127 @@
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-2">&#182;</a>
               </div>
-              <p>This is the main API that can be used to create HTTP/2 servers.</p>
+              <p>The main governing power behind the http2 API design is that it should look very similar to the
+existing node.js <a href="http://nodejs.org/api/https.html">HTTPS API</a> (which is, in turn, almost identical to the <a href="http://nodejs.org/api/http.html">HTTP API</a>). The
+additional features of HTTP/2 are exposed as extensions to this API. Furthermore, node-http2
+should fall back to using HTTP/1.1 if needed. Compatibility with undocumented or deprecated
+elements of the node.js HTTP/HTTPS API is a non-goal.</p>
+<p>Additional and modified API elements:</p>
+<ul>
+<li><p><strong>Class: http2.Server</strong></p>
+<ul>
+<li><strong>Event: &#39;connection&#39; (socket, [endpoint])</strong>: there&#39;s a second argument if the negotiation of
+HTTP/2 was successful: the reference to the <a href="endpoint.html">Endpoint</a> object tied to the
+socket.</li>
+</ul>
+</li>
+<li><p><strong>Class: http2.ServerResponse</strong></p>
+<ul>
+<li><strong>response.push(options)</strong>: initiates a server push. <code>options</code> describes the &#39;imaginary&#39;
+request to which the push stream is a response; the possible options are identical to the
+ones accepted by <code>http2.request</code>. Returns a ServerResponse object that can be used to send
+the response headers and content.</li>
+<li><strong>response.writeHead(statusCode, [reasonPhrase], [headers])</strong>: reasonPhrase will always be
+ignored since <a href="http://tools.ietf.org/html/draft-ietf-httpbis-http2-04#section-8.1.3">it&#39;s not supported in HTTP/2</a></li>
+<li><strong>response.setTimeout(timeout, [callback])</strong>: will be ignored for HTTP/2 requests</li>
+</ul>
+</li>
+<li><p><strong>Class: http2.ClientRequest</strong></p>
+<ul>
+<li><strong>Event: &#39;socket&#39; (socket)</strong>: it&#39;s not emitted in case of an HTTP/2 incoming message.</li>
+<li><strong>Event: &#39;stream&#39; (stream)</strong>: in case of an HTTP/2 incoming message, a reference to the
+associated <a href="stream.html">HTTP/2 Stream</a> object is emitted.</li>
+<li><strong>request.setTimeout(timeout, [callback])</strong>: will be ignored for HTTP/2 requests</li>
+<li><strong>request.setNoDelay([noDelay])</strong>: will be ignored for HTTP/2 requests</li>
+<li><strong>request.setSocketKeepAlive([enable], [initialDelay])</strong>: will be ignored for HTTP/2 requests</li>
+</ul>
+</li>
+<li><p><strong>Class: http2.IncomingMessage</strong></p>
+<ul>
+<li>has two subclasses for easier interface description: <strong>IncomingRequest</strong> and
+<strong>IncomingResponse</strong></li>
+<li><strong>message.socket</strong>: it&#39;s not present in case of an HTTP/2 incoming message.</li>
+<li><strong>message.stream</strong>: in case of an HTTP/2 incoming message, it&#39;s a reference to the associated
+<a href="stream.html">HTTP/2 Stream</a> object.</li>
+<li><strong>message.setTimeout(timeout, [callback])</strong>: will be ignored for HTTP/2 requests</li>
+</ul>
+</li>
+<li><p><strong>Class: http2.IncomingRequest (IncomingMessage)</strong></p>
+<ul>
+<li><strong>message.url</strong>: in case of an HTTP/2 incoming request, the <code>url</code> field always contains the
+path, and never a full url (it contains the path in most cases in the HTTPS api as well).</li>
+<li><strong>message.scheme</strong>: additional field. Mandatory HTTP/2 request metadata.</li>
+<li><strong>message.host</strong>: additional field. Mandatory HTTP/2 request metadata. Note that this
+replaces the old Host header field, but node-http2 will add Host to the <code>message.headers</code> for
+backwards compatibility.</li>
+</ul>
+</li>
+<li><p><strong>Class: http2.IncomingResponse (IncomingMessage)</strong></p>
+<ul>
+<li><strong>Event: &#39;push&#39; (promise)</strong>: signals the intention of a server push. <code>promise</code> is an
+IncomingPromise. If there&#39;s no listener for this event, the server push is cancelled.</li>
+</ul>
+</li>
+<li><p><strong>Class: http2.IncomingPromise (IncomingRequest)</strong></p>
+<ul>
+<li>contains the metadata of the &#39;imaginary&#39; request to which the server push is an answer.</li>
+<li><strong>Event: &#39;response&#39; (response)</strong>: signals the arrival of the actual push stream. <code>response</code>
+is an IncomingResponse.</li>
+<li><strong>promise.cancel()</strong>: cancels the promised server push.</li>
+</ul>
+</li>
+</ul>
+<p>API elements not yet implemented:</p>
+<ul>
+<li><p><strong>Class: http2.Server</strong></p>
+<ul>
+<li><strong>Event: &#39;checkContinue&#39;</strong></li>
+<li><strong>Event: &#39;connect&#39;</strong></li>
+<li><strong>Event: &#39;upgrade&#39;</strong></li>
+<li><strong>Event: &#39;clientError&#39;</strong></li>
+<li><strong>server.maxHeadersCount</strong></li>
+<li><strong>server.setTimeout(msecs, callback)</strong></li>
+<li><strong>server.timeout</strong></li>
+</ul>
+</li>
+<li><p><strong>Class: http2.ServerResponse</strong></p>
+<ul>
+<li><strong>Event: &#39;close&#39;</strong></li>
+<li><strong>response.writeContinue()</strong></li>
+<li><strong>response.addTrailers(headers)</strong></li>
+</ul>
+</li>
+<li><p><strong>http.request(options, callback)</strong>: not implemented options:</p>
+<ul>
+<li><strong>auth</strong></li>
+<li><strong>agent</strong></li>
+</ul>
+</li>
+<li><p><strong>Class: http2.Agent</strong></p>
+<ul>
+<li><strong>agent.maxSockets</strong></li>
+<li><strong>agent.sockets</strong></li>
+<li><strong>agent.requests</strong></li>
+</ul>
+</li>
+<li><p><strong>Class: http2.ClientRequest</strong></p>
+<ul>
+<li><strong>Event: &#39;connect&#39;</strong></li>
+<li><strong>Event: &#39;upgrade&#39;</strong></li>
+<li><strong>Event: &#39;continue&#39;</strong></li>
+<li><strong>request.abort()</strong></li>
+</ul>
+</li>
+<li><p><strong>Class: http2.IncomingMessage</strong></p>
+<ul>
+<li><strong>Event: &#39;close&#39;</strong></li>
+<li><strong>message.trailers</strong></li>
+</ul>
+</li>
+</ul>
+<h1>Common server and client side code</h1>
 
             </div>
-            
-            <div class="content"><div class='highlight'><pre><span class="keyword">var</span> http2 = exports;</pre></div></div>
             
         </li>
         
@@ -116,11 +221,24 @@
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-3">&#182;</a>
               </div>
-              <p>The implemented draft is <a href="http://tools.ietf.org/html/draft-ietf-httpbis-http2-04">http2-04</a>.</p>
-
+              
             </div>
             
-            <div class="content"><div class='highlight'><pre><span class="keyword">var</span> implementedVersion = <span class="string">'HTTP-draft-04/2.0'</span>;</pre></div></div>
+            <div class="content"><div class='highlight'><pre><span class="keyword">var</span> net = require(<span class="string">'net'</span>);
+<span class="keyword">var</span> url = require(<span class="string">'url'</span>);
+<span class="keyword">var</span> util = require(<span class="string">'util'</span>);
+<span class="keyword">var</span> EventEmitter = require(<span class="string">'events'</span>).EventEmitter;
+<span class="keyword">var</span> PassThrough = require(<span class="string">'stream'</span>).PassThrough;
+<span class="keyword">var</span> Readable = require(<span class="string">'stream'</span>).Readable;
+<span class="keyword">var</span> Writable = require(<span class="string">'stream'</span>).Writable;
+<span class="keyword">var</span> Endpoint = require(<span class="string">'./endpoint'</span>).Endpoint;
+<span class="keyword">var</span> logging = require(<span class="string">'./logging'</span>);
+<span class="keyword">var</span> http = require(<span class="string">'http'</span>);
+<span class="keyword">var</span> https = require(<span class="string">'https'</span>);
+
+exports.STATUS_CODES = http.STATUS_CODES;
+exports.IncomingMessage = IncomingMessage;
+exports.OutgoingMessage = OutgoingMessage;</pre></div></div>
             
         </li>
         
@@ -131,17 +249,11 @@
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-4">&#182;</a>
               </div>
-              <p>The main governing power behind the http2 API design is that it should look very similar to the
-existing node.js <a href="http://nodejs.org/api/http.html">HTTP</a>/<a href="http://nodejs.org/api/https.html">HTTPS</a>
-APIs. The additional features of HTTP/2 are exposed as extensions to these APIs. Furthermore,
-node-http2 should fall back to using HTTP/1.1 if needed.</p>
+              <p>The implemented version of the HTTP/2 specification is <a href="http://tools.ietf.org/html/draft-ietf-httpbis-http2-04">draft 04</a>.</p>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre><span class="keyword">var</span> http = require(<span class="string">'http'</span>);
-<span class="keyword">var</span> https = require(<span class="string">'https'</span>);
-
-http2.STATUS_CODES = http.STATUS_CODES;</pre></div></div>
+            <div class="content"><div class='highlight'><pre><span class="keyword">var</span> implementedVersion = <span class="string">'HTTP-draft-04/2.0'</span>;</pre></div></div>
             
         </li>
         
@@ -170,7 +282,7 @@ configuration object in client and server APIs.</p>
               <div class="pilwrap for-h2">
                 <a class="pilcrow" href="#section-6">&#182;</a>
               </div>
-              <h2>Server</h2>
+              <h2>IncomingMessage class</h2>
 
             </div>
             
@@ -183,33 +295,10 @@ configuration object in client and server APIs.</p>
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-7">&#182;</a>
               </div>
-              <p>Deviation from the original http API: there&#39;s and <code>options</code> optional argument. Values in it can
-override the default settings.</p>
-
+              
             </div>
             
-            <div class="content"><div class='highlight'><pre>http2.createServer = createServer;
-http2.Server = Server;
-
-<span class="function"><span class="keyword">function</span> <span class="title">createServer</span><span class="params">(options, requestListener)</span> {</span>
-  <span class="keyword">if</span> (<span class="keyword">typeof</span> options === <span class="string">'function'</span>) {
-    requestListener = options;
-    options = <span class="literal">undefined</span>;
-  }
-
-  <span class="keyword">var</span> server = <span class="keyword">new</span> Server(options);
-
-  <span class="keyword">if</span> (requestListener) {
-    server.on(<span class="string">'request'</span>, requestListener);
-  }
-
-  <span class="keyword">return</span> server;
-}
-
-<span class="function"><span class="keyword">function</span> <span class="title">Server</span><span class="params">(options)</span> {</span>
-  options = options || {};
-
-  <span class="keyword">this</span>._settings = options.settings;</pre></div></div>
+            <div class="content"><div class='highlight'><pre><span class="function"><span class="keyword">function</span> <span class="title">IncomingMessage</span><span class="params">(stream, log)</span> {</span></pre></div></div>
             
         </li>
         
@@ -220,18 +309,17 @@ http2.Server = Server;
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-8">&#182;</a>
               </div>
-              <p>HTTP2 over TLS (using NPN instean of ALPN)</p>
+              <ul>
+<li>This is basically a read-only wrapper for the <a href="stream.html">Stream</a> class.</li>
+</ul>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>  <span class="keyword">if</span> ((options.key &amp;&amp; options.cert) || options.pfx) {
-    options.NPNProtocols = [implementedVersion, <span class="string">'http/1.1'</span>, <span class="string">'http/1.0'</span>];
-    <span class="keyword">this</span>._server = https.createServer(options);
-    <span class="keyword">this</span>._originalSocketListeners = <span class="keyword">this</span>._server.listeners(<span class="string">'secureConnection'</span>);
-    <span class="keyword">this</span>._server.removeAllListeners(<span class="string">'secureConnection'</span>);
-    <span class="keyword">this</span>._server.on(<span class="string">'secureConnection'</span>, <span class="keyword">this</span>._onSecureConnection.bind(<span class="keyword">this</span>));
-    <span class="keyword">this</span>._server.on(<span class="string">'request'</span>, <span class="keyword">this</span>.emit.bind(<span class="keyword">this</span>, <span class="string">'request'</span>));
-  }</pre></div></div>
+            <div class="content"><div class='highlight'><pre>  PassThrough.call(<span class="keyword">this</span>);
+  stream.pipe(<span class="keyword">this</span>);
+  <span class="keyword">this</span>.stream = stream;
+
+  <span class="keyword">this</span>._log = log;</pre></div></div>
             
         </li>
         
@@ -242,13 +330,16 @@ http2.Server = Server;
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-9">&#182;</a>
               </div>
-              <p>HTTP2 over plain TCP</p>
+              <ul>
+<li>HTTP/2.0 does not define a way to carry the version identifier that is included in the
+HTTP/1.1 request/status line. Version is always 2.0.</li>
+</ul>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>  <span class="keyword">else</span> <span class="keyword">if</span> (options.plain) {
-    <span class="keyword">this</span>._server = net.createServer(<span class="keyword">this</span>._start.bind(<span class="keyword">this</span>));
-  }</pre></div></div>
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">this</span>.httpVersion = <span class="string">'2.0'</span>;
+  <span class="keyword">this</span>.httpVersionMajor = <span class="number">2</span>;
+  <span class="keyword">this</span>.httpVersionMinor = <span class="number">0</span>;</pre></div></div>
             
         </li>
         
@@ -259,17 +350,17 @@ http2.Server = Server;
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-10">&#182;</a>
               </div>
-              <p>HTTP/2 with HTTP/1.1 upgrade</p>
+              <ul>
+<li>Other metadata is filled in when the headers arrive.</li>
+</ul>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>  <span class="keyword">else</span> {
-    <span class="keyword">throw</span> <span class="keyword">new</span> Error(<span class="string">'HTTP1.1 -&gt; HTTP2 upgrade is not yet supported. Please provide TLS keys.'</span>);
-  }
+            <div class="content"><div class='highlight'><pre>  stream.once(<span class="string">'headers'</span>, <span class="keyword">this</span>._onHeaders.bind(<span class="keyword">this</span>));
 }
-Server.prototype = Object.create(EventEmitter.prototype, { constructor: { value: Server } });
+IncomingMessage.prototype = Object.create(PassThrough.prototype, { constructor: { value: IncomingMessage } });
 
-Server.prototype._onSecureConnection = <span class="function"><span class="keyword">function</span> <span class="title">_onSecureConnection</span><span class="params">(socket)</span> {</span></pre></div></div>
+IncomingMessage.prototype.setTimeout = <span class="function"><span class="keyword">function</span> <span class="title">noop</span><span class="params">()</span> {</span>};</pre></div></div>
             
         </li>
         
@@ -277,16 +368,12 @@ Server.prototype._onSecureConnection = <span class="function"><span class="keywo
         <li id="section-11">
             <div class="annotation">
               
-              <div class="pilwrap ">
+              <div class="pilwrap for-h2">
                 <a class="pilcrow" href="#section-11">&#182;</a>
               </div>
-              <p>Upgrading only if the NPN negotiation was successful</p>
+              <h2>OutgoingMessage class</h2>
 
             </div>
-            
-            <div class="content"><div class='highlight'><pre>  <span class="keyword">if</span> (socket.npnProtocol === implementedVersion) {
-    <span class="keyword">this</span>._start(socket);
-  }</pre></div></div>
             
         </li>
         
@@ -297,16 +384,10 @@ Server.prototype._onSecureConnection = <span class="function"><span class="keywo
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-12">&#182;</a>
               </div>
-              <p>Fallback to https</p>
-
+              
             </div>
             
-            <div class="content"><div class='highlight'><pre>  <span class="keyword">else</span> {
-    <span class="keyword">for</span> (<span class="keyword">var</span> i = <span class="number">0</span>; i &lt; <span class="keyword">this</span>._originalSocketListeners.length; i++) {
-      <span class="keyword">this</span>._originalSocketListeners[i].call(<span class="keyword">this</span>._server, socket);
-    }
-  }
-};</pre></div></div>
+            <div class="content"><div class='highlight'><pre><span class="function"><span class="keyword">function</span> <span class="title">OutgoingMessage</span><span class="params">(log)</span> {</span></pre></div></div>
             
         </li>
         
@@ -317,32 +398,59 @@ Server.prototype._onSecureConnection = <span class="function"><span class="keywo
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-13">&#182;</a>
               </div>
-              <p>Starting HTTP/2</p>
+              <ul>
+<li>This is basically a read-only wrapper for the <a href="stream.html">Stream</a> class.</li>
+</ul>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>Server.prototype._start = <span class="function"><span class="keyword">function</span> <span class="title">_start</span><span class="params">(socket)</span> {</span>
-  <span class="keyword">var</span> endpoint = <span class="keyword">new</span> Endpoint(<span class="string">'SERVER'</span>, <span class="keyword">this</span>._settings || default_settings);
+            <div class="content"><div class='highlight'><pre>  Writable.call(<span class="keyword">this</span>);
 
-  endpoint.pipe(socket).pipe(endpoint);
+  <span class="keyword">this</span>._log = log;
+  <span class="keyword">this</span>._headers = {};
+  <span class="keyword">this</span>.headersSent = <span class="literal">false</span>;
 
-  endpoint.on(<span class="string">'stream'</span>, <span class="keyword">this</span>._onStream.bind(<span class="keyword">this</span>));
+  <span class="keyword">this</span>.on(<span class="string">'finish'</span>, <span class="keyword">this</span>._finish.bind(<span class="keyword">this</span>));
+}
+OutgoingMessage.prototype = Object.create(Writable.prototype, { constructor: { value: OutgoingMessage } });
+
+OutgoingMessage.prototype._write = <span class="function"><span class="keyword">function</span> <span class="title">_write</span><span class="params">(chunk, encoding, callback)</span> {</span>
+  <span class="keyword">if</span> (<span class="keyword">this</span>.stream) {
+    <span class="keyword">this</span>.stream.write(chunk, encoding, callback);
+  } <span class="keyword">else</span> {
+    <span class="keyword">this</span>.once(<span class="string">'socket'</span>, <span class="keyword">this</span>._write.bind(<span class="keyword">this</span>, chunk, encoding, callback));
+  }
 };
 
-Server.prototype._onStream = <span class="function"><span class="keyword">function</span> <span class="title">_onStream</span><span class="params">(stream)</span> {</span>
-  <span class="keyword">var</span> request = <span class="keyword">new</span> IncomingMessage(stream);
-  <span class="keyword">var</span> response = <span class="keyword">new</span> ServerResponse(stream);
-
-  request.once(<span class="string">'ready'</span>, <span class="keyword">this</span>.emit.bind(<span class="keyword">this</span>, <span class="string">'request'</span>, request, response));
+OutgoingMessage.prototype._finish = <span class="function"><span class="keyword">function</span> <span class="title">_finish</span><span class="params">()</span> {</span>
+  <span class="keyword">if</span> (<span class="keyword">this</span>.stream) {
+    <span class="keyword">this</span>.stream.end();
+  } <span class="keyword">else</span> {
+    <span class="keyword">this</span>.once(<span class="string">'socket'</span>, <span class="keyword">this</span>._finish.bind(<span class="keyword">this</span>));
+  }
 };
 
-Server.prototype.listen = <span class="function"><span class="keyword">function</span> <span class="title">listen</span><span class="params">(port)</span> {</span>
-  <span class="keyword">this</span>._server.listen(port);
+OutgoingMessage.prototype.setHeader = <span class="function"><span class="keyword">function</span> <span class="title">setHeader</span><span class="params">(name, value)</span> {</span>
+  <span class="keyword">if</span> (<span class="keyword">this</span>.headersSent) {
+    <span class="keyword">throw</span> <span class="keyword">new</span> Error(<span class="string">'Can\'t set headers after they are sent.'</span>);
+  } <span class="keyword">else</span> {
+    <span class="keyword">this</span>._headers[name.toLowerCase()] = value;
+  }
 };
 
-Server.prototype.close = <span class="function"><span class="keyword">function</span> <span class="title">close</span><span class="params">()</span> {</span>
-  <span class="keyword">this</span>._server.close();
-};</pre></div></div>
+OutgoingMessage.prototype.removeHeader = <span class="function"><span class="keyword">function</span> <span class="title">removeHeader</span><span class="params">(name)</span> {</span>
+  <span class="keyword">if</span> (<span class="keyword">this</span>.headersSent) {
+    <span class="keyword">throw</span> <span class="keyword">new</span> Error(<span class="string">'Can\'t remove headers after they are sent.'</span>);
+  } <span class="keyword">else</span> {
+    <span class="keyword">delete</span> <span class="keyword">this</span>._headers[name.toLowerCase()];
+  }
+};
+
+OutgoingMessage.prototype.getHeader = <span class="function"><span class="keyword">function</span> <span class="title">getHeader</span><span class="params">(name)</span> {</span>
+  <span class="keyword">return</span> <span class="keyword">this</span>._headers[name.toLowerCase()];
+};
+
+IncomingMessage.prototype.setTimeout = <span class="function"><span class="keyword">function</span> <span class="title">noop</span><span class="params">()</span> {</span>};</pre></div></div>
             
         </li>
         
@@ -350,10 +458,10 @@ Server.prototype.close = <span class="function"><span class="keyword">function</
         <li id="section-14">
             <div class="annotation">
               
-              <div class="pilwrap for-h2">
+              <div class="pilwrap for-h1">
                 <a class="pilcrow" href="#section-14">&#182;</a>
               </div>
-              <h2>Client</h2>
+              <h1>Server side</h1>
 
             </div>
             
@@ -369,37 +477,11 @@ Server.prototype.close = <span class="function"><span class="keyword">function</
               
             </div>
             
-            <div class="content"><div class='highlight'><pre>http2.request = <span class="function"><span class="keyword">function</span> <span class="title">request</span><span class="params">(options, callback)</span> {</span>
-  <span class="keyword">var</span> request = <span class="keyword">new</span> ClientRequest();
-
-  <span class="keyword">if</span> (callback) {
-    request.on(<span class="string">'response'</span>, callback);
-  }
-
-  <span class="keyword">var</span> tls_options = {
-    host: options.hostname || options.host,
-    port: options.port || <span class="number">80</span>,
-    NPNProtocols: [implementedVersion, <span class="string">'http/1.1'</span>, <span class="string">'http/1.0'</span>]
-  };
-
-  <span class="keyword">var</span> options_to_forward = [
-    <span class="string">'pfx'</span>,
-    <span class="string">'key'</span>,
-    <span class="string">'passphrase'</span>,
-    <span class="string">'cert'</span>,
-    <span class="string">'ca'</span>,
-    <span class="string">'ciphers'</span>,
-    <span class="string">'rejectUnauthorized'</span>,
-    <span class="string">'secureProtocol'</span>
-  ];
-  <span class="keyword">for</span> (<span class="keyword">var</span> i = <span class="number">0</span>; i &lt; options_to_forward.length; i++) {
-    <span class="keyword">var</span> key = options_to_forward[i];
-    <span class="keyword">if</span> (key <span class="keyword">in</span> options) {
-      tls_options[key] = options[key];
-    }
-  }
-
-  <span class="keyword">var</span> socket = tls.connect(tls_options, <span class="keyword">function</span>() {</pre></div></div>
+            <div class="content"><div class='highlight'><pre>exports.createServer = createServer;
+exports.Server = Server;
+exports.IncomingRequest = IncomingRequest;
+exports.OutgoingResponse = OutgoingResponse;
+exports.ServerResponse = OutgoingResponse; <span class="comment">// for API compatibility</span></pre></div></div>
             
         </li>
         
@@ -407,18 +489,12 @@ Server.prototype.close = <span class="function"><span class="keyword">function</
         <li id="section-16">
             <div class="annotation">
               
-              <div class="pilwrap ">
+              <div class="pilwrap for-h2">
                 <a class="pilcrow" href="#section-16">&#182;</a>
               </div>
-              <p>HTTP2 is supported!</p>
+              <h2>Server class</h2>
 
             </div>
-            
-            <div class="content"><div class='highlight'><pre>    <span class="keyword">if</span> (socket.npnProtocol === implementedVersion) {
-      <span class="keyword">var</span> endpoint = <span class="keyword">new</span> Endpoint(<span class="string">'CLIENT'</span>, options._settings || default_settings);
-      endpoint.pipe(socket).pipe(endpoint);
-      request._start(endpoint.createStream(), options);
-    }</pre></div></div>
             
         </li>
         
@@ -429,21 +505,17 @@ Server.prototype.close = <span class="function"><span class="keyword">function</
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-17">&#182;</a>
               </div>
-              <p>Fallback</p>
-
+              
             </div>
             
-            <div class="content"><div class='highlight'><pre>    <span class="keyword">else</span> {
-      socket.end();
-      request._fallback(https.request(options));
-    }
-  });
+            <div class="content"><div class='highlight'><pre><span class="function"><span class="keyword">function</span> <span class="title">Server</span><span class="params">(options)</span> {</span>
+  options = options || {};
 
-  <span class="keyword">return</span> request;
-};
+  <span class="keyword">this</span>._log = (options.log || logging.root).child({ component: <span class="string">'http'</span> });
+  <span class="keyword">this</span>._settings = options.settings;
 
-http2.get = <span class="function"><span class="keyword">function</span> <span class="title">get</span><span class="params">(options, callback)</span> {</span>
-};</pre></div></div>
+  <span class="keyword">var</span> start = <span class="keyword">this</span>._start.bind(<span class="keyword">this</span>);
+  <span class="keyword">var</span> fallback = <span class="keyword">this</span>._fallback.bind(<span class="keyword">this</span>);</pre></div></div>
             
         </li>
         
@@ -451,12 +523,28 @@ http2.get = <span class="function"><span class="keyword">function</span> <span c
         <li id="section-18">
             <div class="annotation">
               
-              <div class="pilwrap for-h2">
+              <div class="pilwrap ">
                 <a class="pilcrow" href="#section-18">&#182;</a>
               </div>
-              <h2>Common IncomingMessage class</h2>
+              <p>HTTP2 over TLS (using NPN instean of ALPN)</p>
 
             </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">if</span> ((options.key &amp;&amp; options.cert) || options.pfx) {
+    <span class="keyword">this</span>._log.info(<span class="string">'Creating HTTP/2 server over TLS/NPN'</span>);
+    options.NPNProtocols = [implementedVersion, <span class="string">'http/1.1'</span>, <span class="string">'http/1.0'</span>];
+    <span class="keyword">this</span>._server = https.createServer(options);
+    <span class="keyword">this</span>._originalSocketListeners = <span class="keyword">this</span>._server.listeners(<span class="string">'secureConnection'</span>);
+    <span class="keyword">this</span>._server.removeAllListeners(<span class="string">'secureConnection'</span>);
+    <span class="keyword">this</span>._server.on(<span class="string">'secureConnection'</span>, <span class="keyword">function</span>(socket) {
+      <span class="keyword">if</span> (socket.npnProtocol === implementedVersion) {
+        start(socket);
+      } <span class="keyword">else</span> {
+        fallback(socket);
+      }
+    });
+    <span class="keyword">this</span>._server.on(<span class="string">'request'</span>, <span class="keyword">this</span>.emit.bind(<span class="keyword">this</span>, <span class="string">'request'</span>));
+  }</pre></div></div>
             
         </li>
         
@@ -467,37 +555,14 @@ http2.get = <span class="function"><span class="keyword">function</span> <span c
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-19">&#182;</a>
               </div>
-              
+              <p>HTTP2 over plain TCP</p>
+
             </div>
             
-            <div class="content"><div class='highlight'><pre><span class="function"><span class="keyword">function</span> <span class="title">IncomingMessage</span><span class="params">(stream)</span> {</span>
-  PassThrough.call(<span class="keyword">this</span>);
-
-  <span class="keyword">this</span>._stream = stream;
-
-  <span class="keyword">this</span>.httpVersion = <span class="string">'2.0'</span>;
-  <span class="keyword">this</span>.httpVersionMajor = <span class="number">2</span>;
-  <span class="keyword">this</span>.httpVersionMinor = <span class="number">0</span>;
-
-  stream.pipe(<span class="keyword">this</span>);
-  stream.once(<span class="string">'headers'</span>, <span class="keyword">this</span>._onHeaders.bind(<span class="keyword">this</span>));
-}
-IncomingMessage.prototype = Object.create(PassThrough.prototype, { constructor: { value: IncomingMessage } });
-
-IncomingMessage.prototype._onHeaders = <span class="function"><span class="keyword">function</span> <span class="title">_onHeaders</span><span class="params">(headers)</span> {</span>
-  <span class="keyword">this</span>.statusCode = headers[<span class="string">':status'</span>];
-  <span class="keyword">this</span>.method = headers[<span class="string">':method'</span>];
-  <span class="keyword">this</span>.url = headers[<span class="string">':path'</span>];
-
-  <span class="keyword">this</span>.headers = headers;
-  headers.host = headers[<span class="string">':host'</span>];
-  <span class="keyword">delete</span> headers[<span class="string">':scheme'</span>];
-  <span class="keyword">delete</span> headers[<span class="string">':method'</span>];
-  <span class="keyword">delete</span> headers[<span class="string">':host'</span>];
-  <span class="keyword">delete</span> headers[<span class="string">':path'</span>];
-
-  <span class="keyword">this</span>.emit(<span class="string">'ready'</span>);
-};</pre></div></div>
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">else</span> <span class="keyword">if</span> (options.plain) {
+    <span class="keyword">this</span>._log.info(<span class="string">'Creating HTTP/2 server over plain TCP'</span>);
+    <span class="keyword">this</span>._server = net.createServer(start);
+  }</pre></div></div>
             
         </li>
         
@@ -505,12 +570,21 @@ IncomingMessage.prototype._onHeaders = <span class="function"><span class="keywo
         <li id="section-20">
             <div class="annotation">
               
-              <div class="pilwrap for-h2">
+              <div class="pilwrap ">
                 <a class="pilcrow" href="#section-20">&#182;</a>
               </div>
-              <h2>ServerResponse</h2>
+              <p>HTTP/2 with HTTP/1.1 upgrade</p>
 
             </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">else</span> {
+    <span class="keyword">this</span>._log.error(<span class="string">'Trying to create HTTP/2 server with Upgrade from HTTP/1.1'</span>);
+    <span class="keyword">throw</span> <span class="keyword">new</span> Error(<span class="string">'HTTP1.1 -&gt; HTTP2 upgrade is not yet supported. Please provide TLS keys.'</span>);
+  }
+
+  <span class="keyword">this</span>._server.on(<span class="string">'close'</span>, <span class="keyword">this</span>.emit.bind(<span class="keyword">this</span>, <span class="string">'close'</span>));
+}
+Server.prototype = Object.create(EventEmitter.prototype, { constructor: { value: Server } });</pre></div></div>
             
         </li>
         
@@ -521,28 +595,38 @@ IncomingMessage.prototype._onHeaders = <span class="function"><span class="keywo
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-21">&#182;</a>
               </div>
-              
+              <p>Starting HTTP/2</p>
+
             </div>
             
-            <div class="content"><div class='highlight'><pre><span class="function"><span class="keyword">function</span> <span class="title">ServerResponse</span><span class="params">(stream)</span> {</span>
-  PassThrough.call(<span class="keyword">this</span>);
+            <div class="content"><div class='highlight'><pre>Server.prototype._start = <span class="function"><span class="keyword">function</span> <span class="title">_start</span><span class="params">(socket)</span> {</span>
+  <span class="keyword">var</span> logger = <span class="keyword">this</span>._log.child({ client: socket.remoteAddress + <span class="string">':'</span> + socket.remotePort  });
+  logger.info(<span class="string">'Incoming HTTP/2 connection'</span>);
 
-  <span class="keyword">this</span>._stream = stream;
+  <span class="keyword">var</span> endpoint = <span class="keyword">new</span> Endpoint(<span class="string">'SERVER'</span>, <span class="keyword">this</span>._settings, logger);
 
-  <span class="keyword">this</span>.pipe(stream);
-}
-ServerResponse.prototype = Object.create(PassThrough.prototype, { constructor: { value: ServerResponse } });
+  endpoint.pipe(socket).pipe(endpoint);
 
-ServerResponse.prototype.writeHead = <span class="function"><span class="keyword">function</span> <span class="title">writeHead</span><span class="params">(statusCode, reasonPhrase, headers)</span> {</span>
-  <span class="keyword">if</span> (!headers) {
-    headers = reasonPhrase;
+  <span class="keyword">var</span> self = <span class="keyword">this</span>;
+  endpoint.on(<span class="string">'stream'</span>, <span class="function"><span class="keyword">function</span> <span class="title">_onStream</span><span class="params">(stream)</span> {</span>
+    <span class="keyword">var</span> response = <span class="keyword">new</span> OutgoingResponse(endpoint, stream, logger);
+    <span class="keyword">var</span> request = <span class="keyword">new</span> IncomingRequest(stream, logger);
+
+    request.once(<span class="string">'ready'</span>, self.emit.bind(self, <span class="string">'request'</span>, request, response));
+  });
+
+  <span class="keyword">this</span>.emit(<span class="string">'connection'</span>, socket, endpoint);
+};
+
+Server.prototype._fallback = <span class="function"><span class="keyword">function</span> <span class="title">_fallback</span><span class="params">(socket)</span> {</span>
+  <span class="keyword">this</span>._log.info({ client: socket.remoteAddress + <span class="string">':'</span> + socket.remotePort, protocol: socket.npnProtocol },
+                 <span class="string">'Falling back to simple HTTPS'</span>);
+
+  <span class="keyword">for</span> (<span class="keyword">var</span> i = <span class="number">0</span>; i &lt; <span class="keyword">this</span>._originalSocketListeners.length; i++) {
+    <span class="keyword">this</span>._originalSocketListeners[i].call(<span class="keyword">this</span>._server, socket);
   }
 
-  headers = headers || {};
-
-  headers[<span class="string">':status'</span>] = statusCode;
-
-  <span class="keyword">this</span>._stream.headers(headers);
+  <span class="keyword">this</span>.emit(<span class="string">'connection'</span>, socket);
 };</pre></div></div>
             
         </li>
@@ -551,12 +635,39 @@ ServerResponse.prototype.writeHead = <span class="function"><span class="keyword
         <li id="section-22">
             <div class="annotation">
               
-              <div class="pilwrap for-h2">
+              <div class="pilwrap ">
                 <a class="pilcrow" href="#section-22">&#182;</a>
               </div>
-              <h2>ClientRequest</h2>
+              <p>There are <a href="http://nodejs.org/api/http.html#http_server_listen_port_hostname_backlog_callback">3 possible signatures</a> of the <code>listen</code> function. Every arguments is forwarded to
+the backing TCP or HTTPS server.</p>
 
             </div>
+            
+            <div class="content"><div class='highlight'><pre>Server.prototype.listen = <span class="function"><span class="keyword">function</span> <span class="title">listen</span><span class="params">(port, hostname)</span> {</span>
+  <span class="keyword">this</span>._log.info({ on: ((<span class="keyword">typeof</span> hostname === <span class="string">'string'</span>) ? (hostname + <span class="string">':'</span> + port) : port) },
+                 <span class="string">'Listening for incoming connections'</span>);
+  <span class="keyword">this</span>._server.listen.apply(<span class="keyword">this</span>._server, arguments);
+};
+
+Server.prototype.close = <span class="function"><span class="keyword">function</span> <span class="title">close</span><span class="params">(callback)</span> {</span>
+  <span class="keyword">this</span>._log.info(<span class="string">'Closing server'</span>);
+  <span class="keyword">this</span>._server.close(callback);
+};
+
+<span class="function"><span class="keyword">function</span> <span class="title">createServer</span><span class="params">(options, requestListener)</span> {</span>
+  <span class="keyword">if</span> (<span class="keyword">typeof</span> options === <span class="string">'function'</span>) {
+    requestListener = options;
+    options = <span class="literal">undefined</span>;
+  }
+
+  <span class="keyword">var</span> server = <span class="keyword">new</span> Server(options);
+
+  <span class="keyword">if</span> (requestListener) {
+    server.on(<span class="string">'request'</span>, requestListener);
+  }
+
+  <span class="keyword">return</span> server;
+}</pre></div></div>
             
         </li>
         
@@ -564,44 +675,12 @@ ServerResponse.prototype.writeHead = <span class="function"><span class="keyword
         <li id="section-23">
             <div class="annotation">
               
-              <div class="pilwrap ">
+              <div class="pilwrap for-h2">
                 <a class="pilcrow" href="#section-23">&#182;</a>
               </div>
-              
+              <h2>IncomingRequest class</h2>
+
             </div>
-            
-            <div class="content"><div class='highlight'><pre><span class="function"><span class="keyword">function</span> <span class="title">ClientRequest</span><span class="params">()</span> {</span>
-  PassThrough.call(<span class="keyword">this</span>);
-
-  <span class="keyword">this</span>._stream = <span class="literal">undefined</span>;
-  <span class="keyword">this</span>._request = <span class="literal">undefined</span>;
-}
-ClientRequest.prototype = Object.create(PassThrough.prototype, { constructor: { value: ClientRequest } });
-
-ClientRequest.prototype._start = <span class="function"><span class="keyword">function</span> <span class="title">_start</span><span class="params">(stream, options)</span> {</span>
-  <span class="keyword">var</span> headers = {};
-  <span class="keyword">for</span> (<span class="keyword">var</span> key <span class="keyword">in</span> options.headers) {
-    headers[key] = options.headers[key];
-  }
-  <span class="keyword">delete</span> headers.host;
-  headers[<span class="string">':scheme'</span>] = <span class="string">'https'</span>;
-  headers[<span class="string">':method'</span>] = options.method;
-  headers[<span class="string">':host'</span>] = options.hostname || options.host;
-  headers[<span class="string">':path'</span>] = options.url;
-
-  <span class="keyword">this</span>._stream = stream;
-  stream.headers(headers);
-  <span class="keyword">this</span>.pipe(stream);
-
-  <span class="keyword">var</span> response = <span class="keyword">new</span> IncomingMessage(stream);
-  response.once(<span class="string">'ready'</span>, <span class="keyword">this</span>.emit.bind(<span class="keyword">this</span>, <span class="string">'response'</span>, response));
-};
-
-ClientRequest.prototype._fallback = <span class="function"><span class="keyword">function</span> <span class="title">_fallback</span><span class="params">(request)</span> {</span>
-  <span class="keyword">this</span>._request = request;
-
-  <span class="keyword">this</span>.pipe(request);
-};</pre></div></div>
             
         </li>
         
@@ -609,12 +688,16 @@ ClientRequest.prototype._fallback = <span class="function"><span class="keyword"
         <li id="section-24">
             <div class="annotation">
               
-              <div class="pilwrap for-h2">
+              <div class="pilwrap ">
                 <a class="pilcrow" href="#section-24">&#182;</a>
               </div>
-              <h2>Agent</h2>
-
+              
             </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="function"><span class="keyword">function</span> <span class="title">IncomingRequest</span><span class="params">(stream, log)</span> {</span>
+  IncomingMessage.call(<span class="keyword">this</span>, stream, log);
+}
+IncomingRequest.prototype = Object.create(IncomingMessage.prototype, { constructor: { value: IncomingRequest } });</pre></div></div>
             
         </li>
         
@@ -625,10 +708,751 @@ ClientRequest.prototype._fallback = <span class="function"><span class="keyword"
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-25">&#182;</a>
               </div>
-              <p><a href="http://nodejs.org/api/http.html#http_class_http_agent">HTTP agents</a> are not yet supported,
-so every client request will create a new TCP stream.</p>
+              <p><a href="http://tools.ietf.org/html/draft-ietf-httpbis-http2-05#section-8.1.2.1">Request Header Fields</a></p>
 
             </div>
+            
+            <div class="content"><div class='highlight'><pre>IncomingRequest.prototype._onHeaders = <span class="function"><span class="keyword">function</span> <span class="title">_onHeaders</span><span class="params">(headers)</span> {</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-26">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-26">&#182;</a>
+              </div>
+              <ul>
+<li>HTTP/2.0 request and response header fields carry information as a series of key-value pairs.
+This includes the target URI for the request, the status code for the response, as well as
+HTTP header fields.</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">this</span>.headers = headers;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-27">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-27">&#182;</a>
+              </div>
+              <ul>
+<li>The &quot;:method&quot; header field includes the HTTP method</li>
+<li>The &quot;:scheme&quot; header field includes the scheme portion of the target URI</li>
+<li>The &quot;:host&quot; header field includes the authority portion of the target URI</li>
+<li>The &quot;:path&quot; header field includes the path and query parts of the target URI.
+This field MUST NOT be empty; URIs that do not contain a path component MUST include a value
+of &#39;/&#39;, unless the request is an OPTIONS request for &#39;<em>&#39;, in which case the &quot;:path&quot; header
+field MUST include &#39;</em>&#39;.</li>
+<li>All HTTP/2.0 requests MUST include exactly one valid value for all of these header fields. A
+server MUST treat the absence of any of these header fields, presence of multiple values, or
+an invalid value as a stream error of type PROTOCOL_ERROR.</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">var</span> mapping = {
+    method: <span class="string">':method'</span>,
+    scheme: <span class="string">':scheme'</span>,
+    host: <span class="string">':host'</span>,
+    url: <span class="string">':path'</span>
+  };
+  <span class="keyword">for</span> (<span class="keyword">var</span> property <span class="keyword">in</span> mapping) {
+    <span class="keyword">var</span> value = headers[mapping[property]];
+    <span class="keyword">if</span> ((<span class="keyword">typeof</span> value !== <span class="string">'string'</span>) || (value.length === <span class="number">0</span>)) {
+      <span class="keyword">this</span>._log.error({ key: mapping[property], value: value }, <span class="string">'Invalid header field'</span>);
+      <span class="keyword">this</span>.stream.emit(<span class="string">'error'</span>, <span class="string">'PROTOCOL_ERROR'</span>);
+      <span class="keyword">return</span>;
+    }
+    <span class="keyword">this</span>[property] = value;
+    <span class="keyword">delete</span> headers[mapping[property]];
+  }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-28">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-28">&#182;</a>
+              </div>
+              <ul>
+<li>An HTTP/2.0 request MUST NOT include any of the following header fields: Connection, Host,
+Keep-Alive, Proxy-Connection, TE, Transfer-Encoding, and Upgrade. A server MUST treat the
+presence of any of these header fields as a stream error of type PROTOCOL_ERROR.</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">var</span> deprecatedHeaders = [
+    <span class="string">'connection'</span>,
+    <span class="string">'host'</span>,
+    <span class="string">'keep-alive'</span>,
+    <span class="string">'proxy-connection'</span>,
+    <span class="string">'te'</span>,
+    <span class="string">'transfer-encoding'</span>,
+    <span class="string">'upgrade'</span>
+  ];
+  <span class="keyword">for</span> (<span class="keyword">var</span> i = <span class="number">0</span>; i &lt; deprecatedHeaders.length; i++) {
+    <span class="keyword">var</span> key = deprecatedHeaders[i];
+    <span class="keyword">if</span> (key <span class="keyword">in</span> headers) {
+      <span class="keyword">this</span>._log.error({ key: key, value: headers[key] }, <span class="string">'Deprecated header found'</span>);
+      <span class="keyword">this</span>.stream.emit(<span class="string">'error'</span>, <span class="string">'PROTOCOL_ERROR'</span>);
+      <span class="keyword">return</span>;
+    }
+  }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-29">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-29">&#182;</a>
+              </div>
+              <ul>
+<li>Host header is included in the headers object for backwards compatibility.</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  headers.host = <span class="keyword">this</span>.host;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-30">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-30">&#182;</a>
+              </div>
+              <ul>
+<li>Signaling that the header arrived.</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">this</span>._log.info({ method: <span class="keyword">this</span>.method, scheme: <span class="keyword">this</span>.scheme, host: <span class="keyword">this</span>.host,
+    path: <span class="keyword">this</span>.url, headers: headers}, <span class="string">'Incoming request'</span>);
+  <span class="keyword">this</span>.emit(<span class="string">'ready'</span>);
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-31">
+            <div class="annotation">
+              
+              <div class="pilwrap for-h2">
+                <a class="pilcrow" href="#section-31">&#182;</a>
+              </div>
+              <h2>OutgoingResponse class</h2>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-32">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-32">&#182;</a>
+              </div>
+              
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="function"><span class="keyword">function</span> <span class="title">OutgoingResponse</span><span class="params">(endpoint, stream, log)</span> {</span>
+  OutgoingMessage.call(<span class="keyword">this</span>, log);
+
+  <span class="keyword">this</span>.endpoint = endpoint;
+  <span class="keyword">this</span>.stream = stream;
+  <span class="keyword">this</span>.statusCode = <span class="literal">undefined</span>;
+  <span class="keyword">this</span>.sendDate = <span class="literal">true</span>;
+
+  <span class="keyword">this</span>.stream.once(<span class="string">'headers'</span>, <span class="keyword">this</span>._onRequestHeaders.bind(<span class="keyword">this</span>));
+}
+OutgoingResponse.prototype = Object.create(OutgoingMessage.prototype, { constructor: { value: OutgoingResponse } });
+
+OutgoingResponse.prototype.writeHead = <span class="function"><span class="keyword">function</span> <span class="title">writeHead</span><span class="params">(statusCode, reasonPhrase, headers)</span> {</span>
+  <span class="keyword">if</span> (<span class="keyword">typeof</span> reasonPhrase === <span class="string">'string'</span>) {
+    <span class="keyword">this</span>._log.warn(<span class="string">'Reason phrase argument was present but ignored by the writeHead method'</span>);
+  } <span class="keyword">else</span> {
+    headers = reasonPhrase;
+  }
+
+  headers = headers || {};
+
+  <span class="keyword">for</span> (<span class="keyword">var</span> name <span class="keyword">in</span> headers) {
+    <span class="keyword">this</span>._headers[name.toLowerCase()] = headers[name];
+  }
+
+  <span class="keyword">if</span> (<span class="keyword">this</span>.sendDate &amp;&amp; !(<span class="string">'date'</span> <span class="keyword">in</span> <span class="keyword">this</span>._headers)) {
+    <span class="keyword">this</span>._headers.date = (<span class="keyword">new</span> Date()).toUTCString();
+  }
+
+  <span class="keyword">this</span>._log.info({ status: statusCode, headers: <span class="keyword">this</span>._headers }, <span class="string">'Sending server response'</span>);
+
+  <span class="keyword">this</span>._headers[<span class="string">':status'</span>] = <span class="keyword">this</span>.statusCode = statusCode;
+
+  <span class="keyword">this</span>.stream.headers(<span class="keyword">this</span>._headers);
+
+  <span class="keyword">this</span>.headersSent = <span class="literal">true</span>;
+};
+
+OutgoingResponse.prototype._implicitHeaders = <span class="function"><span class="keyword">function</span> <span class="title">_implicitHeaders</span><span class="params">()</span> {</span>
+  <span class="keyword">if</span> (!<span class="keyword">this</span>.headersSent) {
+    <span class="keyword">this</span>.writeHead(<span class="keyword">this</span>.statusCode);
+  }
+};
+
+OutgoingResponse.prototype.write = <span class="function"><span class="keyword">function</span> <span class="title">write</span><span class="params">()</span> {</span>
+  <span class="keyword">this</span>._implicitHeaders();
+  <span class="keyword">return</span> OutgoingMessage.prototype.write.apply(<span class="keyword">this</span>, arguments);
+};
+
+OutgoingResponse.prototype.end = <span class="function"><span class="keyword">function</span> <span class="title">end</span><span class="params">()</span> {</span>
+  <span class="keyword">this</span>._implicitHeaders();
+  <span class="keyword">return</span> OutgoingMessage.prototype.end.apply(<span class="keyword">this</span>, arguments);
+};
+
+OutgoingResponse.prototype._onRequestHeaders = <span class="function"><span class="keyword">function</span> <span class="title">_onRequestHeaders</span><span class="params">(headers)</span> {</span>
+  <span class="keyword">this</span>._requestHeaders = headers;
+};
+
+OutgoingResponse.prototype.push = <span class="function"><span class="keyword">function</span> <span class="title">push</span><span class="params">(options)</span> {</span>
+  <span class="keyword">if</span> (!<span class="keyword">this</span>.headersSent) {
+    <span class="keyword">throw</span> <span class="keyword">new</span> Error(<span class="string">'Initiating a server push is only possible after the head of the parent '</span> +
+                    <span class="string">'request is sent.'</span>);
+  }
+
+  <span class="keyword">if</span> (<span class="keyword">typeof</span> options === <span class="string">'string'</span>) {
+    options = url.parse(options);
+  }
+
+  <span class="keyword">if</span> (!options.path) {
+    <span class="keyword">throw</span> <span class="keyword">new</span> Error(<span class="string">'`path` option is mandatory.'</span>);
+  }
+
+  <span class="keyword">var</span> promiseHeaders = util._extend({
+    <span class="string">':method'</span>: (options.method || <span class="string">'GET'</span>).toUpperCase(),
+    <span class="string">':scheme'</span>: options.protocol || <span class="keyword">this</span>._requestHeaders[<span class="string">':scheme'</span>],
+    <span class="string">':host'</span>: options.hostname || options.host || <span class="keyword">this</span>._requestHeaders[<span class="string">':host'</span>],
+    <span class="string">':path'</span>: options.path
+  }, options.headers);
+
+  <span class="keyword">var</span> pushStream = <span class="keyword">this</span>.endpoint.createStream();
+  <span class="keyword">this</span>.stream.promise(pushStream, promiseHeaders);
+
+  <span class="keyword">return</span> <span class="keyword">new</span> OutgoingResponse(<span class="keyword">this</span>.endpoint, pushStream, <span class="keyword">this</span>._log);
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-33">
+            <div class="annotation">
+              
+              <div class="pilwrap for-h1">
+                <a class="pilcrow" href="#section-33">&#182;</a>
+              </div>
+              <h1>Client side</h1>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-34">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-34">&#182;</a>
+              </div>
+              
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>exports.request = request;
+exports.get = get;
+exports.Agent = Agent;
+exports.ClientRequest = OutgoingRequest; <span class="comment">// for API compatibility</span>
+exports.OutgoingRequest = OutgoingRequest;
+exports.IncomingResponse = IncomingResponse;
+exports.globalAgent = <span class="literal">undefined</span>;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-35">
+            <div class="annotation">
+              
+              <div class="pilwrap for-h2">
+                <a class="pilcrow" href="#section-35">&#182;</a>
+              </div>
+              <h2>Agent class</h2>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-36">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-36">&#182;</a>
+              </div>
+              
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="function"><span class="keyword">function</span> <span class="title">Agent</span><span class="params">(options)</span> {</span>
+  EventEmitter.call(<span class="keyword">this</span>);
+
+  options = options || {};
+
+  <span class="keyword">this</span>._settings = options.settings;
+  <span class="keyword">this</span>._log = (options.log || logging.root).child({ component: <span class="string">'http'</span> });
+  <span class="keyword">this</span>._endpoints = {};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-37">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-37">&#182;</a>
+              </div>
+              <ul>
+<li>Using an own HTTPS agent, because the global agent does not look at <code>NPNProtocols</code> when
+generating the key identifying the connection, so we may get useless non-negotiated TLS
+channels even if we ask for a negotiated one. This agent will contain only negotiated
+channels.</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">this</span>._httpsAgent = <span class="keyword">new</span> https.Agent({
+    NPNProtocols: [implementedVersion, <span class="string">'http/1.1'</span>, <span class="string">'http/1.0'</span>]
+  });
+}
+Agent.prototype = Object.create(EventEmitter.prototype, { constructor: { value: Agent } });
+
+Agent.prototype.request = <span class="function"><span class="keyword">function</span> <span class="title">request</span><span class="params">(options, callback)</span> {</span>
+  <span class="keyword">if</span> (<span class="keyword">typeof</span> options === <span class="string">'string'</span>) {
+    options = url.parse(options);
+  }
+
+  options.method = (options.method || <span class="string">'GET'</span>).toUpperCase();
+  options.protocol = options.protocol || <span class="string">'https'</span>;
+  options.host = options.hostname || options.host || <span class="string">'localhost'</span>;
+  options.port = options.port || <span class="number">443</span>;
+  options.path = options.path || <span class="string">'/'</span>;
+
+  <span class="keyword">if</span> (options.protocol === <span class="string">'http'</span>) {
+    <span class="keyword">this</span>._log.error(<span class="string">'Trying to negotiate client request with Upgrade from HTTP/1.1'</span>);
+    <span class="keyword">throw</span> <span class="keyword">new</span> Error(<span class="string">'HTTP1.1 -&gt; HTTP2 upgrade is not yet supported.'</span>);
+  }
+
+  <span class="keyword">var</span> request = <span class="keyword">new</span> OutgoingRequest(logging.root);
+
+  <span class="keyword">if</span> (callback) {
+    request.on(<span class="string">'response'</span>, callback);
+  }
+
+  <span class="keyword">var</span> key = [options.host, options.port].join(<span class="string">':'</span>);</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-38">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-38">&#182;</a>
+              </div>
+              <ul>
+<li>There&#39;s an existing HTTP/2 connection to this host</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">if</span> (key <span class="keyword">in</span> <span class="keyword">this</span>._endpoints) {
+    <span class="keyword">var</span> endpoint = <span class="keyword">this</span>._endpoints[key];
+    request._start(endpoint.createStream(), options);
+  }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-39">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-39">&#182;</a>
+              </div>
+              <ul>
+<li>HTTP/2 over TLS negotiated using NPN (or later ALPN)<ul>
+<li>if the negotiation is unsuccessful<ul>
+<li>adding socket to the HTTPS agent&#39;s socket pool</li>
+<li>initiating a request with the HTTPS agent</li>
+<li>calling request&#39;s fallback() to fall back to use the new request object</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">else</span> {
+    <span class="keyword">var</span> started = <span class="literal">false</span>;
+    options.NPNProtocols = [implementedVersion, <span class="string">'http/1.1'</span>, <span class="string">'http/1.0'</span>];
+    options.agent = <span class="keyword">this</span>._httpsAgent;
+    <span class="keyword">var</span> httpsRequest = https.request(options);
+    httpsRequest.on(<span class="string">'socket'</span>, <span class="keyword">function</span>(socket) {
+      <span class="keyword">if</span> (socket.npnProtocol !== <span class="literal">undefined</span>) {
+        negotiated();
+      } <span class="keyword">else</span> {
+        socket.on(<span class="string">'secureConnect'</span>, negotiated);
+      }
+    });
+
+    <span class="keyword">var</span> negotiated = <span class="function"><span class="keyword">function</span> <span class="title">negotiated</span><span class="params">()</span> {</span>
+      <span class="keyword">if</span> (!started) {
+        <span class="keyword">if</span> (httpsRequest.socket.npnProtocol === implementedVersion) {
+          httpsRequest.socket.emit(<span class="string">'agentRemove'</span>);
+          unbundleSocket(httpsRequest.socket);
+          <span class="keyword">var</span> logger = <span class="keyword">this</span>._log.child({ server: options.host + <span class="string">':'</span> + options.port });
+          <span class="keyword">var</span> endpoint = <span class="keyword">new</span> Endpoint(<span class="string">'CLIENT'</span>, <span class="keyword">this</span>._settings, logger);
+          endpoint.socket = httpsRequest.socket;
+          endpoint.pipe(endpoint.socket).pipe(endpoint);
+          <span class="keyword">this</span>._endpoints[key] = endpoint;
+          <span class="keyword">this</span>.emit(key, endpoint);
+        } <span class="keyword">else</span> {
+          <span class="keyword">this</span>.emit(key, <span class="literal">undefined</span>);
+        }
+      }
+    }.bind(<span class="keyword">this</span>);
+
+    <span class="keyword">this</span>.once(key, <span class="keyword">function</span>(endpoint) {
+      started = <span class="literal">true</span>;
+      <span class="keyword">if</span> (endpoint) {
+        request._start(endpoint.createStream(), options);
+      } <span class="keyword">else</span> {
+        request._fallback(httpsRequest);
+      }
+    });
+  }
+
+  <span class="keyword">return</span> request;
+};
+
+Agent.prototype.get = <span class="function"><span class="keyword">function</span> <span class="title">get</span><span class="params">(options, callback)</span> {</span>
+  <span class="keyword">var</span> request = <span class="keyword">this</span>.request(options, callback);
+  request.end();
+  <span class="keyword">return</span> request;
+};
+
+<span class="function"><span class="keyword">function</span> <span class="title">unbundleSocket</span><span class="params">(socket)</span> {</span>
+  socket.removeAllListeners(<span class="string">'data'</span>);
+  socket.removeAllListeners(<span class="string">'end'</span>);
+  socket.removeAllListeners(<span class="string">'readable'</span>);
+  socket.removeAllListeners(<span class="string">'close'</span>);
+  socket.removeAllListeners(<span class="string">'error'</span>);
+  socket.unpipe();
+  <span class="keyword">delete</span> socket.ondata;
+  <span class="keyword">delete</span> socket.onend;
+}
+
+<span class="keyword">var</span> globalAgent = exports.globalAgent = <span class="keyword">new</span> Agent();
+
+<span class="function"><span class="keyword">function</span> <span class="title">request</span><span class="params">(options, callback)</span> {</span>
+  <span class="keyword">return</span> globalAgent.request(options, callback);
+}
+
+<span class="function"><span class="keyword">function</span> <span class="title">get</span><span class="params">(options, callback)</span> {</span>
+  <span class="keyword">return</span> globalAgent.get(options, callback);
+}</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-40">
+            <div class="annotation">
+              
+              <div class="pilwrap for-h2">
+                <a class="pilcrow" href="#section-40">&#182;</a>
+              </div>
+              <h2>OutgoingRequest class</h2>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-41">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-41">&#182;</a>
+              </div>
+              
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="function"><span class="keyword">function</span> <span class="title">OutgoingRequest</span><span class="params">(log)</span> {</span>
+  OutgoingMessage.call(<span class="keyword">this</span>, log);
+
+  <span class="keyword">this</span>.socket = <span class="literal">undefined</span>;
+  <span class="keyword">this</span>.stream = <span class="literal">undefined</span>;
+  <span class="keyword">this</span>.request = <span class="literal">undefined</span>;
+  <span class="keyword">this</span>.headersSent = <span class="literal">true</span>;
+}
+OutgoingRequest.prototype = Object.create(OutgoingMessage.prototype, { constructor: { value: OutgoingRequest } });
+
+OutgoingRequest.prototype._start = <span class="function"><span class="keyword">function</span> <span class="title">_start</span><span class="params">(stream, options)</span> {</span>
+  <span class="keyword">var</span> logger = <span class="keyword">this</span>._log.child({ server: (options.hostname || options.host) + <span class="string">':'</span> + (options.port || <span class="number">80</span>)  });
+  logger.info(<span class="string">'Successfully initiated HTTP/2 connection'</span>);
+
+  <span class="keyword">this</span>.stream = stream;
+
+  <span class="keyword">var</span> headers = {};
+  <span class="keyword">for</span> (<span class="keyword">var</span> key <span class="keyword">in</span> options.headers) {
+    headers[key] = options.headers[key];
+  }
+  <span class="keyword">delete</span> headers.host;
+  headers[<span class="string">':scheme'</span>] = options.protocol;
+  headers[<span class="string">':method'</span>] = options.method;
+  headers[<span class="string">':host'</span>] = options.hostname;
+  headers[<span class="string">':path'</span>] = options.path;
+
+  logger.info({ scheme: headers[<span class="string">':scheme'</span>], method: headers[<span class="string">':method'</span>], host: headers[<span class="string">':host'</span>],
+                path: headers[<span class="string">':path'</span>], headers: (options.headers || {}) }, <span class="string">'Sending request'</span>);
+  <span class="keyword">this</span>.stream.headers(headers);
+
+  <span class="keyword">this</span>.emit(<span class="string">'stream'</span>, <span class="keyword">this</span>.stream);
+
+  <span class="keyword">var</span> response = <span class="keyword">new</span> IncomingResponse(<span class="keyword">this</span>.stream, logger);
+  response.once(<span class="string">'ready'</span>, <span class="keyword">this</span>.emit.bind(<span class="keyword">this</span>, <span class="string">'response'</span>, response));
+};
+
+OutgoingRequest.prototype._fallback = <span class="function"><span class="keyword">function</span> <span class="title">_fallback</span><span class="params">(request)</span> {</span>
+  <span class="keyword">this</span>._log.info(<span class="string">'Falling back to simple HTTPS'</span>);
+
+  <span class="keyword">this</span>.request = request;
+  <span class="keyword">this</span>.socket = request.socket;
+  <span class="keyword">this</span>.emit(<span class="string">'socket'</span>, request.socket);
+
+  <span class="keyword">this</span>.pipe(request);
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-42">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-42">&#182;</a>
+              </div>
+              <p>Methods only in fallback mode</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>OutgoingRequest.prototype.setNoDelay = <span class="function"><span class="keyword">function</span> <span class="title">setNoDelay</span><span class="params">(noDelay)</span> {</span>
+  <span class="keyword">if</span> (<span class="keyword">this</span>.request) {
+    <span class="keyword">this</span>.request.setNoDelay(noDelay);
+  }
+};
+
+OutgoingRequest.prototype.setSocketKeepAlive = <span class="function"><span class="keyword">function</span> <span class="title">setSocketKeepAlive</span><span class="params">(enable, initialDelay)</span> {</span>
+  <span class="keyword">if</span> (<span class="keyword">this</span>.request) {
+    <span class="keyword">this</span>.request.setSocketKeepAlive(enable, initialDelay);
+  }
+};
+
+OutgoingRequest.prototype.setTimeout = <span class="function"><span class="keyword">function</span> <span class="title">setTimeout</span><span class="params">(timeout, callback)</span> {</span>
+  <span class="keyword">if</span> (<span class="keyword">this</span>.request) {
+    <span class="keyword">this</span>.request.setTimeout(timeout, callback);
+  }
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-43">
+            <div class="annotation">
+              
+              <div class="pilwrap for-h2">
+                <a class="pilcrow" href="#section-43">&#182;</a>
+              </div>
+              <h2>IncomingResponse class</h2>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-44">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-44">&#182;</a>
+              </div>
+              
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="function"><span class="keyword">function</span> <span class="title">IncomingResponse</span><span class="params">(stream, log)</span> {</span>
+  IncomingMessage.call(<span class="keyword">this</span>, stream, log);
+  stream.on(<span class="string">'promise'</span>, <span class="keyword">this</span>._onPromise.bind(<span class="keyword">this</span>));
+}
+IncomingResponse.prototype = Object.create(IncomingMessage.prototype, { constructor: { value: IncomingResponse } });</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-45">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-45">&#182;</a>
+              </div>
+              <p><a href="http://tools.ietf.org/html/draft-ietf-httpbis-http2-05#section-8.1.2.2">Response Header Fields</a></p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>IncomingResponse.prototype._onHeaders = <span class="function"><span class="keyword">function</span> <span class="title">_onHeaders</span><span class="params">(headers)</span> {</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-46">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-46">&#182;</a>
+              </div>
+              <ul>
+<li>HTTP/2.0 request and response header fields carry information as a series of key-value pairs.
+This includes the target URI for the request, the status code for the response, as well as
+HTTP header fields.</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">this</span>.headers = headers;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-47">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-47">&#182;</a>
+              </div>
+              <ul>
+<li>A single &quot;:status&quot; header field is defined that carries the HTTP status code field. This
+header field MUST be included in all responses.</li>
+<li>A client MUST treat the absence of the &quot;:status&quot; header field, the presence of multiple
+values, or an invalid value as a stream error of type PROTOCOL_ERROR.</li>
+<li>HTTP/2.0 does not define a way to carry the reason phrase that is included in an HTTP/1.1
+status line.</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">var</span> statusCode = headers[<span class="string">':status'</span>];
+  <span class="keyword">if</span> ((<span class="keyword">typeof</span> statusCode !== <span class="string">'string'</span>) || (statusCode.length === <span class="number">0</span>)) {
+    <span class="keyword">this</span>._log.error({ key: <span class="string">':status'</span>, value: statusCode }, <span class="string">'Invalid header field'</span>);
+    <span class="keyword">this</span>.stream.emit(<span class="string">'error'</span>, <span class="string">'PROTOCOL_ERROR'</span>);
+    <span class="keyword">return</span>;
+  }
+  <span class="keyword">this</span>.statusCode = statusCode;
+  <span class="keyword">delete</span> headers[<span class="string">':status'</span>];</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-48">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-48">&#182;</a>
+              </div>
+              <ul>
+<li>Signaling that the header arrived.</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">this</span>._log.info({ status: statusCode, headers: headers}, <span class="string">'Incoming response'</span>);
+  <span class="keyword">this</span>.emit(<span class="string">'ready'</span>);
+};
+
+IncomingResponse.prototype._onPromise = <span class="function"><span class="keyword">function</span> <span class="title">_onPromise</span><span class="params">(stream, headers)</span> {</span>
+  <span class="keyword">var</span> promise = <span class="keyword">new</span> IncomingPromise(stream, headers, <span class="keyword">this</span>._log);
+
+  <span class="keyword">if</span> (<span class="keyword">this</span>.listeners(<span class="string">'push'</span>).length &gt; <span class="number">0</span>) {
+    <span class="keyword">this</span>.emit(<span class="string">'push'</span>, promise);
+  } <span class="keyword">else</span> {
+    promise.cancel();
+  }
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-49">
+            <div class="annotation">
+              
+              <div class="pilwrap for-h2">
+                <a class="pilcrow" href="#section-49">&#182;</a>
+              </div>
+              <h2>IncomingPromise class</h2>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-50">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-50">&#182;</a>
+              </div>
+              
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="function"><span class="keyword">function</span> <span class="title">IncomingPromise</span><span class="params">(responseStream, promiseHeaders, log)</span> {</span>
+  <span class="keyword">var</span> stream = <span class="keyword">new</span> Readable();
+  stream._read = <span class="function"><span class="keyword">function</span> <span class="title">noop</span><span class="params">()</span> {</span>};
+  stream.push(<span class="literal">null</span>);
+
+  IncomingRequest.call(<span class="keyword">this</span>, stream, log);
+
+  stream.emit(<span class="string">'headers'</span>, promiseHeaders);
+
+  <span class="keyword">this</span>._responseStream = responseStream;
+
+  <span class="keyword">var</span> response = <span class="keyword">new</span> IncomingResponse(<span class="keyword">this</span>._responseStream, log);
+  response.once(<span class="string">'ready'</span>, <span class="keyword">this</span>.emit.bind(<span class="keyword">this</span>, <span class="string">'response'</span>, response));
+}
+IncomingPromise.prototype = Object.create(IncomingRequest.prototype, { constructor: { value: IncomingPromise } });
+
+IncomingPromise.prototype.cancel = <span class="function"><span class="keyword">function</span> <span class="title">cancel</span><span class="params">()</span> {</span>
+  <span class="keyword">this</span>._responseStream.reset(<span class="string">'CANCEL'</span>);
+};</pre></div></div>
             
         </li>
         

@@ -86,7 +86,7 @@
               
             </div>
             
-            <div class="content"><div class='highlight'><pre><span class="keyword">var</span> assert  = require(<span class="string">'assert'</span>);
+            <div class="content"><div class='highlight'><pre><span class="keyword">var</span> assert = process.env.HTTP2_ASSERT ? require(<span class="string">'assert'</span>) : <span class="function"><span class="keyword">function</span> <span class="title">noop</span><span class="params">()</span> {</span>};
 <span class="keyword">var</span> logging = require(<span class="string">'./logging'</span>);</pre></div></div>
             
         </li>
@@ -148,13 +148,13 @@ exports.Stream = Stream;</pre></div></div>
               <ul>
 <li><p><strong>Event: &#39;headers&#39; (headers)</strong>: signals incoming headers</p>
 </li>
-<li><p><strong>Event: &#39;promise&#39; (headers, stream)</strong>: signals an incoming push promise</p>
+<li><p><strong>Event: &#39;promise&#39; (stream, headers)</strong>: signals an incoming push promise</p>
 </li>
 <li><p><strong>Event: &#39;error&#39; (type)</strong>: signals an error</p>
 </li>
 <li><p><strong>headers(headers, [priority])</strong>: send headers</p>
 </li>
-<li><p><strong>promise(headers, stream)</strong>: promise a stream</p>
+<li><p><strong>promise(stream, headers)</strong>: promise a stream</p>
 </li>
 <li><p><strong>reset(error)</strong>: reset the stream with an error code</p>
 </li>
@@ -283,7 +283,7 @@ close the stream.</p>
             
             <div class="content"><div class='highlight'><pre>Stream.prototype._initializeManagement = <span class="function"><span class="keyword">function</span> <span class="title">_initializeManagement</span><span class="params">()</span> {</span>
   <span class="keyword">this</span>.on(<span class="string">'PUSH_PROMISE'</span>, <span class="keyword">function</span>(frame) {
-    <span class="keyword">this</span>.emit(<span class="string">'promise'</span>, frame.headers, frame.promised_stream);
+    <span class="keyword">this</span>.emit(<span class="string">'promise'</span>, frame.promised_stream, frame.headers);
   });
   <span class="keyword">this</span>.on(<span class="string">'HEADERS'</span>, <span class="keyword">function</span>(frame) {
     <span class="keyword">this</span>.priority = frame.priority;
@@ -300,9 +300,9 @@ close the stream.</p>
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-13">&#182;</a>
               </div>
-              <p>For sending management frames, the <code>this.upstream.push(frame)</code> method is used. It notifies the state
-management code about the sent frames (using the &#39;sending&#39; event) so we don&#39;t have to manage
-state transitions here.</p>
+              <p>For sending management frames, the <code>this.upstream.push(frame)</code> method is used. It notifies the
+state management code about the sent frames (using the &#39;sending&#39; event) so we don&#39;t have to
+manage state transitions here.</p>
 
             </div>
             
@@ -411,6 +411,8 @@ Stream.prototype._initializeDataFlow = <span class="function"><span class="keywo
             </div>
             
             <div class="content"><div class='highlight'><pre>Stream.prototype._receive = <span class="function"><span class="keyword">function</span> <span class="title">_receive</span><span class="params">(frame, ready)</span> {</span>
+  <span class="keyword">this</span>._log.debug({ frame: frame }, <span class="string">'Receiving frame'</span>);
+
   <span class="keyword">var</span> callReady = <span class="literal">true</span>;</pre></div></div>
             
         </li>
@@ -607,7 +609,7 @@ Stream.prototype._finishing = <span class="function"><span class="keyword">funct
   <span class="keyword">delete</span> endFrame.stream;
   <span class="keyword">var</span> lastFrame = <span class="keyword">this</span>.upstream.getLastQueuedFrame();
   <span class="keyword">if</span> (lastFrame &amp;&amp; ((lastFrame.type === <span class="string">'DATA'</span>) || (lastFrame.type === <span class="string">'HEADERS'</span>))) {
-    <span class="keyword">this</span>._log.trace(<span class="string">'Marking last frame with END_STREAM flag.'</span>);
+    <span class="keyword">this</span>._log.trace({ frame: lastFrame }, <span class="string">'Marking last frame with END_STREAM flag.'</span>);
     lastFrame.flags.END_STREAM = <span class="literal">true</span>;
     <span class="keyword">this</span>._transition(<span class="literal">true</span>, endFrame);
   } <span class="keyword">else</span> {
@@ -668,6 +670,7 @@ Stream.prototype._finishing = <span class="function"><span class="keyword">funct
             
             <div class="content"><div class='highlight'><pre>Stream.prototype._initializeState = <span class="function"><span class="keyword">function</span> <span class="title">_initializeState</span><span class="params">()</span> {</span>
   <span class="keyword">this</span>.state = <span class="string">'IDLE'</span>;
+  <span class="keyword">this</span>._closedByPeer = <span class="literal">false</span>;
   <span class="keyword">this</span>.on(<span class="string">'sending'</span>, <span class="keyword">this</span>._transition.bind(<span class="keyword">this</span>, <span class="literal">true</span>));
   <span class="keyword">this</span>.on(<span class="string">'receiving'</span>, <span class="keyword">this</span>._transition.bind(<span class="keyword">this</span>, <span class="literal">false</span>));
 };</pre></div></div>
@@ -724,6 +727,20 @@ allowed in the current state.</p>
   <span class="keyword">var</span> receiving = !sending;
   <span class="keyword">var</span> error = <span class="literal">undefined</span>;
 
+  <span class="keyword">var</span> DATA = <span class="literal">false</span>, HEADERS = <span class="literal">false</span>, PRIORITY = <span class="literal">false</span>, RST_STREAM = <span class="literal">false</span>, SETTINGS = <span class="literal">false</span>;
+  <span class="keyword">var</span> PUSH_PROMISE = <span class="literal">false</span>, PING = <span class="literal">false</span>, GOAWAY = <span class="literal">false</span>, WINDOW_UPDATE = <span class="literal">false</span>;
+  <span class="keyword">switch</span>(frame.type) {
+    <span class="keyword">case</span> <span class="string">'DATA'</span>         : DATA          = <span class="literal">true</span>; <span class="keyword">break</span>;
+    <span class="keyword">case</span> <span class="string">'HEADERS'</span>      : HEADERS       = <span class="literal">true</span>; <span class="keyword">break</span>;
+    <span class="keyword">case</span> <span class="string">'PRIORITY'</span>     : PRIORITY      = <span class="literal">true</span>; <span class="keyword">break</span>;
+    <span class="keyword">case</span> <span class="string">'RST_STREAM'</span>   : RST_STREAM    = <span class="literal">true</span>; <span class="keyword">break</span>;
+    <span class="keyword">case</span> <span class="string">'SETTINGS'</span>     : SETTINGS      = <span class="literal">true</span>; <span class="keyword">break</span>;
+    <span class="keyword">case</span> <span class="string">'PUSH_PROMISE'</span> : PUSH_PROMISE  = <span class="literal">true</span>; <span class="keyword">break</span>;
+    <span class="keyword">case</span> <span class="string">'PING'</span>         : PING          = <span class="literal">true</span>; <span class="keyword">break</span>;
+    <span class="keyword">case</span> <span class="string">'GOAWAY'</span>       : GOAWAY        = <span class="literal">true</span>; <span class="keyword">break</span>;
+    <span class="keyword">case</span> <span class="string">'WINDOW_UPDATE'</span>: WINDOW_UPDATE = <span class="literal">true</span>; <span class="keyword">break</span>;
+  }
+
   <span class="keyword">switch</span> (<span class="keyword">this</span>.state) {</pre></div></div>
             
         </li>
@@ -744,7 +761,7 @@ allowed in the current state.</p>
             </div>
             
             <div class="content"><div class='highlight'><pre>    <span class="keyword">case</span> <span class="string">'IDLE'</span>:
-      <span class="keyword">if</span> (frame.type === <span class="string">'HEADERS'</span>) {
+      <span class="keyword">if</span> (HEADERS) {
         <span class="keyword">this</span>._setState(<span class="string">'OPEN'</span>);
         <span class="keyword">if</span> (frame.flags.END_STREAM) {
           <span class="keyword">this</span>._setState(sending ? <span class="string">'HALF_CLOSED_LOCAL'</span> : <span class="string">'HALF_CLOSED_REMOTE'</span>);
@@ -777,11 +794,13 @@ releases the stream reservation.</li>
             </div>
             
             <div class="content"><div class='highlight'><pre>    <span class="keyword">case</span> <span class="string">'RESERVED_LOCAL'</span>:
-      <span class="keyword">if</span> (sending &amp;&amp; (frame.type === <span class="string">'HEADERS'</span>)) {
+      <span class="keyword">if</span> (sending &amp;&amp; HEADERS) {
         <span class="keyword">this</span>._setState(<span class="string">'HALF_CLOSED_REMOTE'</span>);
-      } <span class="keyword">else</span> <span class="keyword">if</span> (sending &amp;&amp; (frame.type === <span class="string">'RST_STREAM'</span>)) {
+      } <span class="keyword">else</span> <span class="keyword">if</span> (RST_STREAM) {
         <span class="keyword">this</span>._setState(<span class="string">'CLOSED'</span>);
-      } <span class="keyword">else</span> <span class="keyword">if</span> (!(receiving &amp;&amp; (frame.type === <span class="string">'PRIORITY'</span>))) {
+      } <span class="keyword">else</span> <span class="keyword">if</span> (receiving &amp;&amp; PRIORITY) {
+        <span class="comment">/* No state change */</span>
+      } <span class="keyword">else</span> {
         error = <span class="string">'PROTOCOL_ERROR'</span>;
       }
       <span class="keyword">break</span>;</pre></div></div>
@@ -807,11 +826,13 @@ releases the stream reservation.</li>
             </div>
             
             <div class="content"><div class='highlight'><pre>    <span class="keyword">case</span> <span class="string">'RESERVED_REMOTE'</span>:
-      <span class="keyword">if</span> (frame.type === <span class="string">'RST_STREAM'</span>) {
+      <span class="keyword">if</span> (RST_STREAM) {
         <span class="keyword">this</span>._setState(<span class="string">'CLOSED'</span>);
-      } <span class="keyword">else</span> <span class="keyword">if</span> (receiving &amp;&amp; (frame.type === <span class="string">'HEADERS'</span>)) {
+      } <span class="keyword">else</span> <span class="keyword">if</span> (receiving &amp;&amp; HEADERS) {
         <span class="keyword">this</span>._setState(<span class="string">'HALF_CLOSED_LOCAL'</span>);
-      } <span class="keyword">else</span> <span class="keyword">if</span> (!(sending &amp;&amp; (frame.type === <span class="string">'PRIORITY'</span>))) {
+      } <span class="keyword">else</span> <span class="keyword">if</span> (sending &amp;&amp; PRIORITY) {
+        <span class="comment">/* No state change */</span>
+      } <span class="keyword">else</span> {
         error = <span class="string">'PROTOCOL_ERROR'</span>;
       }
       <span class="keyword">break</span>;</pre></div></div>
@@ -841,9 +862,11 @@ immediately to &quot;closed&quot;.</li>
             <div class="content"><div class='highlight'><pre>    <span class="keyword">case</span> <span class="string">'OPEN'</span>:
       <span class="keyword">if</span> (frame.flags.END_STREAM) {
         <span class="keyword">this</span>._setState(sending ? <span class="string">'HALF_CLOSED_LOCAL'</span> : <span class="string">'HALF_CLOSED_REMOTE'</span>);
-      } <span class="keyword">else</span> <span class="keyword">if</span> (frame.type === <span class="string">'RST_STREAM'</span>) {
+      } <span class="keyword">else</span> <span class="keyword">if</span> (RST_STREAM) {
         <span class="keyword">this</span>._setState(<span class="string">'CLOSED'</span>);
-      } <span class="comment">// Anything else is OK</span>
+      } <span class="keyword">else</span> {
+        <span class="comment">/* No state change */</span>
+      }
       <span class="keyword">break</span>;</pre></div></div>
             
         </li>
@@ -866,11 +889,13 @@ flag is received, or when either peer sends a RST_STREAM frame.</li>
             </div>
             
             <div class="content"><div class='highlight'><pre>    <span class="keyword">case</span> <span class="string">'HALF_CLOSED_LOCAL'</span>:
-      <span class="keyword">if</span> ((frame.type === <span class="string">'RST_STREAM'</span>) || (receiving &amp;&amp; frame.flags.END_STREAM)) {
+      <span class="keyword">if</span> (RST_STREAM || (receiving &amp;&amp; frame.flags.END_STREAM)) {
         <span class="keyword">this</span>._setState(<span class="string">'CLOSED'</span>);
-      } <span class="keyword">else</span> <span class="keyword">if</span> (sending &amp;&amp; !(frame.type === <span class="string">'PRIORITY'</span>) &amp;&amp; !(frame.type === <span class="string">'WINDOW_UPDATE'</span>)) {
+      } <span class="keyword">else</span> <span class="keyword">if</span> (receiving || (sending &amp;&amp; (PRIORITY || WINDOW_UPDATE))) {
+        <span class="comment">/* No state change */</span>
+      } <span class="keyword">else</span> {
         error = <span class="string">'PROTOCOL_ERROR'</span>;
-      } <span class="comment">// Receiving anything is OK</span>
+      }
       <span class="keyword">break</span>;</pre></div></div>
             
         </li>
@@ -897,11 +922,13 @@ END_STREAM flag, or when either peer sends a RST_STREAM frame.</li>
             </div>
             
             <div class="content"><div class='highlight'><pre>    <span class="keyword">case</span> <span class="string">'HALF_CLOSED_REMOTE'</span>:
-      <span class="keyword">if</span> ((frame.type === <span class="string">'RST_STREAM'</span>) || (sending &amp;&amp; frame.flags.END_STREAM)) {
+      <span class="keyword">if</span> (RST_STREAM || (sending &amp;&amp; frame.flags.END_STREAM)) {
         <span class="keyword">this</span>._setState(<span class="string">'CLOSED'</span>);
-      } <span class="keyword">else</span> <span class="keyword">if</span> (receiving &amp;&amp; !(frame.type === <span class="string">'PRIORITY'</span>) &amp;&amp; !(frame.type === <span class="string">'WINDOW_UPDATE'</span>)) {
+      } <span class="keyword">else</span> <span class="keyword">if</span> (sending || (receiving &amp;&amp; (WINDOW_UPDATE || PRIORITY))) {
+        <span class="comment">/* No state change */</span>
+      } <span class="keyword">else</span> {
         error = <span class="string">'PROTOCOL_ERROR'</span>;
-      } <span class="comment">// Sending anything is OK</span>
+      }
       <span class="keyword">break</span>;</pre></div></div>
             
         </li>
@@ -938,13 +965,12 @@ can be used to close any of those streams.</li>
             </div>
             
             <div class="content"><div class='highlight'><pre>    <span class="keyword">case</span> <span class="string">'CLOSED'</span>:
-      <span class="keyword">if</span> (receiving &amp;&amp; (frame.type === <span class="string">'PUSH_PROMISE'</span>)) {
-        <span class="keyword">this</span>._setState(<span class="string">'RESERVED_REMOTE'</span>);
-      } <span class="keyword">else</span> <span class="keyword">if</span> (!(sending &amp;&amp; (frame.type === <span class="string">'RST_STREAM'</span>)) &amp;&amp;
-                 !(receiving &amp;&amp; (frame.type === <span class="string">'WINDOW_UPDATE'</span>)) &amp;&amp;
-                 !(receiving &amp;&amp; (frame.type === <span class="string">'PRIORITY'</span>))) {
-        error = <span class="string">'PROTOCOL_ERROR'</span>;
-      } <span class="comment">// TODO: act based on the reason for termination.</span>
+      <span class="keyword">if</span> ((sending &amp;&amp; RST_STREAM) || (receiving &amp;&amp; !<span class="keyword">this</span>._closedByPeer) ||
+          (receiving &amp;&amp; (WINDOW_UPDATE || PRIORITY))) {
+        <span class="comment">/* No state change */</span>
+      } <span class="keyword">else</span> {
+        error = <span class="string">'STREAM_CLOSED'</span>;
+      }
       <span class="keyword">break</span>;
   }</pre></div></div>
             
@@ -957,19 +983,14 @@ can be used to close any of those streams.</li>
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-37">&#182;</a>
               </div>
-              <p>Sending/receiving a PUSH_PROMISE</p>
-<ul>
-<li>Sending a PUSH_PROMISE frame marks the associated stream for later use. The stream state
-for the reserved stream transitions to &quot;reserved (local)&quot;.</li>
-<li>Receiving a PUSH_PROMISE frame marks the associated stream as reserved by the remote peer.
-The state of the stream becomes &quot;reserved (remote)&quot;.</li>
-</ul>
+              <p>Noting that the connection was closed by the other endpoint. It may be important in edge cases.
+For example, when the peer tries to cancel a promised stream, but we already sent every data
+on it, then the stream is in CLOSED state, yet we want to ignore the incoming RST_STREAM.</p>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>  <span class="keyword">if</span> (!error &amp;&amp; (frame.type === <span class="string">'PUSH_PROMISE'</span>)) {
-    assert(frame.promised_stream.state === <span class="string">'IDLE'</span>);
-    frame.promised_stream._setState(sending ? <span class="string">'RESERVED_LOCAL'</span> : <span class="string">'RESERVED_REMOTE'</span>);
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">if</span> (receiving &amp;&amp; (RST_STREAM || frame.flags.END_STREAM)) {
+    <span class="keyword">this</span>._closedByPeer = <span class="literal">true</span>;
   }</pre></div></div>
             
         </li>
@@ -981,6 +1002,31 @@ The state of the stream becomes &quot;reserved (remote)&quot;.</li>
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-38">&#182;</a>
               </div>
+              <p>Sending/receiving a PUSH_PROMISE</p>
+<ul>
+<li>Sending a PUSH_PROMISE frame marks the associated stream for later use. The stream state
+for the reserved stream transitions to &quot;reserved (local)&quot;.</li>
+<li>Receiving a PUSH_PROMISE frame marks the associated stream as reserved by the remote peer.
+The state of the stream becomes &quot;reserved (remote)&quot;.</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">if</span> (PUSH_PROMISE &amp;&amp; !error) {
+    assert(frame.promised_stream.state === <span class="string">'IDLE'</span>, <span class="string">'Promised stream is in invalid state ('</span> +
+                                                   frame.promised_stream.state + <span class="string">')'</span>);
+    frame.promised_stream._setState(sending ? <span class="string">'RESERVED_LOCAL'</span> : <span class="string">'RESERVED_REMOTE'</span>);
+  }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-39">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-39">&#182;</a>
+              </div>
               <p>Common error handling.</p>
 
             </div>
@@ -991,11 +1037,11 @@ The state of the stream becomes &quot;reserved (remote)&quot;.</li>
         </li>
         
         
-        <li id="section-39">
+        <li id="section-40">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-39">&#182;</a>
+                <a class="pilcrow" href="#section-40">&#182;</a>
               </div>
               <ul>
 <li>When sending something invalid, throwing an exception, since it is probably a bug.</li>
@@ -1011,11 +1057,11 @@ The state of the stream becomes &quot;reserved (remote)&quot;.</li>
         </li>
         
         
-        <li id="section-40">
+        <li id="section-41">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-40">&#182;</a>
+                <a class="pilcrow" href="#section-41">&#182;</a>
               </div>
               <ul>
 <li>When receiving something invalid, sending an RST_STREAM using the <code>reset</code> method.
