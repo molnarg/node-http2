@@ -9,12 +9,15 @@ Status
 ------
 
 I post weekly status updates [on my blog][1]. Short version: main missing items are:
-* prioritization (issue #19 and #20)
-* ALPN support for negotiating HTTP/2 over TLS (it's done with NPN for now) (issue #5)
-* Upgrade mechanism to start HTTP/2 over unencrypted channel (issue #4)
+* prioritization (issue [#19][2] and [#20][3])
+* ALPN support for negotiating HTTP/2 over TLS (it's done with NPN for now) (issue [#5][4])
+* Upgrade mechanism to start HTTP/2 over unencrypted channel (issue [#4][5])
 
 [1]: http://gabor.molnar.es/blog/categories/google-summer-of-code/
-[2]: https://github.com/molnarg/node-http2/issues?labels=feature&state=open
+[2]: https://github.com/molnarg/node-http2/issues/19
+[3]: https://github.com/molnarg/node-http2/issues/20
+[4]: https://github.com/molnarg/node-http2/issues/5
+[5]: https://github.com/molnarg/node-http2/issues/4
 
 Installation
 ------------
