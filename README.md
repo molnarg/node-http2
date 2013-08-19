@@ -4,20 +4,6 @@ node-http2
 An HTTP/2 server implementation for node.js, developed as a [Google Summer of Code project]
 (https://google-melange.appspot.com/gsoc/project/google/gsoc2013/molnarg/5001).
 
-Status
-------
-
-I post weekly status updates [on my blog](http://gabor.molnar.es/blog/categories/google-summer-of-code/).
-Short version: main missing items are:
-
-* prioritization
-  (issue [#19](https://github.com/molnarg/node-http2/issues/19)
-  and [#20](https://github.com/molnarg/node-http2/issues/20))
-* ALPN support for negotiating HTTP/2 over TLS (it's done with NPN for now)
-  (issue [#5](https://github.com/molnarg/node-http2/issues/5))
-* Upgrade mechanism to start HTTP/2 over unencrypted channel
-  (issue [#4](https://github.com/molnarg/node-http2/issues/4))
-
 Installation
 ------------
 
@@ -90,6 +76,20 @@ $ node ./example/client.js 'https://localhost:8080/server.js' 2>/tmp/server.js
 
 For a server push example, see the source code of the example
 [server](blob/master/example/server.js) and [client](blob/master/example/client.js).
+
+Status
+------
+
+I post weekly status updates [on my blog](http://gabor.molnar.es/blog/categories/google-summer-of-code/).
+Short version: main missing items are:
+
+* prioritization
+  (issue [#19](https://github.com/molnarg/node-http2/issues/19)
+  and [#20](https://github.com/molnarg/node-http2/issues/20))
+* ALPN support for negotiating HTTP/2 over TLS (it's done with NPN for now)
+  (issue [#5](https://github.com/molnarg/node-http2/issues/5))
+* Upgrade mechanism to start HTTP/2 over unencrypted channel
+  (issue [#4](https://github.com/molnarg/node-http2/issues/4))
 
 Development
 -----------
