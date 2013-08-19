@@ -1,6 +1,6 @@
 {
   "name": "http2",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "An HTTP/2 server implementation",
   "main": "lib/index.js",
   "engines" : {
@@ -26,7 +26,10 @@
     "url": "https://github.com/molnarg/node-http2/issues"
   },
   "keywords": [
-    "http2"
+    "http",
+    "http2",
+    "client",
+    "server"
   ],
   "author": "Gábor Molnár <gabor@molnar.es> (http://gabor.molnar.es)",
   "license": "MIT",

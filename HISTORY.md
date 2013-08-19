@@ -1,6 +1,15 @@
 Version history
 ===============
 
+### 0.2.0 (2013-08-19) ###
+
+* Exposing server push in the public API
+* Connection pooling when operating as client
+* Much better API compatibility with the standard node.js HTTPS module
+* Logging improvements
+* [Blog post](http://gabor.molnar.es/blog/2013/08/19/gsoc-week-number-9/)
+* [Tarball](https://github.com/molnarg/node-http2/archive/node-http2-0.2.0.tar.gz)
+
 ### 0.1.1 (2013-08-12) ###
 
 * Lots of bugfixes
