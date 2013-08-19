@@ -8,9 +8,10 @@ An HTTP/2 server implementation for node.js, developed as a [Google Summer of Co
 Status
 ------
 
-I post weekly status updates [on my blog][1]. Short version: the first version of the public API is
-in place, server push is not exposed yet, prioritization and ALPN support is not yet done. Main
-missing items will be tracked in the issue tracker under the label [feature][2].
+I post weekly status updates [on my blog][1]. Short version: main missing items are:
+* prioritization (issue #19 and #20)
+* ALPN support for negotiating HTTP/2 over TLS (it's done with NPN for now) (issue #5)
+* Upgrade mechanism to start HTTP/2 over unencrypted channel (issue #4)
 
 [1]: http://gabor.molnar.es/blog/categories/google-summer-of-code/
 [2]: https://github.com/molnarg/node-http2/issues?labels=feature&state=open
