@@ -16,11 +16,13 @@ function finish() {
 }
 
 request.on('response', function(response) {
-  response.stream.on('promise', function(pushed, headers) {
+  response.on('push', function(pushRequest) {
     var filename = path.join(__dirname, '/push-' + (push_count));
     push_count += 1;
-    console.log('Receiving pushed resource: ' + headers[':path'] + ' -> ' + filename);
-    pushed.pipe(fs.createWriteStream(filename)).on('finish', finish);
+    console.log('Receiving pushed resource: ' + pushRequest.url + ' -> ' + filename);
+    pushRequest.on('response', function(pushResponse) {
+      pushResponse.pipe(fs.createWriteStream(filename)).on('finish', finish);
+    });
   });
 
   response.pipe(process.stderr);
