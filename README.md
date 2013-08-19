@@ -7,8 +7,6 @@ An HTTP/2 server implementation for node.js, developed as a [Google Summer of Co
 Installation
 ------------
 
-Using npm:
-
 ```
 npm install http2
 ```
@@ -139,7 +137,7 @@ There's a hosted version of the detailed (line-by-line) coverage report
 
 Logging is turned off by default. To turn it on, set the `HTTP2_LOG` environment variable to
 `fatal`, `error`, `warn`, `info`, `debug` or `trace` (the logging level). Log output is in JSON
-format, and can be pretty printed using the [bunyan][7] command line tool.
+format, and can be pretty printed using the bunyan command line tool.
 
 For example, running the test client with debug level logging output:
 
