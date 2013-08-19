@@ -1,8 +1,8 @@
 node-http2
 ==========
 
-An HTTP/2 server implementation for node.js, developed as a
-[Google Summer of Code project](https://google-melange.appspot.com/gsoc/project/google/gsoc2013/molnarg/5001).
+An HTTP/2 server implementation for node.js, developed as a [Google Summer of Code project]
+(https://google-melange.appspot.com/gsoc/project/google/gsoc2013/molnarg/5001).
 
 Status
 ------
@@ -144,8 +144,14 @@ HTTP2_LOG=debug node ./example/client.js 'http://localhost:8080/server.js' 2>/tm
 Contributors
 ------------
 
+Code contributions are always welcome! People who contributed to node-http2 so far:
+
 * Nick Hurley
 * Mike Belshe
+
+Special thanks to Google for financing the development of this module as part of their [Summer of
+Code program](https://developers.google.com/open-source/soc/), and Nick Hurley of Mozilla, my GSoC
+mentor, who helps with regular code review and technical advices.
 
 License
 -------
