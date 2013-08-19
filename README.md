@@ -18,7 +18,7 @@ The API is very similar to the [standard node.js HTTPS API](http://nodejs.org/ap
 goal is the perfect API compatibility, with additional HTTP2 related extensions (like server push).
 
 Detailed API documentation is primarily maintained in the `lib/http.js` file and is [available in
-the wiki](https://github.com/molnarg/node-http2/wiki/node-http2-API) as well.
+the wiki](https://github.com/molnarg/node-http2/wiki/Public-API) as well.
 
 Examples
 --------
