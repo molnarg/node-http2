@@ -91,7 +91,7 @@
             </div>
             
             <div class="content"><div class='highlight'><pre><span class="keyword">var</span> http2        = require(<span class="string">'./http'</span>);
-module.exports = http2;</pre></div></div>
+module.exports   = http2;</pre></div></div>
             
         </li>
         
@@ -155,6 +155,23 @@ the JavaScript object representation of HTTP/2 frames</li>
                 <a class="pilcrow" href="#section-5">&#182;</a>
               </div>
               <ul>
+<li><a href="flow.html">flow.js</a>: flow control</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>http2.flow       = require(<span class="string">'./flow'</span>);</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-6">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-6">&#182;</a>
+              </div>
+              <ul>
 <li><a href="stream.html">stream.js</a>: implementation of the HTTP/2 stream concept</li>
 </ul>
 
@@ -165,11 +182,11 @@ the JavaScript object representation of HTTP/2 frames</li>
         </li>
         
         
-        <li id="section-6">
+        <li id="section-7">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-6">&#182;</a>
+                <a class="pilcrow" href="#section-7">&#182;</a>
               </div>
               <ul>
 <li><a href="connection.html">connection.js</a>: multiplexes streams, manages the identifiers of them and
@@ -183,11 +200,11 @@ repsonsible for connection level flow control</li>
         </li>
         
         
-        <li id="section-7">
+        <li id="section-8">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-7">&#182;</a>
+                <a class="pilcrow" href="#section-8">&#182;</a>
               </div>
               <ul>
 <li><a href="endpoint.html">endpoint.js</a>: manages other components (framer, compressor, connection,

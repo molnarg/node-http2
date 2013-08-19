@@ -290,7 +290,6 @@ incoming frame is a WINDOW_UPDATE.</p>
             </div>
             
             <div class="content"><div class='highlight'><pre>Flow.prototype._write = <span class="function"><span class="keyword">function</span> <span class="title">_write</span><span class="params">(frame, encoding, callback)</span> {</span>
-  <span class="keyword">this</span>._log.trace({ frame: frame }, <span class="string">'Receiving frame'</span>);
   <span class="keyword">this</span>.emit(<span class="string">'receiving'</span>, frame);
 
   <span class="keyword">if</span> (frame.flags.END_STREAM) {
@@ -311,7 +310,8 @@ incoming frame is a WINDOW_UPDATE.</p>
     <span class="keyword">this</span>._receive(frame, callback);
   }
 
-  <span class="keyword">if</span> ((frame.type === <span class="string">'WINDOW_UPDATE'</span>) &amp;&amp; (!<span class="keyword">this</span>._flowControlId || (frame.stream === <span class="keyword">this</span>._flowControlId))) {
+  <span class="keyword">if</span> ((frame.type === <span class="string">'WINDOW_UPDATE'</span>) &amp;&amp;
+      ((<span class="keyword">this</span>._flowControlId === <span class="literal">undefined</span>) || (frame.stream === <span class="keyword">this</span>._flowControlId))) {
     <span class="keyword">this</span>._updateWindow(frame);
   }
 };</pre></div></div>
@@ -443,6 +443,9 @@ there are no items in it (which means that we are not waiting for window update)
             <div class="content"><div class='highlight'><pre>Flow.prototype._read = <span class="function"><span class="keyword">function</span> <span class="title">_read</span><span class="params">()</span> {</span>
   <span class="keyword">if</span> (<span class="keyword">this</span>._queue.length === <span class="number">0</span>) {
     <span class="keyword">this</span>._send();
+  } <span class="keyword">else</span> {
+    assert(<span class="keyword">this</span>._window === <span class="number">0</span>);
+    assert(<span class="keyword">this</span>._queue[<span class="number">0</span>].type === <span class="string">'DATA'</span>);
   }
   <span class="keyword">this</span>._readableState.reading = <span class="literal">false</span>;
 };</pre></div></div>
@@ -493,37 +496,45 @@ similar to <code>push</code> except that it returns <code>null</code> if it did 
             </div>
             
             <div class="content"><div class='highlight'><pre>Flow.prototype._push = <span class="function"><span class="keyword">function</span> <span class="title">_push</span><span class="params">(frame, remainderCallback)</span> {</span>
-  <span class="keyword">var</span> forwardable, remainder;
-  <span class="keyword">if</span> ((frame === <span class="literal">null</span>) || (frame.type !== <span class="string">'DATA'</span>) || (<span class="keyword">this</span>._window &gt;= frame.data.length)) {
-    forwardable = frame;
-  }
-
-  <span class="keyword">else</span> <span class="keyword">if</span> (<span class="keyword">this</span>._window &lt;= <span class="number">0</span>) {
-    remainder = frame;
-  }
-
-  <span class="keyword">else</span> {
-    <span class="keyword">var</span> chunkSize = Math.min(<span class="keyword">this</span>._window, MAX_HTTP_PAYLOAD_SIZE);
-    forwardable = {
-      stream: frame.stream,
-      type: <span class="string">'DATA'</span>,
-      data: frame.data.slice(<span class="number">0</span>, chunkSize)
-    };
-
-    frame.data = frame.data.slice(chunkSize);
-    remainder = frame;
-  }
-
-  <span class="keyword">var</span> moreNeeded = <span class="literal">null</span>;
-  <span class="keyword">if</span> (forwardable !== <span class="literal">undefined</span>) {
-    <span class="keyword">if</span> (forwardable &amp;&amp; forwardable.type === <span class="string">'DATA'</span>) {
-      <span class="keyword">this</span>._log.trace({ window: <span class="keyword">this</span>._window, by: forwardable.data.length },
-                       <span class="string">'Decreasing flow control window size.'</span>);
-      <span class="keyword">this</span>._window -= forwardable.data.length;
-      assert(<span class="keyword">this</span>._window &gt;= <span class="number">0</span>);
+  <span class="keyword">do</span> {
+    <span class="keyword">var</span> forwardable = <span class="literal">undefined</span>, remainder = <span class="literal">undefined</span>;
+    <span class="keyword">if</span> ((frame === <span class="literal">null</span>) || (frame.type !== <span class="string">'DATA'</span>) ||
+        ((frame.data.length &lt;= <span class="keyword">this</span>._window) &amp;&amp; (frame.data.length &lt;= MAX_HTTP_PAYLOAD_SIZE))) {
+      forwardable = frame;
     }
-    moreNeeded = Duplex.prototype.push.call(<span class="keyword">this</span>, forwardable);
-  }
+
+    <span class="keyword">else</span> <span class="keyword">if</span> (<span class="keyword">this</span>._window &lt;= <span class="number">0</span>) {
+      remainder = frame;
+    }
+
+    <span class="keyword">else</span> {
+      <span class="keyword">var</span> chunkSize = Math.min(<span class="keyword">this</span>._window, MAX_HTTP_PAYLOAD_SIZE);
+      forwardable = {
+        stream: frame.stream,
+        type: <span class="string">'DATA'</span>,
+        data: frame.data.slice(<span class="number">0</span>, chunkSize)
+      };
+
+      <span class="keyword">this</span>._log.trace({ frame: frame, size: frame.data.length, forwardable: chunkSize },
+                      <span class="string">'Splitting out forwardable part of a DATA frame.'</span>);
+      frame.data = frame.data.slice(chunkSize);
+      remainder = frame;
+    }
+
+    <span class="keyword">var</span> moreNeeded = <span class="literal">null</span>;
+    <span class="keyword">if</span> (forwardable !== <span class="literal">undefined</span>) {
+      <span class="keyword">this</span>._log.trace({ frame: forwardable }, <span class="string">'Pushing frame into the output queue'</span>);
+      <span class="keyword">if</span> (forwardable &amp;&amp; (forwardable.type === <span class="string">'DATA'</span>) &amp;&amp; (<span class="keyword">this</span>._window !== <span class="literal">Infinity</span>)) {
+        <span class="keyword">this</span>._log.trace({ window: <span class="keyword">this</span>._window, by: forwardable.data.length },
+                         <span class="string">'Decreasing flow control window size.'</span>);
+        <span class="keyword">this</span>._window -= forwardable.data.length;
+        assert(<span class="keyword">this</span>._window &gt;= <span class="number">0</span>);
+      }
+      moreNeeded = Duplex.prototype.push.call(<span class="keyword">this</span>, forwardable);
+    }
+
+    frame = remainder;
+  } <span class="keyword">while</span> (remainder &amp;&amp; moreNeeded);
 
   <span class="keyword">if</span> (remainder !== <span class="literal">undefined</span>) {
     remainderCallback(remainder);
@@ -547,10 +558,10 @@ similar to <code>push</code> except that it returns <code>null</code> if it did 
             
             <div class="content"><div class='highlight'><pre>Flow.prototype.push = <span class="function"><span class="keyword">function</span> <span class="title">push</span><span class="params">(frame)</span> {</span>
   <span class="keyword">if</span> (frame === <span class="literal">null</span>) {
-    <span class="keyword">this</span>._log.trace(<span class="string">'Enqueueing End Of Stream'</span>);
+    <span class="keyword">this</span>._log.debug(<span class="string">'Enqueueing outgoing End Of Stream'</span>);
   } <span class="keyword">else</span> {
     frame.flags = frame.flags || {};
-    <span class="keyword">this</span>._log.trace({ frame: frame }, <span class="string">'Enqueueing frame'</span>);
+    <span class="keyword">this</span>._log.debug({ frame: frame }, <span class="string">'Enqueueing outgoing frame'</span>);
     <span class="keyword">this</span>.emit(<span class="string">'sending'</span>, frame);
   }
 

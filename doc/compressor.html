@@ -139,7 +139,8 @@ Working Set entries are objects with two properties: <code>index</code> (a numbe
             
             <div class="content"><div class='highlight'><pre><span class="keyword">var</span> DEFAULT_HEADER_TABLE_LIMIT = <span class="number">4096</span>;
 
-<span class="function"><span class="keyword">function</span> <span class="title">CompressionContext</span><span class="params">(table, limit)</span> {</span>
+<span class="function"><span class="keyword">function</span> <span class="title">CompressionContext</span><span class="params">(log, table, limit)</span> {</span>
+  <span class="keyword">this</span>._log = log;
   <span class="keyword">this</span>._table = table.slice();
   <span class="keyword">this</span>._limit = limit || DEFAULT_HEADER_TABLE_LIMIT;
   <span class="keyword">this</span>._reference = [];
@@ -276,6 +277,9 @@ Literal:
             </div>
             
             <div class="content"><div class='highlight'><pre>CompressionContext.prototype.execute = <span class="function"><span class="keyword">function</span> <span class="title">execute</span><span class="params">(command)</span> {</span>
+  <span class="keyword">this</span>._log.trace({ key: command.name, value: command.value, index: command.index },
+                  <span class="string">'Executing a header representation'</span>);
+
   <span class="keyword">var</span> index, pair;</pre></div></div>
             
         </li>
@@ -517,7 +521,7 @@ The initial value of it&#39;s Header Table depends on which side of the connecti
 
   <span class="keyword">var</span> initialTable = (type === <span class="string">'REQUEST'</span>) ? CompressionContext.initialRequestTable
                                           : CompressionContext.initialResponseTable;
-  <span class="keyword">this</span>._context = <span class="keyword">new</span> CompressionContext(initialTable);
+  <span class="keyword">this</span>._context = <span class="keyword">new</span> CompressionContext(<span class="keyword">this</span>._log, initialTable);
 
   <span class="keyword">this</span>._initializeStream();
 }
@@ -629,7 +633,7 @@ usual header set format used in node.js: <code>{ name1: value1, name2: [value2, 
       headers[name] = value;
     }
   }
-  <span class="keyword">this</span>._log.debug({ headers: headers }, <span class="string">'Header decompression is done'</span>);
+  <span class="keyword">this</span>._log.trace({ headers: headers }, <span class="string">'Header decompression is done'</span>);
   <span class="keyword">return</span> headers;
 };</pre></div></div>
             
@@ -666,7 +670,7 @@ The initial value of it&#39;s Header Table depends on which side of the connecti
 
   <span class="keyword">var</span> initialTable = (type === <span class="string">'REQUEST'</span>) ? CompressionContext.initialRequestTable
                                           : CompressionContext.initialResponseTable;
-  <span class="keyword">this</span>._context = <span class="keyword">new</span> CompressionContext(initialTable);
+  <span class="keyword">this</span>._context = <span class="keyword">new</span> CompressionContext(<span class="keyword">this</span>._log, initialTable);
 
   <span class="keyword">this</span>._initializeStream();
 }
@@ -688,7 +692,7 @@ encoded binary data.</p>
             </div>
             
             <div class="content"><div class='highlight'><pre>Compressor.prototype.compress = <span class="function"><span class="keyword">function</span> <span class="title">compress</span><span class="params">(headers)</span> {</span>
-  <span class="keyword">this</span>._log.debug({ headers: headers }, <span class="string">'Starting header compression'</span>);
+  <span class="keyword">this</span>._log.trace({ headers: headers }, <span class="string">'Starting header compression'</span>);
   <span class="keyword">var</span> i;</pre></div></div>
             
         </li>
@@ -712,10 +716,10 @@ has to be converted to <code>[name, value]</code> pairs.</li>
     <span class="keyword">var</span> value = headers[name];
     <span class="keyword">if</span> (value <span class="keyword">instanceof</span> Array) {
       <span class="keyword">for</span> (i = <span class="number">0</span>; i&lt; value.length; i++) {
-        pairs.push([name, value[i]]);
+        pairs.push([String(name), String(value[i])]);
       }
     } <span class="keyword">else</span> {
-      pairs.push([name, value]);
+      pairs.push([String(name), String(value)]);
     }
   }</pre></div></div>
             
@@ -1266,6 +1270,7 @@ marks the last frame and the END_STREAM flag which is always false before the en
         flags: flags,
         stream: frame.stream,
         priority: frame.priority,
+        promised_stream: frame.promised_stream,
         data: chunks[i]
       });
     }
@@ -1349,7 +1354,9 @@ it&#39;s an illegal frame</li>
             
             <div class="content"><div class='highlight'><pre>  <span class="keyword">if</span> (<span class="keyword">this</span>._inProgress) {
     <span class="keyword">if</span> ((frame.type !== <span class="keyword">this</span>._type) || (frame.stream !== <span class="keyword">this</span>._stream)) {
-      <span class="keyword">this</span>.emit(<span class="string">'error'</span>, <span class="string">'A series of header frames must not be interleaved with other frames!'</span>);
+      <span class="keyword">this</span>._log.error(<span class="string">'A series of HEADER frames were not continuous'</span>);
+      <span class="keyword">this</span>.emit(<span class="string">'error'</span>, <span class="string">'PROTOCOL_ERROR'</span>);
+      <span class="keyword">return</span>;
     }
     <span class="keyword">this</span>._frames.push(frame);
   }</pre></div></div>
@@ -1415,12 +1422,19 @@ decompressed headers.</p>
     <span class="keyword">var</span> buffer = concat(<span class="keyword">this</span>._frames.map(<span class="keyword">function</span>(frame) {
       <span class="keyword">return</span> frame.data;
     }));
-    <span class="keyword">var</span> headers = <span class="keyword">this</span>.decompress(buffer);
+    <span class="keyword">try</span> {
+      <span class="keyword">var</span> headers = <span class="keyword">this</span>.decompress(buffer);
+    } <span class="keyword">catch</span>(error) {
+      <span class="keyword">this</span>._log.error({ err: error }, <span class="string">'Header decompression error'</span>);
+      <span class="keyword">this</span>.emit(<span class="string">'error'</span>, <span class="string">'COMPRESSION_ERROR'</span>);
+      <span class="keyword">return</span>;
+    }
     <span class="keyword">this</span>.push({
       type: frame.type,
       flags: frame.flags,
       stream: frame.stream,
       priority: frame.priority,
+      promised_stream: frame.promised_stream,
       headers: headers
     });
     <span class="keyword">this</span>._inProgress = <span class="literal">false</span>;
