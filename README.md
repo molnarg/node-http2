@@ -1,8 +1,8 @@
 node-http2
 ==========
 
-An HTTP/2 server implementation for node.js, developed as a [Google Summer of Code project]
-(https://google-melange.appspot.com/gsoc/project/google/gsoc2013/molnarg/5001).
+An HTTP/2 server implementation for node.js, developed as a [Google Summer of Code
+project](https://google-melange.appspot.com/gsoc/project/google/gsoc2013/molnarg/5001).
 
 Installation
 ------------
@@ -73,7 +73,8 @@ $ node ./example/client.js 'https://localhost:8080/server.js' 2>/tmp/server.js
 ### Server push ###
 
 For a server push example, see the source code of the example
-[server](blob/master/example/server.js) and [client](blob/master/example/client.js).
+[server](https://github.com/molnarg/node-http2/blob/master/example/server.js) and
+[client](https://github.com/molnarg/node-http2/blob/master/example/client.js).
 
 Status
 ------
