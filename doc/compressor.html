@@ -1052,7 +1052,7 @@ always represented as a string.</p>
   literalSubstitution : { prefix: <span class="number">6</span>, pattern: <span class="number">0x00</span> }
 };
 
-Compressor.header = <span class="function"><span class="keyword">function</span> <span class="title">writeString</span><span class="params">(header)</span> {</span>
+Compressor.header = <span class="function"><span class="keyword">function</span> <span class="title">writeHeader</span><span class="params">(header)</span> {</span>
   <span class="keyword">var</span> representation, buffers = [];
 
   <span class="keyword">if</span> (<span class="keyword">typeof</span> header.value === <span class="string">'number'</span>) {
@@ -1088,7 +1088,7 @@ Compressor.header = <span class="function"><span class="keyword">function</span>
   <span class="keyword">return</span> Array.prototype.concat.apply([], buffers); <span class="comment">// array of arrays of buffers -&gt; array of buffers</span>
 };
 
-Decompressor.header = <span class="function"><span class="keyword">function</span> <span class="title">readString</span><span class="params">(buffer)</span> {</span>
+Decompressor.header = <span class="function"><span class="keyword">function</span> <span class="title">readHeader</span><span class="params">(buffer)</span> {</span>
   <span class="keyword">var</span> representation, header = {};
 
   <span class="keyword">var</span> firstByte = buffer[buffer.cursor];

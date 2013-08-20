@@ -554,15 +554,15 @@ broadcasts the message by creating an event on it.</p>
             </div>
             
             <div class="content"><div class='highlight'><pre>Connection.prototype._newStream = <span class="function"><span class="keyword">function</span> <span class="title">_newStream</span><span class="params">(id)</span> {</span>
-  <span class="keyword">this</span>._log.trace({ stream_id: id }, <span class="string">'Adding new stream.'</span>);
-  <span class="keyword">var</span> stream = <span class="keyword">new</span> Stream(<span class="keyword">this</span>._log.child({ stream_id: id }));
+  <span class="keyword">var</span> stream = <span class="keyword">new</span> Stream(<span class="keyword">this</span>._log);
+  <span class="keyword">this</span>._log.debug({ s: stream.id, stream_id: id }, <span class="string">'Created new stream.'</span>);
   <span class="keyword">this</span>._streamsIds[id] = stream;
   <span class="keyword">this</span>.emit(<span class="string">'new_stream'</span>, stream, id);
   <span class="keyword">return</span> stream;
 };
 
 Connection.prototype._activateStream = <span class="function"><span class="keyword">function</span> <span class="title">_activateStream</span><span class="params">(stream)</span> {</span>
-  <span class="keyword">this</span>._log.trace({ stream_id: <span class="keyword">this</span>._getIdOf(stream) }, <span class="string">'Activating stream.'</span>);
+  <span class="keyword">this</span>._log.trace({ s: stream.id }, <span class="string">'Activating stream.'</span>);
   <span class="keyword">this</span>._streamPriorities.push(stream);
   stream.upstream.on(<span class="string">'readable'</span>, <span class="keyword">this</span>.read.bind(<span class="keyword">this</span>, <span class="number">0</span>));
 };</pre></div></div>
@@ -793,7 +793,7 @@ by child classes. It reads frames from streams and pushes them to the output buf
         frame.promised_stream = <span class="keyword">this</span>._getIdOf(frame.promised_stream);
       }
 
-      <span class="keyword">this</span>._log.trace({ stream_id: id, frame: frame }, <span class="string">'Trying to forward outgoing frame'</span>);
+      <span class="keyword">this</span>._log.trace({ s: stream.id, frame: frame }, <span class="string">'Trying to forward outgoing frame'</span>);
       <span class="keyword">var</span> moreNeeded = <span class="keyword">this</span>._push(frame, unshiftRemainder);
 
       <span class="keyword">if</span> (moreNeeded === <span class="literal">null</span>) {

@@ -1271,6 +1271,10 @@ logging.serializers.frame = <span class="keyword">function</span>(frame) {
     }
   }
 
+  <span class="keyword">if</span> (frame.promised_stream <span class="keyword">instanceof</span> Object) {
+    logEntry.promised_stream = <span class="string">'stream-'</span> + frame.promised_stream.id;
+  }
+
   logEntry.flags = Object.keys(frame.flags || {}).filter(<span class="keyword">function</span>(name) {
     <span class="keyword">return</span> frame.flags[name] === <span class="literal">true</span>;
   });

@@ -118,12 +118,11 @@ exports.Endpoint = Endpoint;</pre></div></div>
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-3">&#182;</a>
               </div>
-              <p>The process of initialization:</p>
+              <p>Counter for globally unique endpoint ID generation</p>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre><span class="function"><span class="keyword">function</span> <span class="title">Endpoint</span><span class="params">(role, settings, log)</span> {</span>
-  Duplex.call(<span class="keyword">this</span>);</pre></div></div>
+            <div class="content"><div class='highlight'><pre><span class="keyword">var</span> nextId = <span class="number">0</span>;</pre></div></div>
             
         </li>
         
@@ -134,13 +133,12 @@ exports.Endpoint = Endpoint;</pre></div></div>
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-4">&#182;</a>
               </div>
-              <ul>
-<li>Initializing logging infrastructure</li>
-</ul>
+              <p>The process of initialization:</p>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>  <span class="keyword">this</span>._log = (log || logging.root).child({ component: <span class="string">'endpoint'</span> });</pre></div></div>
+            <div class="content"><div class='highlight'><pre><span class="function"><span class="keyword">function</span> <span class="title">Endpoint</span><span class="params">(role, settings, log)</span> {</span>
+  Duplex.call(<span class="keyword">this</span>);</pre></div></div>
             
         </li>
         
@@ -150,6 +148,24 @@ exports.Endpoint = Endpoint;</pre></div></div>
               
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-5">&#182;</a>
+              </div>
+              <ul>
+<li>Initializing logging infrastructure</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">this</span>.id = nextId++;
+  <span class="keyword">this</span>._log = (log || logging.root).child({ component: <span class="string">'endpoint'</span>, e: <span class="keyword">this</span>.id });</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-6">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-6">&#182;</a>
               </div>
               <ul>
 <li>First part of the handshake process: sending and receiving the client connection header
@@ -169,11 +185,11 @@ prelude.</li>
         </li>
         
         
-        <li id="section-6">
+        <li id="section-7">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-6">&#182;</a>
+                <a class="pilcrow" href="#section-7">&#182;</a>
               </div>
               <ul>
 <li>Initialization of componenet. This includes the second part of the handshake process:
@@ -188,11 +204,11 @@ initialization.</li>
         </li>
         
         
-        <li id="section-7">
+        <li id="section-8">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-7">&#182;</a>
+                <a class="pilcrow" href="#section-8">&#182;</a>
               </div>
               <ul>
 <li>Initialization of management code.</li>
@@ -205,11 +221,11 @@ initialization.</li>
         </li>
         
         
-        <li id="section-8">
+        <li id="section-9">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-8">&#182;</a>
+                <a class="pilcrow" href="#section-9">&#182;</a>
               </div>
               <ul>
 <li>Initializing error handling.</li>
@@ -224,29 +240,15 @@ Endpoint.prototype = Object.create(Duplex.prototype, { constructor: { value: End
         </li>
         
         
-        <li id="section-9">
+        <li id="section-10">
             <div class="annotation">
               
               <div class="pilwrap for-h2">
-                <a class="pilcrow" href="#section-9">&#182;</a>
+                <a class="pilcrow" href="#section-10">&#182;</a>
               </div>
               <h2>Handshake</h2>
 
             </div>
-            
-        </li>
-        
-        
-        <li id="section-10">
-            <div class="annotation">
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-10">&#182;</a>
-              </div>
-              
-            </div>
-            
-            <div class="content"><div class='highlight'><pre><span class="keyword">var</span> CLIENT_PRELUDE = <span class="keyword">new</span> Buffer(<span class="string">'PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n'</span>);</pre></div></div>
             
         </li>
         
@@ -256,6 +258,20 @@ Endpoint.prototype = Object.create(Duplex.prototype, { constructor: { value: End
               
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-11">&#182;</a>
+              </div>
+              
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="keyword">var</span> CLIENT_PRELUDE = <span class="keyword">new</span> Buffer(<span class="string">'PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n'</span>);</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-12">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-12">&#182;</a>
               </div>
               <p>Writing the client header is simple and synchronous.</p>
 
@@ -269,11 +285,11 @@ Endpoint.prototype = Object.create(Duplex.prototype, { constructor: { value: End
         </li>
         
         
-        <li id="section-12">
+        <li id="section-13">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-12">&#182;</a>
+                <a class="pilcrow" href="#section-13">&#182;</a>
               </div>
               <p>The asynchronous process of reading the client header:</p>
 
@@ -284,11 +300,11 @@ Endpoint.prototype = Object.create(Duplex.prototype, { constructor: { value: End
         </li>
         
         
-        <li id="section-13">
+        <li id="section-14">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-13">&#182;</a>
+                <a class="pilcrow" href="#section-14">&#182;</a>
               </div>
               <ul>
 <li>progress in the header is tracker using a <code>cursor</code></li>
@@ -301,11 +317,11 @@ Endpoint.prototype = Object.create(Duplex.prototype, { constructor: { value: End
         </li>
         
         
-        <li id="section-14">
+        <li id="section-15">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-14">&#182;</a>
+                <a class="pilcrow" href="#section-15">&#182;</a>
               </div>
               <ul>
 <li><code>_write</code> is temporarily replaced by the comparator function</li>
@@ -318,11 +334,11 @@ Endpoint.prototype = Object.create(Duplex.prototype, { constructor: { value: End
         </li>
         
         
-        <li id="section-15">
+        <li id="section-16">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-15">&#182;</a>
+                <a class="pilcrow" href="#section-16">&#182;</a>
               </div>
               <ul>
 <li>which compares the stored header with the current <code>chunk</code> byte by byte and emits the
@@ -345,11 +361,11 @@ Endpoint.prototype = Object.create(Duplex.prototype, { constructor: { value: End
         </li>
         
         
-        <li id="section-16">
+        <li id="section-17">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-16">&#182;</a>
+                <a class="pilcrow" href="#section-17">&#182;</a>
               </div>
               <ul>
 <li>if the whole header is over, and there were no error then restore the original <code>_write</code>
@@ -370,11 +386,11 @@ and call it with the remaining part of the current chunk</li>
         </li>
         
         
-        <li id="section-17">
+        <li id="section-18">
             <div class="annotation">
               
               <div class="pilwrap for-h2">
-                <a class="pilcrow" href="#section-17">&#182;</a>
+                <a class="pilcrow" href="#section-18">&#182;</a>
               </div>
               <h2>Data flow</h2>
 
@@ -383,11 +399,11 @@ and call it with the remaining part of the current chunk</li>
         </li>
         
         
-        <li id="section-18">
+        <li id="section-19">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-18">&#182;</a>
+                <a class="pilcrow" href="#section-19">&#182;</a>
               </div>
               <pre><code>+---------------------------------------------+
 |                                             |
@@ -459,11 +475,11 @@ Endpoint.prototype._write = <span class="function"><span class="keyword">functio
         </li>
         
         
-        <li id="section-19">
+        <li id="section-20">
             <div class="annotation">
               
               <div class="pilwrap for-h2">
-                <a class="pilcrow" href="#section-19">&#182;</a>
+                <a class="pilcrow" href="#section-20">&#182;</a>
               </div>
               <h2>Management</h2>
 
@@ -472,11 +488,11 @@ Endpoint.prototype._write = <span class="function"><span class="keyword">functio
         </li>
         
         
-        <li id="section-20">
+        <li id="section-21">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-20">&#182;</a>
+                <a class="pilcrow" href="#section-21">&#182;</a>
               </div>
               
             </div>
@@ -492,11 +508,11 @@ Endpoint.prototype.createStream = <span class="function"><span class="keyword">f
         </li>
         
         
-        <li id="section-21">
+        <li id="section-22">
             <div class="annotation">
               
               <div class="pilwrap for-h2">
-                <a class="pilcrow" href="#section-21">&#182;</a>
+                <a class="pilcrow" href="#section-22">&#182;</a>
               </div>
               <h2>Error handling</h2>
 
@@ -505,11 +521,11 @@ Endpoint.prototype.createStream = <span class="function"><span class="keyword">f
         </li>
         
         
-        <li id="section-22">
+        <li id="section-23">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-22">&#182;</a>
+                <a class="pilcrow" href="#section-23">&#182;</a>
               </div>
               
             </div>
