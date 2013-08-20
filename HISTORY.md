@@ -1,6 +1,11 @@
 Version history
 ===============
 
+### 0.2.1 (2013-08-20) ###
+
+* Fixing a flow control bug
+* [Tarball](https://github.com/molnarg/node-http2/archive/node-http2-0.2.1.tar.gz)
+
 ### 0.2.0 (2013-08-19) ###
 
 * Exposing server push in the public API
