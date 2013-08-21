@@ -53,7 +53,10 @@ function execute_sequence(stream, sequence, done) {
     var command = commands.shift();
     if (command) {
       if ('method' in command) {
-        stream[command.method.name].apply(stream, command.method.arguments);
+        var value = stream[command.method.name].apply(stream, command.method.arguments);
+        if (command.method.ret) {
+          command.method.ret(value);
+        }
         execute(callback);
       } else if ('incoming' in command) {
         stream.upstream.write(command.incoming);
@@ -77,7 +80,10 @@ function execute_sequence(stream, sequence, done) {
   function check() {
     checks.forEach(function(check) {
       if ('outgoing' in check) {
-        expect(outgoing_frames.shift()).to.deep.equal(check.outgoing);
+        var frame = outgoing_frames.shift();
+        for (var key in check.outgoing) {
+          expect(frame).to.have.property(key).that.deep.equals(check.outgoing[key]);
+        }
       } else if ('event' in check) {
         var event = events.shift();
         expect(event.name).to.be.equal(check.event.name);
@@ -165,7 +171,7 @@ describe('stream.js', function() {
       it('should trigger the appropriate state transitions and outgoing frames', function(done) {
         execute_sequence([
           { method  : { name: 'headers', arguments: [{ ':path': '/' }] } },
-          { outgoing: { type: 'HEADERS', flags: { }, headers: { ':path': '/' }, priority: undefined } },
+          { outgoing: { type: 'HEADERS', flags: { }, headers: { ':path': '/' } } },
           { event   : { name: 'state', data: ['OPEN'] } },
 
           { wait    : 5 },
@@ -196,7 +202,7 @@ describe('stream.js', function() {
 
           { wait    : 5 },
           { method  : { name: 'headers', arguments: [{ ':status': 200 }] } },
-          { outgoing: { type: 'HEADERS', flags: { }, headers: { ':status': 200 }, priority: undefined } },
+          { outgoing: { type: 'HEADERS', flags: { }, headers: { ':status': 200 } } },
 
           { wait    : 5 },
           { method  : { name: 'end', arguments: [payload] } },
@@ -208,12 +214,9 @@ describe('stream.js', function() {
     describe('sending push stream', function() {
       it('should trigger the appropriate state transitions and outgoing frames', function(done) {
         var payload = new Buffer(5);
-        var original_stream = createStream();
-        var promised_stream = createStream();
+        var pushStream;
 
-        done = callNTimes(2, done);
-
-        execute_sequence(original_stream, [
+        execute_sequence([
           // receiving request
           { incoming: { type: 'HEADERS', flags: { END_STREAM: true }, headers: { ':path': '/' } } },
           { event   : { name: 'state', data: ['OPEN'] } },
@@ -223,33 +226,33 @@ describe('stream.js', function() {
           // sending response headers
           { wait    : 5 },
           { method  : { name: 'headers', arguments: [{ ':status': '200' }] } },
-          { outgoing: { type: 'HEADERS', flags: {  }, headers: { ':status': '200' }, priority: undefined } },
+          { outgoing: { type: 'HEADERS', flags: {  }, headers: { ':status': '200' } } },
 
           // sending push promise
-          { method  : { name: 'promise', arguments: [promised_stream, { ':path': '/' }] } },
-          { outgoing: { type: 'PUSH_PROMISE', flags: { }, headers: { ':path': '/' }, promised_stream: promised_stream } },
+          { method  : { name: 'promise', arguments: [{ ':path': '/' }], ret: function(str) { pushStream = str; } } },
+          { outgoing: { type: 'PUSH_PROMISE', flags: { }, headers: { ':path': '/' } } },
 
           // sending response data
           { method  : { name: 'end', arguments: [payload] } },
           { outgoing: { type: 'DATA', flags: { END_STREAM: true  }, data: payload } },
           { event   : { name: 'state', data: ['CLOSED'] } }
-        ], done);
-
-        execute_sequence(promised_stream, [
+        ], function() {
           // initial state of the promised stream
-          { event   : { name: 'state', data: ['RESERVED_LOCAL'] } },
+          expect(pushStream.state).to.equal('RESERVED_LOCAL');
 
-          // push headers
-          { wait    : 5 },
-          { method  : { name: 'headers', arguments: [{ ':status': '200' }] } },
-          { outgoing: { type: 'HEADERS', flags: { }, headers: { ':status': '200' }, priority: undefined } },
-          { event   : { name: 'state', data: ['HALF_CLOSED_REMOTE'] } },
+          execute_sequence(pushStream, [
+            // push headers
+            { wait    : 5 },
+            { method  : { name: 'headers', arguments: [{ ':status': '200' }] } },
+            { outgoing: { type: 'HEADERS', flags: { }, headers: { ':status': '200' } } },
+            { event   : { name: 'state', data: ['HALF_CLOSED_REMOTE'] } },
 
-          // push data
-          { method  : { name: 'end', arguments: [payload] } },
-          { outgoing: { type: 'DATA', flags: { END_STREAM: true  }, data: payload } },
-          { event   : { name: 'state', data: ['CLOSED'] } }
-        ], done);
+            // push data
+            { method  : { name: 'end', arguments: [payload] } },
+            { outgoing: { type: 'DATA', flags: { END_STREAM: true  }, data: payload } },
+            { event   : { name: 'state', data: ['CLOSED'] } }
+          ], done);
+        });
       });
     });
     describe('receiving push stream', function() {
@@ -264,7 +267,7 @@ describe('stream.js', function() {
           // sending request headers
           { method  : { name: 'headers', arguments: [{ ':path': '/' }] } },
           { method  : { name: 'end', arguments: [] } },
-          { outgoing: { type: 'HEADERS', flags: { END_STREAM: true  }, headers: { ':path': '/' }, priority: undefined } },
+          { outgoing: { type: 'HEADERS', flags: { END_STREAM: true  }, headers: { ':path': '/' } } },
           { event   : { name: 'state', data: ['OPEN'] } },
           { event   : { name: 'state', data: ['HALF_CLOSED_LOCAL'] } },
 

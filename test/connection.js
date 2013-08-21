@@ -96,8 +96,7 @@ describe('connection.js', function() {
         s.on('stream', function(response) {
           response.headers(response_headers);
 
-          var pushed = this.createStream();
-          response.promise(pushed, push_request_headers);
+          var pushed = response.promise(push_request_headers);
           pushed.headers(push_response_headers);
           pushed.write(push_content);
 
