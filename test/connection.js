@@ -81,20 +81,21 @@ describe('connection.js', function() {
         var response_content = new Buffer(10);
         var push_content = new Buffer(10);
 
-        done = util.callNTimes(4, done);
+        done = util.callNTimes(5, done);
 
         s.on('stream', function(response) {
           response.headers(response_headers);
 
           var pushed = response.promise(push_request_headers);
           pushed.headers(push_response_headers);
-          pushed.write(push_content);
+          pushed.end(push_content);
 
-          response.write(response_content);
+          response.end(response_content);
         });
 
         var request = c.createStream();
         request.headers(request_headers);
+        request.end();
         request.on('headers', function(headers) {
           expect(headers).to.deep.equal(response_headers);
           done();
@@ -111,6 +112,9 @@ describe('connection.js', function() {
           });
           pushed.on('readable', function() {
             expect(pushed.read()).to.deep.equal(push_content);
+            done();
+          });
+          pushed.on('end', function() {
             done();
           });
         });
