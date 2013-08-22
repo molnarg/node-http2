@@ -20,13 +20,17 @@ if (process.env.HTTP2_LOG) {
 }
 
 exports.callNTimes = function callNTimes(limit, done) {
-  var i = 0;
-  return function() {
-    i += 1;
-    if (i === limit) {
-      done();
-    }
-  };
+  if (limit === 0) {
+    done();
+  } else {
+    var i = 0;
+    return function() {
+      i += 1;
+      if (i === limit) {
+        done();
+      }
+    };
+  }
 };
 
 // Concatenate an array of buffers into a new buffer

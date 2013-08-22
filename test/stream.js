@@ -35,10 +35,15 @@ function execute_sequence(stream, sequence, done) {
       commands.push(step);
     }
 
-    if ('outgoing' in step || 'event' in step) {
+    if ('outgoing' in step || 'event' in step || 'active' in step) {
       checks.push(step);
     }
   });
+
+  var activeCount = 0;
+  function count_change(change) {
+    activeCount += change;
+  }
 
   function execute(callback) {
     var command = commands.shift();
@@ -50,6 +55,7 @@ function execute_sequence(stream, sequence, done) {
         }
         execute(callback);
       } else if ('incoming' in command) {
+        command.incoming.count_change = count_change;
         stream.upstream.write(command.incoming);
         execute(callback);
       } else if ('outgoing' in command) {
@@ -75,12 +81,15 @@ function execute_sequence(stream, sequence, done) {
         for (var key in check.outgoing) {
           expect(frame).to.have.property(key).that.deep.equals(check.outgoing[key]);
         }
+        count_change(frame.count_change);
       } else if ('event' in check) {
         var event = events.shift();
         expect(event.name).to.be.equal(check.event.name);
         check.event.data.forEach(function(data, index) {
           expect(event.data[index]).to.deep.equal(data);
         });
+      } else if ('active' in check) {
+        expect(activeCount).to.be.equal(check.active);
       } else {
         throw new Error('Invalid check', check);
       }
@@ -128,14 +137,7 @@ describe('stream.js', function() {
     describe('._transition(sending, frame) method', function() {
       Object.keys(invalid_frames).forEach(function(state) {
         it('should emit error, and answer RST_STREAM for invalid incoming frames in ' + state + ' state', function(done) {
-          var left = invalid_frames[state].length + 1;
-          function one_done() {
-            left -= 1;
-            if (!left) {
-              done();
-            }
-          }
-          one_done();
+          done = util.callNTimes(invalid_frames[state].length, done);
 
           invalid_frames[state].forEach(function(invalid_frame) {
             var stream = createStream();
@@ -150,7 +152,7 @@ describe('stream.js', function() {
               { outgoing : { type: 'RST_STREAM', flags: {}, error: 'PROTOCOL_ERROR' } }
             ], function sequence_ready() {
               expect(error_emitted).to.equal(true);
-              one_done();
+              done();
             });
           });
         });
@@ -174,7 +176,9 @@ describe('stream.js', function() {
           { incoming: { type: 'HEADERS', flags: { }, headers: { ':status': 200 } } },
           { incoming: { type: 'DATA'   , flags: { END_STREAM: true  }, data: new Buffer(5) } },
           { event   : { name: 'headers', data: [{ ':status': 200 }] } },
-          { event   : { name: 'state', data: ['CLOSED'] } }
+          { event   : { name: 'state', data: ['CLOSED'] } },
+
+          { active  : 0 }
         ], done);
       });
     });
@@ -198,7 +202,9 @@ describe('stream.js', function() {
           { wait    : 5 },
           { method  : { name: 'end', arguments: [payload] } },
           { outgoing: { type: 'DATA', flags: { END_STREAM: true  }, data: payload } },
-          { event   : { name: 'state', data: ['CLOSED'] } }
+          { event   : { name: 'state', data: ['CLOSED'] } },
+
+          { active  : 0 }
         ], done);
       });
     });
@@ -226,7 +232,9 @@ describe('stream.js', function() {
           // sending response data
           { method  : { name: 'end', arguments: [payload] } },
           { outgoing: { type: 'DATA', flags: { END_STREAM: true  }, data: payload } },
-          { event   : { name: 'state', data: ['CLOSED'] } }
+          { event   : { name: 'state', data: ['CLOSED'] } },
+
+          { active  : 0 }
         ], function() {
           // initial state of the promised stream
           expect(pushStream.state).to.equal('RESERVED_LOCAL');
@@ -241,7 +249,9 @@ describe('stream.js', function() {
             // push data
             { method  : { name: 'end', arguments: [payload] } },
             { outgoing: { type: 'DATA', flags: { END_STREAM: true  }, data: payload } },
-            { event   : { name: 'state', data: ['CLOSED'] } }
+            { event   : { name: 'state', data: ['CLOSED'] } },
+
+            { active  : 1 }
           ], done);
         });
       });
@@ -273,7 +283,9 @@ describe('stream.js', function() {
 
           // receiving response data
           { incoming: { type: 'DATA'   , flags: { END_STREAM: true  }, data: payload } },
-          { event   : { name: 'state', data: ['CLOSED'] } }
+          { event   : { name: 'state', data: ['CLOSED'] } },
+
+          { active  : 0 }
         ], done);
 
         execute_sequence(promised_stream, [
@@ -288,7 +300,9 @@ describe('stream.js', function() {
 
           // push data
           { incoming: { type: 'DATA', flags: { END_STREAM: true  }, data: payload } },
-          { event   : { name: 'state', data: ['CLOSED'] } }
+          { event   : { name: 'state', data: ['CLOSED'] } },
+
+          { active  : 0 }
         ], done);
       });
     });
