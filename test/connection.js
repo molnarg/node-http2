@@ -1,17 +1,7 @@
 var expect = require('chai').expect;
-var log_root = require('../lib/logging').root;
+var util = require('./util');
 
 var Connection = require('../lib/connection').Connection;
-
-function callNTimes(limit, done) {
-  var i = 0;
-  return function() {
-    i += 1;
-    if (i === limit) {
-      done();
-    }
-  };
-}
 
 var settings = {
   SETTINGS_MAX_CONCURRENT_STREAMS: 100,
@@ -22,8 +12,8 @@ describe('connection.js', function() {
   describe('test scenario', function() {
     describe('connection setup', function() {
       it('should work as expected', function(done) {
-        var c = new Connection(1, settings);
-        var s = new Connection(2, settings);
+        var c = new Connection(1, settings, util.log.child({ role: 'client' }));
+        var s = new Connection(2, settings, util.log.child({ role: 'server' }));
 
         c.pipe(s).pipe(c);
 
@@ -35,8 +25,8 @@ describe('connection.js', function() {
     });
     describe('sending/receiving a request', function() {
       it('should work as expected', function(done) {
-        var c = new Connection(1, settings, log_root.child({ role: 'client' }));
-        var s = new Connection(2, settings, log_root.child({ role: 'server' }));
+        var c = new Connection(1, settings, util.log.child({ role: 'client' }));
+        var s = new Connection(2, settings, util.log.child({ role: 'server' }));
 
         c.pipe(s).pipe(c);
 
@@ -66,7 +56,7 @@ describe('connection.js', function() {
         client_stream.end(request_data);
 
         // Waiting for answer
-        done = callNTimes(2, done);
+        done = util.callNTimes(2, done);
         client_stream.on('headers', function(headers) {
           expect(headers).to.deep.equal(response_headers);
           done();
@@ -79,8 +69,8 @@ describe('connection.js', function() {
     });
     describe('server push', function() {
       it('should work as expected', function(done) {
-        var c = new Connection(1, settings, log_root.child({ role: 'client' }));
-        var s = new Connection(2, settings, log_root.child({ role: 'server' }));
+        var c = new Connection(1, settings, util.log.child({ role: 'client' }));
+        var s = new Connection(2, settings, util.log.child({ role: 'server' }));
 
         c.pipe(s).pipe(c);
 
@@ -91,7 +81,7 @@ describe('connection.js', function() {
         var response_content = new Buffer(10);
         var push_content = new Buffer(10);
 
-        done = callNTimes(4, done);
+        done = util.callNTimes(4, done);
 
         s.on('stream', function(response) {
           response.headers(response_headers);
@@ -128,8 +118,8 @@ describe('connection.js', function() {
     });
     describe('ping from client', function() {
       it('should work as expected', function(done) {
-        var c = new Connection(1, settings, log_root.child({ role: 'client' }));
-        var s = new Connection(2, settings, log_root.child({ role: 'server' }));
+        var c = new Connection(1, settings, util.log.child({ role: 'client' }));
+        var s = new Connection(2, settings, util.log.child({ role: 'server' }));
 
         c.pipe(s).pipe(c);
         c.ping(function() {
@@ -139,8 +129,8 @@ describe('connection.js', function() {
     });
     describe('ping from server', function() {
       it('should work as expected', function(done) {
-        var c = new Connection(1, settings, log_root.child({ role: 'client' }));
-        var s = new Connection(2, settings, log_root.child({ role: 'server' }));
+        var c = new Connection(1, settings, util.log.child({ role: 'client' }));
+        var s = new Connection(2, settings, util.log.child({ role: 'server' }));
 
         c.pipe(s).pipe(c);
         s.ping(function() {
@@ -150,8 +140,8 @@ describe('connection.js', function() {
     });
     describe('creating two streams and then using them in reverse order', function() {
       it('should not result in non-monotonous local ID ordering', function() {
-        var c = new Connection(1, settings, log_root.child({ role: 'client' }));
-        var s = new Connection(2, settings, log_root.child({ role: 'server' }));
+        var c = new Connection(1, settings, util.log.child({ role: 'client' }));
+        var s = new Connection(2, settings, util.log.child({ role: 'server' }));
 
         c.pipe(s).pipe(c);
 
@@ -163,8 +153,8 @@ describe('connection.js', function() {
     });
     describe('creating two promises and then using them in reverse order', function() {
       it('should not result in non-monotonous local ID ordering', function(done) {
-        var c = new Connection(1, settings, log_root.child({ role: 'client' }));
-        var s = new Connection(2, settings, log_root.child({ role: 'server' }));
+        var c = new Connection(1, settings, util.log.child({ role: 'client' }));
+        var s = new Connection(2, settings, util.log.child({ role: 'server' }));
 
         c.pipe(s).pipe(c);
 
@@ -182,7 +172,7 @@ describe('connection.js', function() {
         var request = c.createStream();
         request.headers({ ':method': 'get', ':path': '/' });
 
-        done = callNTimes(2, done);
+        done = util.callNTimes(2, done);
         request.on('promise', function() {
           done();
         });

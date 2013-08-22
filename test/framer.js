@@ -1,23 +1,9 @@
 var expect = require('chai').expect;
+var util = require('./util');
 
 var framer = require('../lib/framer');
 var Serializer = framer.Serializer;
 var Deserializer = framer.Deserializer;
-
-// Concatenate an array of buffers into a new buffer
-function concat(buffers) {
-  var size = 0;
-  for (var i = 0; i < buffers.length; i++) {
-    size += buffers[i].length;
-  }
-
-  var concatenated = new Buffer(size);
-  for (var cursor = 0, j = 0; j < buffers.length; cursor += buffers[j].length, j++) {
-    buffers[j].copy(concatenated, cursor);
-  }
-
-  return concatenated;
-}
 
 var frame_types = {
   DATA:          ['data'],
@@ -154,7 +140,7 @@ var test_frames = [{
 
 // Concatenate an array of buffers and then cut them into random size buffers
 function shuffle_buffers(buffers) {
-  var concatenated = concat(buffers), output = [], written = 0;
+  var concatenated = util.concat(buffers), output = [], written = 0;
 
   while (written < concatenated.length) {
     var chunk_size = Math.min(concatenated.length - written, Math.ceil(Math.random()*20));
@@ -188,7 +174,7 @@ describe('framer.js', function() {
             var test = tests[i];
             var buffers = [];
             Serializer[type](test.frame, buffers);
-            expect(concat(buffers)).to.deep.equal(test.buffer.slice(8));
+            expect(util.concat(buffers)).to.deep.equal(test.buffer.slice(8));
           }
         });
       });
@@ -196,14 +182,14 @@ describe('framer.js', function() {
 
     describe('transform stream', function() {
       it('should transform frame objects to appropriate buffers', function() {
-        var stream = new Serializer();
+        var stream = new Serializer(util.log);
 
         for (var i = 0; i < test_frames.length; i++) {
           var test = test_frames[i];
           stream.write(test.frame);
           var chunk, buffer = new Buffer(0);
           while (chunk = stream.read()) {
-            buffer = concat([buffer, chunk]);
+            buffer = util.concat([buffer, chunk]);
           }
           expect(buffer).to.be.deep.equal(test.buffer);
         }
@@ -249,7 +235,7 @@ describe('framer.js', function() {
 
     describe('transform stream', function() {
       it('should transform buffers to appropriate frame object', function() {
-        var stream = new Deserializer();
+        var stream = new Deserializer(util.log);
 
         var shuffled = shuffle_buffers(test_frames.map(function(test) { return test.buffer; }));
         shuffled.forEach(stream.write.bind(stream));

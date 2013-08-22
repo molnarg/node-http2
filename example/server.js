@@ -2,17 +2,25 @@ var fs = require('fs');
 var path = require('path');
 var http2 = require('..');
 
+if (process.env.HTTP2_LOG) {
+  var log = require('bunyan').createLogger({
+    name: 'server',
+    stream: process.stderr,
+    level: process.env.HTTP2_LOG,
+    serializers: http2.serializers
+  });
+}
+
 var options = {
   key: fs.readFileSync(path.join(__dirname, '/localhost.key')),
-  cert: fs.readFileSync(path.join(__dirname, '/localhost.crt'))
+  cert: fs.readFileSync(path.join(__dirname, '/localhost.crt')),
+  log: log
 };
 
 var server = http2.createServer(options, function(request, response) {
   var filename = path.join(__dirname, request.url);
-  console.error('Incoming request:', request.url, '(' + filename + ')');
 
   if ((filename.indexOf(__dirname) === 0) && fs.existsSync(filename) && fs.statSync(filename).isFile()) {
-    console.error('Reading file from disk.');
     var filestream = fs.createReadStream(filename);
     response.writeHead('200');
 
@@ -26,12 +34,9 @@ var server = http2.createServer(options, function(request, response) {
     filestream.pipe(response);
 
   } else {
-    console.error('File not found.');
     response.writeHead('404');
     response.end();
   }
 });
 
-var port = process.env.HTTP2_PORT || 8080;
-server.listen(port);
-console.error('Listening on localhost:' + port + ', serving up files from', __dirname);
+server.listen(process.env.HTTP2_PORT || 8080);

@@ -2,6 +2,17 @@ var fs = require('fs');
 var path = require('path');
 var http2 = require('..');
 
+if (process.env.HTTP2_LOG) {
+  http2.globalAgent = new http2.Agent({
+    log: require('bunyan').createLogger({
+      name: 'client',
+      stream: process.stderr,
+      level: process.env.HTTP2_LOG,
+      serializers: http2.serializers
+    })
+  });
+}
+
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 
 var request = http2.get(process.argv.pop());

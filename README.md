@@ -45,7 +45,7 @@ var http2 = require('http2');
 
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 
-var request = http2.get('https://gabor.molnar.es:8080/');
+var request = http2.get('https://localhost:8080/');
 
 request.on('response', function(response) {
   response.pipe(process.stdout);
@@ -59,7 +59,6 @@ directory. Running the server:
 
 ```bash
 $ node ./example/server.js
-Listening on localhost:8080, serving up files from ./example
 ```
 
 ### Simple command line client ###
@@ -67,7 +66,7 @@ Listening on localhost:8080, serving up files from ./example
 An example client is also available. Downloading the server's own source code from the server:
 
 ```bash
-$ node ./example/client.js 'https://localhost:8080/server.js' 2>/tmp/server.js
+$ node ./example/client.js 'https://localhost:8080/server.js' >/tmp/server.js
 ```
 
 ### Server push ###
@@ -136,15 +135,24 @@ There's a hosted version of the detailed (line-by-line) coverage report
 
 ### Logging ###
 
-Logging is turned off by default. To turn it on, set the `HTTP2_LOG` environment variable to
-`fatal`, `error`, `warn`, `info`, `debug` or `trace` (the logging level). To log every single
-incoming and outgoing data chunk, use `HTTP2_LOG_DATA=1` besides `HTTP2_LOG=trace`. Log output is in
-JSON format, and can be pretty printed using the bunyan command line tool.
+Logging is turned off by default. You can turn it on by passing a bunyan logger as `log` option when
+creating a server or agent.
 
-For example, running the test client with debug level logging output:
+When using the example server or client, it's very easy to turn logging on: set the `HTTP2_LOG`
+environment variable to `fatal`, `error`, `warn`, `info`, `debug` or `trace` (the logging level).
+To log every single incoming and outgoing data chunk, use `HTTP2_LOG_DATA=1` besides
+`HTTP2_LOG=trace`. Log output goes to stdout, and is in JSON format. It can be pretty printed using
+the bunyan command line tool.
 
+Running the example server and client with `info` level logging output:
+
+```bash
+$ HTTP2_LOG=info node ./example/server.js 2> >(bunyan -o short)
 ```
-HTTP2_LOG=debug node ./example/client.js 'http://localhost:8080/server.js' 2>/tmp/server.js | bunyan
+
+```bash
+$ HTTP2_LOG=info node ./example/client.js 'http://localhost:8080/server.js' \
+  >/dev/null 2> >(bunyan -o short)
 ```
 
 Contributors

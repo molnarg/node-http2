@@ -1,19 +1,10 @@
 var expect = require('chai').expect;
+var util = require('./util');
 
 var Stream = require('../lib/stream').Stream;
 
-function callNTimes(limit, done) {
-  var i = 0;
-  return function() {
-    i += 1;
-    if (i === limit) {
-      done();
-    }
-  };
-}
-
 function createStream() {
-  var stream = new Stream();
+  var stream = new Stream(util.log);
   stream.upstream._window = Infinity;
   stream.upstream._remoteFlowControlDisabled = true;
   return stream;
@@ -261,7 +252,7 @@ describe('stream.js', function() {
         var original_stream = createStream();
         var promised_stream = createStream();
 
-        done = callNTimes(2, done);
+        done = util.callNTimes(2, done);
 
         execute_sequence(original_stream, [
           // sending request headers

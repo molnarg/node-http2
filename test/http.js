@@ -1,4 +1,5 @@
 var expect = require('chai').expect;
+var util = require('./util');
 var fs = require('fs');
 var path = require('path');
 
@@ -6,9 +7,10 @@ var http2 = require('../lib/http');
 
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 
-var tls = {
+var options = {
   key: fs.readFileSync(path.join(__dirname, '../example/localhost.key')),
-  cert: fs.readFileSync(path.join(__dirname, '../example/localhost.crt'))
+  cert: fs.readFileSync(path.join(__dirname, '../example/localhost.crt')),
+  log: util.log
 };
 
 describe('http.js', function() {
@@ -18,7 +20,7 @@ describe('http.js', function() {
         var path = '/x';
         var message = 'Hello world';
 
-        var server = http2.createServer(tls, function(request, response) {
+        var server = http2.createServer(options, function(request, response) {
           expect(request.url).to.equal(path);
           response.end(message);
         });
