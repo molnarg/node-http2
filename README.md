@@ -137,8 +137,9 @@ There's a hosted version of the detailed (line-by-line) coverage report
 ### Logging ###
 
 Logging is turned off by default. To turn it on, set the `HTTP2_LOG` environment variable to
-`fatal`, `error`, `warn`, `info`, `debug` or `trace` (the logging level). Log output is in JSON
-format, and can be pretty printed using the bunyan command line tool.
+`fatal`, `error`, `warn`, `info`, `debug` or `trace` (the logging level). To log every single
+incoming and outgoing data chunk, use `HTTP2_LOG_DATA=1` besides `HTTP2_LOG=trace`. Log output is in
+JSON format, and can be pretty printed using the bunyan command line tool.
 
 For example, running the test client with debug level logging output:
 
