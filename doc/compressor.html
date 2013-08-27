@@ -54,11 +54,6 @@
               </a>
             
               
-              <a class="source" href="logging.html">
-                logging.js
-              </a>
-            
-              
               <a class="source" href="stream.html">
                 stream.js
               </a>
@@ -95,8 +90,7 @@ it remains in a valid state.</p>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre><span class="keyword">var</span> logging = require(<span class="string">'./logging'</span>);
-<span class="keyword">var</span> Transform = require(<span class="string">'stream'</span>).Transform;
+            <div class="content"><div class='highlight'><pre><span class="keyword">var</span> Transform = require(<span class="string">'stream'</span>).Transform;
 
 exports.CompressionContext = CompressionContext;
 exports.Decompressor = Decompressor;
@@ -517,7 +511,7 @@ The initial value of it&#39;s Header Table depends on which side of the connecti
             </div>
             
             <div class="content"><div class='highlight'><pre><span class="function"><span class="keyword">function</span> <span class="title">Decompressor</span><span class="params">(type, log)</span> {</span>
-  <span class="keyword">this</span>._log = (log || logging.root).child({ component: <span class="string">'decompressor'</span> });
+  <span class="keyword">this</span>._log = log.child({ component: <span class="string">'decompressor'</span> });
 
   <span class="keyword">var</span> initialTable = (type === <span class="string">'REQUEST'</span>) ? CompressionContext.initialRequestTable
                                           : CompressionContext.initialResponseTable;
@@ -666,7 +660,7 @@ The initial value of it&#39;s Header Table depends on which side of the connecti
             </div>
             
             <div class="content"><div class='highlight'><pre><span class="function"><span class="keyword">function</span> <span class="title">Compressor</span><span class="params">(type, log)</span> {</span>
-  <span class="keyword">this</span>._log = (log || logging.root).child({ component: <span class="string">'compressor'</span> });
+  <span class="keyword">this</span>._log = log.child({ component: <span class="string">'compressor'</span> });
 
   <span class="keyword">var</span> initialTable = (type === <span class="string">'REQUEST'</span>) ? CompressionContext.initialRequestTable
                                           : CompressionContext.initialResponseTable;

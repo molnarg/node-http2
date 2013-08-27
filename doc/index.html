@@ -54,11 +54,6 @@
               </a>
             
               
-              <a class="source" href="logging.html">
-                logging.js
-              </a>
-            
-              
               <a class="source" href="stream.html">
                 stream.js
               </a>
@@ -83,137 +78,91 @@
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-1">&#182;</a>
               </div>
-              <p><a href="https://github.com/molnarg/node-http2">node-http2</a> consists of the following components:</p>
+              <p><a href="https://github.com/molnarg/node-http2">node-http2</a> is an <a href="http://tools.ietf.org/html/draft-ietf-httpbis-http2-04">HTTP/2 (draft 04)</a> implementation for <a href="http://nodejs.org/">node.js</a>.</p>
+<p>The main building blocks are mainly <a href="http://nodejs.org/api/stream.html">node.js streams</a> that are connected through
+pipes.</p>
+<p>The main components are:</p>
 <ul>
-<li><a href="http.html">http.js</a>: public node-http2 API</li>
+<li><p><a href="http.html">http.js</a>: the top layer that presents an API very similar to the standard node.js
+<a href="http://nodejs.org/api/https.html">HTTPS module</a> (which is in turn very similar to the <a href="http://nodejs.org/api/http.html">HTTP module</a>).</p>
+</li>
+<li><p><a href="endpoint.html">Endpoint</a>: represents an HTTP/2 endpoint (client or server). It&#39;s
+responsible for the the first part of the handshake process (sending/receiving the
+<a href="http://tools.ietf.org/html/draft-ietf-httpbis-http2-04#section-3.5">connection header</a>) and manages other components (framer, compressor,
+connection, streams) that make up a client or server.</p>
+</li>
+<li><p><a href="connection.html">Connection</a>: multiplexes the active HTTP/2 streams, manages connection
+lifecycle and settings, and responsible for enforcing the connection level limits (flow
+control, initiated stream limit)</p>
+</li>
+<li><p><a href="stream.html">Stream</a>: implementation of the <a href="http2-stream">HTTP/2 stream concept</a>.
+Implements the <a href="http://tools.ietf.org/html/draft-ietf-httpbis-http2-04#section-5.1">stream state machine</a> defined by the standard, provides
+management methods and events for using the stream (sending/receiving headers, data, etc.),
+and enforces stream level constraints (flow control, sending only legal frames).</p>
+</li>
+<li><p><a href="flow.html">Flow</a>: implements flow control for Connection and Stream as parent class.</p>
+</li>
+<li><p><a href="compressor.html">Compressor and Decompressor</a>: compression and decompression of HEADER and
+PUSH_PROMISE frames</p>
+</li>
+<li><p><a href="framer.html">Serializer and Deserializer</a>: the lowest layer in the stack that transforms
+between the binary and the JavaScript object representation of HTTP/2 frames</p>
+</li>
 </ul>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre><span class="keyword">var</span> http2        = require(<span class="string">'./http'</span>);
-module.exports   = http2;</pre></div></div>
-            
-        </li>
-        
-        
-        <li id="section-2">
-            <div class="annotation">
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-2">&#182;</a>
-              </div>
-              <ul>
-<li><a href="logging.html">logging.js</a>: a default logger object and a registry of log formatter functions</li>
-</ul>
+            <div class="content"><div class='highlight'><pre>module.exports   = require(<span class="string">'./http'</span>);
 
-            </div>
-            
-            <div class="content"><div class='highlight'><pre>http2.logging    = require(<span class="string">'./logging'</span>);</pre></div></div>
-            
-        </li>
-        
-        
-        <li id="section-3">
-            <div class="annotation">
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-3">&#182;</a>
-              </div>
-              <ul>
-<li><a href="framer.html">framer.js</a>: the lowest layer in the stack that transforms between the binary and
-the JavaScript object representation of HTTP/2 frames</li>
-</ul>
+<span class="comment">/*
+                    API user
 
-            </div>
-            
-            <div class="content"><div class='highlight'><pre>http2.framer     = require(<span class="string">'./framer'</span>);</pre></div></div>
-            
-        </li>
-        
-        
-        <li id="section-4">
-            <div class="annotation">
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-4">&#182;</a>
-              </div>
-              <ul>
-<li><a href="compressor.html">compressor.js</a>: compression and decompression of HEADER frames</li>
-</ul>
+                 |            ^
+                 |            |
+ +---------------|------------|--------------------------------------------------------+
+ |               |            |        Server/Agent                                    |
+ |               v            |                                                        |
+ |          +----------+ +----------+                                                  |
+ |          | Outgoing | | Incoming |                                                  |
+ |          | req/res. | | req/res. |                                                  |
+ |          +----------+ +----------+                                                  |
+ |               |            ^                                                        |
+ |   +-----------|------------|---------------------------------------+   +-----       |
+ |   |           |            |   Endpoint                            |   |            |
+ |   |           |            |                                       |   |            |
+ |   |   +-------|------------|-----------------------------------+   |   |            |
+ |   |   |       |            |  Connection                       |   |   |            |
+ |   |   |       v            |                                   |   |   |            |
+ |   |   |  +-----------------------+  +-----------------------+  |   |   |            |
+ |   |   |  |        Stream         |  |         Stream        |  |   |   |            |
+ |   |   |  +-----------------------+  +-----------------------+  |   |   |            |
+ |   |   |       |            ^              |            ^       |   |   |            |
+ |   |   |       v            |              v            |       |   |   |            |
+ |   |   |       +------------+--+--------+--+------------+- ...  |   |   |            |
+ |   |   |                       |        ^                       |   |   |      ...   |
+ |   |   |                       |        |                       |   |   |      ...   |
+ |   |   +-----------------------|--------|-----------------------+   |   |            |
+ |   |                           |        |                           |   |            |
+ |   |                           v        |                           |   |            |
+ |   |   +--------------------------+  +--------------------------+   |   |            |
+ |   |   |        Compressor        |  |       Decompressor       |   |   |            |
+ |   |   +--------------------------+  +--------------------------+   |   |            |
+ |   |                           |        ^                           |   |            |
+ |   |                           v        |                           |   |            |
+ |   |   +--------------------------+  +--------------------------+   |   |            |
+ |   |   |        Serializer        |  |       Deserializer       |   |   |            |
+ |   |   +--------------------------+  +--------------------------+   |   |            |
+ |   |                           |        ^                           |   |            |
+ |   +---------------------------|--------|---------------------------+   +-----       |
+ |                               |        |                                            |
+ |                               v        |                                            |
+ |   +----------------------------------------------------------------+   +-----       |
+ |   |                           TCP stream                           |   |      ...   |
+ |   +----------------------------------------------------------------+   +-----       |
+ |                                                                                     |
+ +-------------------------------------------------------------------------------------+
 
-            </div>
-            
-            <div class="content"><div class='highlight'><pre>http2.compressor = require(<span class="string">'./compressor'</span>);</pre></div></div>
-            
-        </li>
-        
-        
-        <li id="section-5">
-            <div class="annotation">
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-5">&#182;</a>
-              </div>
-              <ul>
-<li><a href="flow.html">flow.js</a>: flow control</li>
-</ul>
-
-            </div>
-            
-            <div class="content"><div class='highlight'><pre>http2.flow       = require(<span class="string">'./flow'</span>);</pre></div></div>
-            
-        </li>
-        
-        
-        <li id="section-6">
-            <div class="annotation">
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-6">&#182;</a>
-              </div>
-              <ul>
-<li><a href="stream.html">stream.js</a>: implementation of the HTTP/2 stream concept</li>
-</ul>
-
-            </div>
-            
-            <div class="content"><div class='highlight'><pre>http2.stream     = require(<span class="string">'./stream'</span>);</pre></div></div>
-            
-        </li>
-        
-        
-        <li id="section-7">
-            <div class="annotation">
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-7">&#182;</a>
-              </div>
-              <ul>
-<li><a href="connection.html">connection.js</a>: multiplexes streams, manages the identifiers of them and
-repsonsible for connection level flow control</li>
-</ul>
-
-            </div>
-            
-            <div class="content"><div class='highlight'><pre>http2.connection = require(<span class="string">'./connection'</span>);</pre></div></div>
-            
-        </li>
-        
-        
-        <li id="section-8">
-            <div class="annotation">
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-8">&#182;</a>
-              </div>
-              <ul>
-<li><a href="endpoint.html">endpoint.js</a>: manages other components (framer, compressor, connection,
-streams) and part of the handshake process</li>
-</ul>
-
-            </div>
-            
-            <div class="content"><div class='highlight'><pre>http2.endpoint   = require(<span class="string">'./endpoint'</span>);</pre></div></div>
+*/</span></pre></div></div>
             
         </li>
         
