@@ -8,13 +8,125 @@ var settings = {
   SETTINGS_INITIAL_WINDOW_SIZE: 100000
 };
 
+var MAX_PRIORITY = Math.pow(2, 31) - 1;
+
+function randomPriority() {
+  return Math.floor(Math.random() * (MAX_PRIORITY + 1));
+}
+
+function expectPriorityOrder(streams) {
+  var previousPriority = -1;
+  for (var j = 0; j < streams.length; j++) {
+    var priority = streams[j]._priority;
+    expect(priority).to.be.at.least(previousPriority);
+    previousPriority = priority;
+  }
+}
+
 describe('connection.js', function() {
+  describe('Connection class', function() {
+    describe('method ._insert(stream)', function() {
+      it('should insert the stream in _streamsOut in a place determined by stream._priority', function() {
+        var streams = [];
+        var connection = Object.create(Connection.prototype, { _streamsOut: { value: streams }});
+        var streamCount = 10;
+
+        // Inserting streams with random priority
+        for (var i = 0; i < streamCount; i++) {
+          var stream = { _priority: randomPriority() };
+          connection._insert(stream);
+        }
+
+        // Resulting _streamsOut should be ordered by priority
+        expect(streams.length).to.equal(streamCount);
+        expectPriorityOrder(streams);
+      });
+    });
+    describe('method ._reprioritize(stream)', function() {
+      it('should eject and then insert the stream in _streamsOut in a place determined by stream._priority', function() {
+        var streams = [];
+        var connection = Object.create(Connection.prototype, { _streamsOut: { value: streams }});
+        var streamCount = 10;
+
+        // Inserting streams with random priority
+        for (var i = 0; i < streamCount; i++) {
+          var stream = { _priority: randomPriority() };
+          connection._insert(stream);
+        }
+
+        // Reprioritizing stream
+        stream = streams[Math.floor(Math.random() * streamCount)];
+        stream._priority = randomPriority();
+        connection._reprioritize(stream);
+
+        // Resulting _streamsOut should be ordered by priority
+        expect(streams.length).to.equal(streamCount);
+        expectPriorityOrder(streams);
+      });
+    });
+    describe('invalid operation', function() {
+      describe('disabling and the re-enabling flow control', function() {
+        it('should result in an error event with type "FLOW_CONTROL_ERROR"', function(done) {
+          var connection = new Connection(1, settings, util.log);
+
+          connection.on('error', function(error) {
+            expect(error).to.equal('FLOW_CONTROL_ERROR');
+            done();
+          });
+
+          connection._setStreamFlowControl(true);
+          connection._setStreamFlowControl(false);
+        });
+      });
+      describe('manipulating flow control window after flow control was turned off', function() {
+        it('should result in an error event with type "FLOW_CONTROL_ERROR"', function(done) {
+          var connection = new Connection(1, settings, util.log);
+
+          connection.on('error', function(error) {
+            expect(error).to.equal('FLOW_CONTROL_ERROR');
+            done();
+          });
+
+          connection._setStreamFlowControl(true);
+          connection._setInitialStreamWindowSize(10);
+        });
+      });
+      describe('disabling flow control twice', function() {
+        it('should be ignored', function() {
+          var connection = new Connection(1, settings, util.log);
+
+          connection._setStreamFlowControl(true);
+          connection._setStreamFlowControl(true);
+        });
+      });
+      describe('enabling flow control when already enabled', function() {
+        it('should be ignored', function() {
+          var connection = new Connection(1, settings, util.log);
+
+          connection._setStreamFlowControl(false);
+        });
+      });
+      describe('unsolicited ping answer', function() {
+        it('should be ignored', function() {
+          var connection = new Connection(1, settings, util.log);
+
+          connection._receivePing({
+            stream: 0,
+            type: 'PING',
+            flags: {
+              'PONG': true
+            },
+            data: new Buffer(8)
+          });
+        });
+      });
+    });
+  });
   describe('test scenario', function() {
     describe('connection setup', function() {
       it('should work as expected', function(done) {
         var c = new Connection(1, settings, util.log.child({ role: 'client' }));
         var s = new Connection(2, settings, util.log.child({ role: 'server' }));
-
         c.pipe(s).pipe(c);
 
         setTimeout(function() {
@@ -124,8 +236,8 @@ describe('connection.js', function() {
       it('should work as expected', function(done) {
         var c = new Connection(1, settings, util.log.child({ role: 'client' }));
         var s = new Connection(2, settings, util.log.child({ role: 'server' }));
-
         c.pipe(s).pipe(c);
+
         c.ping(function() {
           done();
         });
@@ -135,8 +247,8 @@ describe('connection.js', function() {
       it('should work as expected', function(done) {
         var c = new Connection(1, settings, util.log.child({ role: 'client' }));
         var s = new Connection(2, settings, util.log.child({ role: 'server' }));
-
         c.pipe(s).pipe(c);
+
         s.ping(function() {
           done();
         });
@@ -180,6 +292,19 @@ describe('connection.js', function() {
         request.on('promise', function() {
           done();
         });
+      });
+    });
+    describe('closing the connection on one end', function() {
+      it('should result in closed streams on both ends', function(done) {
+        var c = new Connection(1, settings, util.log.child({ role: 'client' }));
+        var s = new Connection(2, settings, util.log.child({ role: 'server' }));
+        c.pipe(s).pipe(c);
+
+        done = util.callNTimes(2, done);
+        c.on('end', done);
+        s.on('end', done);
+
+        c.close();
       });
     });
   });
