@@ -183,16 +183,16 @@
     <h1>Code coverage report for <span class="entity">lib/endpoint.js</span></h1>
     <h2>
         
-        Statements: <span class="metric">90.91% <small>(70 / 77)</small></span> &nbsp;&nbsp;&nbsp;&nbsp;
+        Statements: <span class="metric">86.75% <small>(72 / 83)</small></span> &nbsp;&nbsp;&nbsp;&nbsp;
         
         
-        Branches: <span class="metric">75% <small>(12 / 16)</small></span> &nbsp;&nbsp;&nbsp;&nbsp;
+        Branches: <span class="metric">68.75% <small>(11 / 16)</small></span> &nbsp;&nbsp;&nbsp;&nbsp;
         
         
-        Functions: <span class="metric">83.33% <small>(10 / 12)</small></span> &nbsp;&nbsp;&nbsp;&nbsp;
+        Functions: <span class="metric">76.92% <small>(10 / 13)</small></span> &nbsp;&nbsp;&nbsp;&nbsp;
         
         
-        Lines: <span class="metric">90.91% <small>(70 / 77)</small></span> &nbsp;&nbsp;&nbsp;&nbsp;
+        Lines: <span class="metric">86.75% <small>(72 / 83)</small></span> &nbsp;&nbsp;&nbsp;&nbsp;
         
     </h2>
     <div class="path"><a href="../index.html">All files</a> &#187; <a href="index.html">lib/</a> &#187; endpoint.js</div>
@@ -382,8 +382,20 @@
 181
 182
 183
-184</td><td class="line-coverage"><span class="cline-any cline-yes">1</span>
-<span class="cline-any cline-yes">1</span>
+184
+185
+186
+187
+188
+189
+190
+191
+192
+193
+194
+195
+196
+197</td><td class="line-coverage"><span class="cline-any cline-yes">1</span>
 <span class="cline-any cline-yes">1</span>
 <span class="cline-any cline-yes">1</span>
 <span class="cline-any cline-yes">1</span>
@@ -525,9 +537,9 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1</span>
-<span class="cline-any cline-yes">29</span>
-<span class="cline-any cline-yes">29</span>
-<span class="cline-any cline-yes">16</span>
+<span class="cline-any cline-yes">31</span>
+<span class="cline-any cline-yes">31</span>
+<span class="cline-any cline-yes">18</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -565,8 +577,21 @@
 <span class="cline-any cline-yes">1</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">var logging      = require('./logging');
-var Serializer   = require('./framer').Serializer;
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">var Serializer   = require('./framer').Serializer;
 var Deserializer = require('./framer').Deserializer;
 var Compressor   = require('./compressor').Compressor;
 var Decompressor = require('./compressor').Decompressor;
@@ -583,7 +608,7 @@ function Endpoint(role, settings, log) {
   Duplex.call(this);
 &nbsp;
   // * Initializing logging infrastructure
-  this._log = (log || <span class="branch-1 cbranch-no" title="branch not covered" >logging.root)</span>.child({ component: 'endpoint' });
+  this._log = log.child({ component: 'endpoint', e: this });
 &nbsp;
   // * First part of the handshake process: sending and receiving the client connection header
   //   prelude.
@@ -615,7 +640,7 @@ var CLIENT_PRELUDE = new Buffer('PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n');
 &nbsp;
 // Writing the client header is simple and synchronous.
 Endpoint.prototype._writePrelude = function _writePrelude() {
-  this._log.info('Sending the client connection header prelude.');
+  this._log.debug('Sending the client connection header prelude.');
   this.push(CLIENT_PRELUDE);
 };
 &nbsp;
@@ -642,7 +667,7 @@ Endpoint.prototype._readPrelude = function _readPrelude() {
     // * if the whole header is over, and there were no error then restore the original `_write`
     //   and call it with the remaining part of the current chunk
     <span class="missing-if-branch" title="else path not taken"" >E</span>if (cursor === CLIENT_PRELUDE.length) {
-      this._log.info('Successfully received the client connection header prelude.');
+      this._log.debug('Successfully received the client connection header prelude.');
       delete this._write;
       chunk = chunk.slice(cursor - offset);
       this._write(chunk, encoding, done);
@@ -748,12 +773,26 @@ Endpoint.prototype._error = <span class="fstat-no" title="function not covered" 
 Endpoint.prototype.close = <span class="fstat-no" title="function not covered" >function close(error) {</span>
 <span class="cstat-no" title="statement not covered" >  this._connection.close(error);</span>
 };
+&nbsp;
+// Bunyan serializers
+// ------------------
+&nbsp;
+exports.serializers = {};
+&nbsp;
+var nextId = 0;
+exports.serializers.e = <span class="fstat-no" title="function not covered" >function(endpoint) {</span>
+<span class="cstat-no" title="statement not covered" >  if (!('id' in endpoint)) {</span>
+<span class="cstat-no" title="statement not covered" >    endpoint.id = nextId;</span>
+<span class="cstat-no" title="statement not covered" >    nextId += 1;</span>
+  }
+<span class="cstat-no" title="statement not covered" >  return endpoint.id;</span>
+};
 &nbsp;</pre></td></tr>
 </table></pre>
 
 </div>
 <div class="footer">
-    <div class="meta">Generated by <a href="http://istanbul-js.org/" target="_blank">istanbul</a> at Mon Aug 19 2013 20:40:32 GMT+0200 (CEST)</div>
+    <div class="meta">Generated by <a href="http://istanbul-js.org/" target="_blank">istanbul</a> at Tue Aug 27 2013 22:30:32 GMT+0200 (CEST)</div>
 </div>
 
 <script src="../prettify.js"></script>
