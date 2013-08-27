@@ -54,11 +54,6 @@
               </a>
             
               
-              <a class="source" href="logging.html">
-                logging.js
-              </a>
-            
-              
               <a class="source" href="stream.html">
                 stream.js
               </a>
@@ -86,8 +81,7 @@
               
             </div>
             
-            <div class="content"><div class='highlight'><pre><span class="keyword">var</span> assert = process.env.HTTP2_ASSERT ? require(<span class="string">'assert'</span>) : <span class="function"><span class="keyword">function</span> <span class="title">noop</span><span class="params">()</span> {</span>};
-<span class="keyword">var</span> logging = require(<span class="string">'./logging'</span>);</pre></div></div>
+            <div class="content"><div class='highlight'><pre><span class="keyword">var</span> assert = process.env.HTTP2_ASSERT ? require(<span class="string">'assert'</span>) : <span class="function"><span class="keyword">function</span> <span class="title">noop</span><span class="params">()</span> {</span>};</pre></div></div>
             
         </li>
         
@@ -240,7 +234,7 @@ control window size of 65535 bytes.</p>
 
   <span class="keyword">this</span>._ended = <span class="literal">false</span>;
   <span class="keyword">this</span>._received = <span class="number">0</span>;
-  <span class="keyword">this</span>._remoteFlowControlDisabled = <span class="literal">false</span>;
+  <span class="keyword">this</span>._remoteFlowControlDisabled = <span class="literal">true</span>;
 }
 Flow.prototype = Object.create(Duplex.prototype, { constructor: { value: Flow } });</pre></div></div>
             
@@ -403,21 +397,7 @@ using the <code>disableRemoteFlowControl</code> method.</p>
            +--------+                                           |
            |                                                    |
            +----------------------------------------------------+</code></pre>
-
-            </div>
-            
-            <div class="content"><div class='highlight'><pre><span class="keyword">var</span> MAX_HTTP_PAYLOAD_SIZE = <span class="number">16383</span>; <span class="comment">// TODO: this is repeated in multiple files</span></pre></div></div>
-            
-        </li>
-        
-        
-        <li id="section-16">
-            <div class="annotation">
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-16">&#182;</a>
-              </div>
-              <p><code>_send</code> is called when more frames should be pushed to the output buffer.</p>
+<p><code>_send</code> is called when more frames should be pushed to the output buffer.</p>
 
             </div>
             
@@ -428,11 +408,11 @@ using the <code>disableRemoteFlowControl</code> method.</p>
         </li>
         
         
-        <li id="section-17">
+        <li id="section-16">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-17">&#182;</a>
+                <a class="pilcrow" href="#section-16">&#182;</a>
               </div>
               <p><code>_send</code> is called by <code>_read</code> which is in turn <a href="http://nodejs.org/api/stream.html#stream_writable_write_chunk_encoding_callback_1">called by Duplex</a> when it wants to have more
 items in the output queue. It first check the flow control <code>_queue</code> and only calls <code>_send</code> if
@@ -453,11 +433,11 @@ there are no items in it (which means that we are not waiting for window update)
         </li>
         
         
-        <li id="section-18">
+        <li id="section-17">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-18">&#182;</a>
+                <a class="pilcrow" href="#section-17">&#182;</a>
               </div>
               <p><code>_onWindowIncrease</code> is called when window size increases which means that the peer is ready to
 receive more data. Flushes frames stored in the flow control queue and then triggers a further
@@ -479,11 +459,11 @@ receive more data. Flushes frames stored in the flow control queue and then trig
         </li>
         
         
-        <li id="section-19">
+        <li id="section-18">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-19">&#182;</a>
+                <a class="pilcrow" href="#section-18">&#182;</a>
               </div>
               <p><code>_push(frame)</code> is the low-level version of <code>push</code>. Use this instead of <code>push</code> if you always want
 to have empty flow control queue (but never mix the two). It pushes <code>frame</code> into the output queue
@@ -495,11 +475,13 @@ similar to <code>push</code> except that it returns <code>null</code> if it did 
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>Flow.prototype._push = <span class="function"><span class="keyword">function</span> <span class="title">_push</span><span class="params">(frame, remainderCallback)</span> {</span>
+            <div class="content"><div class='highlight'><pre><span class="keyword">var</span> MAX_PAYLOAD_SIZE = <span class="number">4096</span>; <span class="comment">// Must not be greater than MAX_HTTP_PAYLOAD_SIZE which is 16383</span>
+
+Flow.prototype._push = <span class="function"><span class="keyword">function</span> <span class="title">_push</span><span class="params">(frame, remainderCallback)</span> {</span>
   <span class="keyword">do</span> {
     <span class="keyword">var</span> forwardable = <span class="literal">undefined</span>, remainder = <span class="literal">undefined</span>;
     <span class="keyword">if</span> ((frame === <span class="literal">null</span>) || (frame.type !== <span class="string">'DATA'</span>) ||
-        ((frame.data.length &lt;= <span class="keyword">this</span>._window) &amp;&amp; (frame.data.length &lt;= MAX_HTTP_PAYLOAD_SIZE))) {
+        ((frame.data.length &lt;= <span class="keyword">this</span>._window) &amp;&amp; (frame.data.length &lt;= MAX_PAYLOAD_SIZE))) {
       forwardable = frame;
     }
 
@@ -508,7 +490,7 @@ similar to <code>push</code> except that it returns <code>null</code> if it did 
     }
 
     <span class="keyword">else</span> {
-      <span class="keyword">var</span> chunkSize = Math.min(<span class="keyword">this</span>._window, MAX_HTTP_PAYLOAD_SIZE);
+      <span class="keyword">var</span> chunkSize = Math.min(<span class="keyword">this</span>._window, MAX_PAYLOAD_SIZE);
       forwardable = {
         stream: frame.stream,
         type: <span class="string">'DATA'</span>,
@@ -546,11 +528,11 @@ similar to <code>push</code> except that it returns <code>null</code> if it did 
         </li>
         
         
-        <li id="section-20">
+        <li id="section-19">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-20">&#182;</a>
+                <a class="pilcrow" href="#section-19">&#182;</a>
               </div>
               <p>Push <code>frame</code> into the flow control queue, or if it&#39;s empty, then directly into the output queue</p>
 
@@ -576,11 +558,11 @@ similar to <code>push</code> except that it returns <code>null</code> if it did 
         </li>
         
         
-        <li id="section-21">
+        <li id="section-20">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-21">&#182;</a>
+                <a class="pilcrow" href="#section-20">&#182;</a>
               </div>
               <p><code>getLastQueuedFrame</code> returns the last frame in output buffers. This is primarily used by the
 <a href="stream.html">Stream</a> class to mark the last frame with END_STREAM flag.</p>
@@ -595,11 +577,11 @@ similar to <code>push</code> except that it returns <code>null</code> if it did 
         </li>
         
         
-        <li id="section-22">
+        <li id="section-21">
             <div class="annotation">
               
               <div class="pilwrap for-h2">
-                <a class="pilcrow" href="#section-22">&#182;</a>
+                <a class="pilcrow" href="#section-21">&#182;</a>
               </div>
               <h2>Outgoing frames - managing the window size</h2>
 
@@ -608,11 +590,11 @@ similar to <code>push</code> except that it returns <code>null</code> if it did 
         </li>
         
         
-        <li id="section-23">
+        <li id="section-22">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-23">&#182;</a>
+                <a class="pilcrow" href="#section-22">&#182;</a>
               </div>
               <p>Flow control window size is manipulated using the <code>_increaseWindow</code> method.</p>
 <ul>
@@ -646,11 +628,11 @@ Flow.prototype._increaseWindow = <span class="function"><span class="keyword">fu
         </li>
         
         
-        <li id="section-24">
+        <li id="section-23">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-24">&#182;</a>
+                <a class="pilcrow" href="#section-23">&#182;</a>
               </div>
               <p>The <code>_updateWindow</code> method gets called every time there&#39;s an incoming WINDOW_UPDATE frame. It
 modifies the flow control window:</p>
@@ -671,11 +653,11 @@ specified in the frame.</li>
         </li>
         
         
-        <li id="section-25">
+        <li id="section-24">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-25">&#182;</a>
+                <a class="pilcrow" href="#section-24">&#182;</a>
               </div>
               <p>A SETTINGS frame can alter the initial flow control window size for all current streams. When the
 value of SETTINGS_INITIAL_WINDOW_SIZE changes, a receiver MUST adjust the size of all stream by
@@ -692,11 +674,11 @@ between the new value and the old value.</p>
         </li>
         
         
-        <li id="section-26">
+        <li id="section-25">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-26">&#182;</a>
+                <a class="pilcrow" href="#section-25">&#182;</a>
               </div>
               <p>Flow control for outgoing frames can be disabled by the peer with various methods.</p>
 

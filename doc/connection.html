@@ -54,11 +54,6 @@
               </a>
             
               
-              <a class="source" href="logging.html">
-                logging.js
-              </a>
-            
-              
               <a class="source" href="stream.html">
                 stream.js
               </a>
@@ -86,7 +81,7 @@
               
             </div>
             
-            <div class="content"><div class='highlight'><pre><span class="keyword">var</span> logging = require(<span class="string">'./logging'</span>);</pre></div></div>
+            <div class="content"><div class='highlight'><pre><span class="keyword">var</span> assert = process.env.HTTP2_ASSERT ? require(<span class="string">'assert'</span>) : <span class="function"><span class="keyword">function</span> <span class="title">noop</span><span class="params">()</span> {</span>};</pre></div></div>
             
         </li>
         
@@ -210,7 +205,7 @@ of <code>settings</code></p>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>  <span class="keyword">this</span>._log = (log || logging.root).child({ component: <span class="string">'connection'</span> });</pre></div></div>
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">this</span>._log = log.child({ component: <span class="string">'connection'</span> });</pre></div></div>
             
         </li>
         
@@ -390,23 +385,17 @@ Connection.prototype = Object.create(Flow.prototype, { constructor: { value: Con
                 <a class="pilcrow" href="#section-18">&#182;</a>
               </div>
               <ul>
-<li><p>streams are stored in two data structures:</p>
-<ul>
-<li><p><code>_streamsIds</code> is the primary registry of streams. It&#39;s a sparse array that serves as an
-id -&gt; stream map.</p>
-</li>
-<li><p><code>_streamPriorities</code> is an ordered set of streams that are allowed to send data. The order
-is determined by stream priorities. (currently, it&#39;s order of creation)</p>
-</li>
+<li>streams are stored in two data structures:<ul>
+<li><code>_streamsIn</code> is an id -&gt; stream map of the streams that are allowed to receive frames.</li>
+<li><code>_streamsOut</code> is the list of all streams ordered by priority.</li>
 </ul>
 </li>
 </ul>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>  <span class="keyword">this</span>._streamsIds = [];
-
-  <span class="keyword">this</span>._streamPriorities = [];</pre></div></div>
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">this</span>._streamsIn = [];
+  <span class="keyword">this</span>._streamsOut = [];</pre></div></div>
             
         </li>
         
@@ -441,7 +430,7 @@ is determined by stream priorities. (currently, it&#39;s order of creation)</p>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>  <span class="keyword">this</span>._streamsIds[<span class="number">0</span>] = { upstream: { write: <span class="keyword">this</span>._writeControlFrame.bind(<span class="keyword">this</span>) } };</pre></div></div>
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">this</span>._streamsIn[<span class="number">0</span>] = { upstream: { write: <span class="keyword">this</span>._writeControlFrame.bind(<span class="keyword">this</span>) } };</pre></div></div>
             
         </li>
         
@@ -465,7 +454,7 @@ be set by the SETTINGS_MAX_CONCURRENT_STREAMS setting.</li>
 };
 
 Connection.prototype._getIdOf = <span class="function"><span class="keyword">function</span> <span class="title">_getIdOf</span><span class="params">(stream)</span> {</span>
-  <span class="keyword">return</span> <span class="keyword">this</span>._streamsIds.indexOf(stream);
+  <span class="keyword">return</span> <span class="keyword">this</span>._streamsIn.indexOf(stream);
 };</pre></div></div>
             
         </li>
@@ -502,13 +491,21 @@ broadcasts the message by creating an event on it.</p>
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-23">&#182;</a>
               </div>
-              <p>Changing the stream count limit</p>
+              <p>Method to manage the stream slot pool:</p>
 
             </div>
             
             <div class="content"><div class='highlight'><pre>Connection.prototype._updateStreamLimit = <span class="function"><span class="keyword">function</span> <span class="title">_updateStreamLimit</span><span class="params">(newStreamLimit)</span> {</span>
   <span class="keyword">this</span>._streamLimit = newStreamLimit;
-  <span class="keyword">this</span>.emit(<span class="string">'stream_slot_change'</span>);
+  <span class="keyword">this</span>.read(<span class="number">0</span>);
+};
+
+Connection.prototype._changeStreamCount = <span class="function"><span class="keyword">function</span> <span class="title">_changeStreamCount</span><span class="params">(change)</span> {</span>
+  <span class="keyword">if</span> (change) {
+    <span class="keyword">this</span>._log.trace({ count: <span class="keyword">this</span>._streamCount, change: change }, <span class="string">'Changing active stream count.'</span>);
+    <span class="keyword">this</span>._streamCount += change;
+    <span class="keyword">this</span>.read(<span class="number">0</span>);
+  }
 };</pre></div></div>
             
         </li>
@@ -520,14 +517,18 @@ broadcasts the message by creating an event on it.</p>
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-24">&#182;</a>
               </div>
-              <p>Freeing a slot in the stream pool</p>
+              <p>Creating a new <em>inbound or outbound</em> stream with the given <code>id</code> (which is undefined in case of
+an outbound stream) consists of three steps:</p>
+<ol>
+<li>var stream = new Stream(this._log);</li>
+<li>this._enableReceiving(stream, id);</li>
+<li>this._enableSending(stream);</li>
+</ol>
+<p>Enabling receiving</p>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>Connection.prototype._decreaseStreamCount = <span class="function"><span class="keyword">function</span> <span class="title">_decreaseStreamCount</span><span class="params">()</span> {</span>
-  <span class="keyword">this</span>._streamCount -= <span class="number">1</span>;
-  <span class="keyword">this</span>.emit(<span class="string">'stream_slot_change'</span>);
-};</pre></div></div>
+            <div class="content"><div class='highlight'><pre>Connection.prototype._enableReceiving = <span class="function"><span class="keyword">function</span> <span class="title">_enableReceiving</span><span class="params">(stream, id)</span> {</span></pre></div></div>
             
         </li>
         
@@ -538,34 +539,16 @@ broadcasts the message by creating an event on it.</p>
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-25">&#182;</a>
               </div>
-              <p>Creating a new <em>inbound or outbound</em> stream with the given <code>id</code> consists of two steps:</p>
-<ol>
-<li><code>var newstream = this._newStream(id);</code><ul>
-<li>creates the new stream and registers it in <code>this._streamsIds</code></li>
+              <ul>
+<li>initiated stream without definite ID</li>
 </ul>
-</li>
-<li><code>this._activateStream(newstream);</code><ul>
-<li>adds it to <code>_streamPriorities</code> (in the appropriate position)</li>
-<li>transforms &#39;readable&#39; events on the stream to &#39;stream_readable&#39; events on the connection</li>
-</ul>
-</li>
-</ol>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>Connection.prototype._newStream = <span class="function"><span class="keyword">function</span> <span class="title">_newStream</span><span class="params">(id)</span> {</span>
-  <span class="keyword">this</span>._log.trace({ stream_id: id }, <span class="string">'Adding new stream.'</span>);
-  <span class="keyword">var</span> stream = <span class="keyword">new</span> Stream(<span class="keyword">this</span>._log.child({ stream_id: id }));
-  <span class="keyword">this</span>._streamsIds[id] = stream;
-  <span class="keyword">this</span>.emit(<span class="string">'new_stream'</span>, stream, id);
-  <span class="keyword">return</span> stream;
-};
-
-Connection.prototype._activateStream = <span class="function"><span class="keyword">function</span> <span class="title">_activateStream</span><span class="params">(stream)</span> {</span>
-  <span class="keyword">this</span>._log.trace({ stream_id: <span class="keyword">this</span>._getIdOf(stream) }, <span class="string">'Activating stream.'</span>);
-  <span class="keyword">this</span>._streamPriorities.push(stream);
-  stream.upstream.on(<span class="string">'readable'</span>, <span class="keyword">this</span>.read.bind(<span class="keyword">this</span>, <span class="number">0</span>));
-};</pre></div></div>
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">if</span> (id === <span class="literal">undefined</span>) {
+    id = <span class="keyword">this</span>._nextStreamId;
+    <span class="keyword">this</span>._nextStreamId += <span class="number">2</span>;
+  }</pre></div></div>
             
         </li>
         
@@ -576,32 +559,15 @@ Connection.prototype._activateStream = <span class="function"><span class="keywo
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-26">&#182;</a>
               </div>
-              <p>Creating an <em>inbound</em> stream with the given ID. It is called when there&#39;s an incoming frame to
-a previously nonexistent stream.</p>
-<ul>
-<li>Incoming stream IDs have to be greater than any previous incoming stream ID, and have to be of
-different parity than IDs used for outbound streams.</li>
-<li>It creates and activates the stream.</li>
-<li>Emits &#39;stream&#39; event with the new stream.</li>
+              <ul>
+<li>incoming stream with a legitim ID (larger than any previous and different parity than ours)</li>
 </ul>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>Connection.prototype._createIncomingStream = <span class="function"><span class="keyword">function</span> <span class="title">_createIncomingStream</span><span class="params">(id)</span> {</span>
-  <span class="keyword">this</span>._log.debug({ stream_id: id }, <span class="string">'New incoming stream.'</span>);
-
-  <span class="keyword">if</span> ((id &lt;= <span class="keyword">this</span>._lastIncomingStream) || ((id - <span class="keyword">this</span>._nextStreamId) % <span class="number">2</span> === <span class="number">0</span>)) {
-    <span class="keyword">this</span>._log.error({ stream_id: id, lastIncomingStream: <span class="keyword">this</span>._lastIncomingStream }, <span class="string">'Invalid incoming stream ID.'</span>);
-    <span class="keyword">this</span>.emit(<span class="string">'error'</span>, <span class="string">'PROTOCOL_ERROR'</span>);
-    <span class="keyword">return</span> <span class="literal">undefined</span>;
-  }
-
-  <span class="keyword">this</span>._lastIncomingStream = id;
-  <span class="keyword">var</span> stream = <span class="keyword">this</span>._newStream(id);
-  <span class="keyword">this</span>._activateStream(stream);
-  <span class="keyword">this</span>.emit(<span class="string">'stream'</span>, stream, id);
-  <span class="keyword">return</span> stream;
-};</pre></div></div>
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">else</span> <span class="keyword">if</span> ((id &gt; <span class="keyword">this</span>._lastIncomingStream) &amp;&amp; ((id - <span class="keyword">this</span>._nextStreamId) % <span class="number">2</span> !== <span class="number">0</span>)) {
+    <span class="keyword">this</span>._lastIncomingStream = id;
+  }</pre></div></div>
             
         </li>
         
@@ -612,11 +578,20 @@ different parity than IDs used for outbound streams.</li>
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-27">&#182;</a>
               </div>
-              <p>Creating an <em>outbound</em> stream with the next available ID</p>
+              <ul>
+<li>incoming stream with invalid ID</li>
+</ul>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>Connection.prototype.createStream = <span class="function"><span class="keyword">function</span> <span class="title">createStream</span><span class="params">()</span> {</span></pre></div></div>
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">else</span> {
+    <span class="keyword">this</span>._log.error({ stream_id: id, lastIncomingStream: <span class="keyword">this</span>._lastIncomingStream },
+                    <span class="string">'Invalid incoming stream ID.'</span>);
+    <span class="keyword">this</span>.emit(<span class="string">'error'</span>, <span class="string">'PROTOCOL_ERROR'</span>);
+    <span class="keyword">return</span> <span class="literal">undefined</span>;
+  }
+
+  assert(!(id <span class="keyword">in</span> <span class="keyword">this</span>._streamsIn));</pre></div></div>
             
         </li>
         
@@ -628,15 +603,17 @@ different parity than IDs used for outbound streams.</li>
                 <a class="pilcrow" href="#section-28">&#182;</a>
               </div>
               <ul>
-<li>Allocating a new ID with the appropriate parity.</li>
+<li>adding to <code>this._streamsIn</code></li>
 </ul>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>  <span class="keyword">var</span> id = <span class="keyword">this</span>._nextStreamId;
-  <span class="keyword">this</span>._nextStreamId += <span class="number">2</span>;
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">this</span>._log.trace({ s: stream, stream_id: id }, <span class="string">'Enabling receiving for a stream.'</span>);
+  <span class="keyword">this</span>._streamsIn[id] = stream;
+  <span class="keyword">this</span>.emit(<span class="string">'new_stream'</span>, stream, id);
 
-  <span class="keyword">this</span>._log.trace({ stream_id: id }, <span class="string">'Creating new outbound stream.'</span>);</pre></div></div>
+  <span class="keyword">return</span> id;
+};</pre></div></div>
             
         </li>
         
@@ -647,13 +624,17 @@ different parity than IDs used for outbound streams.</li>
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-29">&#182;</a>
               </div>
-              <ul>
-<li>Creating a new Stream.</li>
-</ul>
+              <p>Enabling sending</p>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>  <span class="keyword">var</span> stream = <span class="keyword">this</span>._newStream(id);</pre></div></div>
+            <div class="content"><div class='highlight'><pre>Connection.prototype._enableSending = <span class="function"><span class="keyword">function</span> <span class="title">_enableSending</span><span class="params">(stream)</span> {</span>
+  <span class="keyword">this</span>._log.trace({ s: stream }, <span class="string">'Enabling sending for a stream.'</span>);
+  <span class="keyword">this</span>._insert(stream);
+  stream.on(<span class="string">'priority'</span>, <span class="keyword">this</span>._reprioritize.bind(<span class="keyword">this</span>, stream));
+  stream.upstream.on(<span class="string">'readable'</span>, <span class="keyword">this</span>.read.bind(<span class="keyword">this</span>, <span class="number">0</span>));
+  <span class="keyword">this</span>.read(<span class="number">0</span>);
+};</pre></div></div>
             
         </li>
         
@@ -664,21 +645,18 @@ different parity than IDs used for outbound streams.</li>
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-30">&#182;</a>
               </div>
-              <ul>
-<li>Activating the created stream is only possible when there&#39;s enough space in the stream pool.
-<code>tryToActivate</code> tries to activate the stream until it finally succeeds.</li>
-</ul>
+              <p><code>_insert(stream)</code> inserts <code>stream</code> in <code>_streamsOut</code> in a place determined by <code>stream._priority</code></p>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>  <span class="keyword">var</span> self = <span class="keyword">this</span>;
-  <span class="function"><span class="keyword">function</span> <span class="title">tryToActivate</span><span class="params">()</span> {</span>
-    <span class="keyword">if</span> (self._streamCount &gt;= self._streamLimit) {
-      self.once(<span class="string">'stream_slot_change'</span>, tryToActivate);
-    } <span class="keyword">else</span> {
-      self._activateStream(stream);
-    }
-  }</pre></div></div>
+            <div class="content"><div class='highlight'><pre>Connection.prototype._insert = <span class="function"><span class="keyword">function</span> <span class="title">_insert</span><span class="params">(stream)</span> {</span>
+  <span class="keyword">var</span> streams = <span class="keyword">this</span>._streamsOut;
+  <span class="keyword">var</span> index = <span class="number">0</span>;
+  <span class="keyword">while</span> ((index &lt; streams.length) &amp;&amp; (streams[index]._priority &lt;= stream._priority)) {
+    index += <span class="number">1</span>;
+  }
+  streams.splice(index, <span class="number">0</span>, stream);
+};</pre></div></div>
             
         </li>
         
@@ -689,31 +667,17 @@ different parity than IDs used for outbound streams.</li>
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-31">&#182;</a>
               </div>
-              <ul>
-<li>Starting activation process when<ul>
-<li>it becomes &#39;active&#39; (tries to send a frame)</li>
-<li>and if it is a promised stream, the PUSH_PROMISE is sent</li>
-</ul>
-</li>
-</ul>
+              <p><code>_reprioritize(stream)</code> moves <code>stream</code> to the apprioriate place in <code>_streamsOut</code> (according to
+its <code>_priority</code>)</p>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>  <span class="keyword">var</span> promisePending = <span class="literal">false</span>;
-  stream.once(<span class="string">'promise_initiated'</span>, <span class="keyword">function</span>() {
-    promisePending = <span class="literal">true</span>;
-    stream.once(<span class="string">'promise_sent'</span>, <span class="keyword">function</span>() {
-      promisePending = <span class="literal">false</span>;
-    });
-  });
-
-  stream.once(<span class="string">'active'</span>, <span class="keyword">function</span>() {
-    <span class="keyword">if</span> (promisePending) {
-      stream.once(<span class="string">'promise_sent'</span>, tryToActivate);
-    } <span class="keyword">else</span> {
-      tryToActivate();
-    }
-  });</pre></div></div>
+            <div class="content"><div class='highlight'><pre>Connection.prototype._reprioritize = <span class="function"><span class="keyword">function</span> <span class="title">_reprioritize</span><span class="params">(stream)</span> {</span>
+  <span class="keyword">var</span> index = <span class="keyword">this</span>._streamsOut.indexOf(stream);
+  assert(index !== -<span class="number">1</span>);
+  <span class="keyword">this</span>._streamsOut.splice(index, <span class="number">1</span>);
+  <span class="keyword">this</span>._insert(stream);
+};</pre></div></div>
             
         </li>
         
@@ -724,13 +688,18 @@ different parity than IDs used for outbound streams.</li>
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-32">&#182;</a>
               </div>
-              <ul>
-<li>When the stream becomes inactive, decreasing the <code>_streamCount</code></li>
-</ul>
+              <p>Creating an <em>inbound</em> stream with the given ID. It is called when there&#39;s an incoming frame to
+a previously nonexistent stream.</p>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>  stream.once(<span class="string">'inactive'</span>, <span class="keyword">this</span>._decreaseStreamCount.bind(<span class="keyword">this</span>));
+            <div class="content"><div class='highlight'><pre>Connection.prototype._createIncomingStream = <span class="function"><span class="keyword">function</span> <span class="title">_createIncomingStream</span><span class="params">(id)</span> {</span>
+  <span class="keyword">this</span>._log.debug({ stream_id: id }, <span class="string">'New incoming stream.'</span>);
+
+  <span class="keyword">var</span> stream = <span class="keyword">new</span> Stream(<span class="keyword">this</span>._log);
+  <span class="keyword">this</span>._enableReceiving(stream, id);
+  <span class="keyword">this</span>._enableSending(stream);
+  <span class="keyword">this</span>.emit(<span class="string">'stream'</span>, stream, id);
 
   <span class="keyword">return</span> stream;
 };</pre></div></div>
@@ -741,12 +710,15 @@ different parity than IDs used for outbound streams.</li>
         <li id="section-33">
             <div class="annotation">
               
-              <div class="pilwrap for-h2">
+              <div class="pilwrap ">
                 <a class="pilcrow" href="#section-33">&#182;</a>
               </div>
-              <h2>Multiplexing</h2>
+              <p>Creating an <em>outbound</em> stream</p>
 
             </div>
+            
+            <div class="content"><div class='highlight'><pre>Connection.prototype.createStream = <span class="function"><span class="keyword">function</span> <span class="title">createStream</span><span class="params">()</span> {</span>
+  <span class="keyword">this</span>._log.trace(<span class="string">'Creating new outbound stream.'</span>);</pre></div></div>
             
         </li>
         
@@ -756,6 +728,40 @@ different parity than IDs used for outbound streams.</li>
               
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-34">&#182;</a>
+              </div>
+              <ul>
+<li>Receiving is enabled immediately, and an ID gets assigned to the stream</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">var</span> stream = <span class="keyword">new</span> Stream(<span class="keyword">this</span>._log);
+  <span class="keyword">this</span>._enableSending(stream);
+
+  <span class="keyword">return</span> stream;
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-35">
+            <div class="annotation">
+              
+              <div class="pilwrap for-h2">
+                <a class="pilcrow" href="#section-35">&#182;</a>
+              </div>
+              <h2>Multiplexing</h2>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-36">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-36">&#182;</a>
               </div>
               <p>The <code>_send</code> method is a virtual method of the <a href="flow.html">Flow class</a> that has to be implemented
 by child classes. It reads frames from streams and pushes them to the output buffer.</p>
@@ -768,11 +774,11 @@ by child classes. It reads frames from streams and pushes them to the output buf
         </li>
         
         
-        <li id="section-35">
+        <li id="section-37">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-35">&#182;</a>
+                <a class="pilcrow" href="#section-37">&#182;</a>
               </div>
               <ul>
 <li>Looping through the active streams in priority order and forwarding frames from streams</li>
@@ -781,20 +787,35 @@ by child classes. It reads frames from streams and pushes them to the output buf
             </div>
             
             <div class="content"><div class='highlight'><pre>stream_loop:
-  <span class="keyword">for</span> (<span class="keyword">var</span> i = <span class="number">0</span>; i &lt; <span class="keyword">this</span>._streamPriorities.length; i++) {
-    <span class="keyword">var</span> stream = <span class="keyword">this</span>._streamPriorities[i];
+  <span class="keyword">for</span> (<span class="keyword">var</span> i = <span class="number">0</span>; i &lt; <span class="keyword">this</span>._streamsOut.length; i++) {
+    <span class="keyword">var</span> stream = <span class="keyword">this</span>._streamsOut[i];
     <span class="keyword">var</span> id = <span class="keyword">this</span>._getIdOf(stream);
     <span class="keyword">var</span> frame;
-    <span class="keyword">var</span> unshiftRemainder = stream.upstream.unshift.bind(stream.upstream);
     <span class="keyword">while</span> (frame = stream.upstream.read()) {
-      frame.stream = id;
-      <span class="keyword">if</span> (frame.type === <span class="string">'PUSH_PROMISE'</span>) {
-        frame.promised_stream.emit(<span class="string">'promise_sent'</span>);
-        frame.promised_stream = <span class="keyword">this</span>._getIdOf(frame.promised_stream);
+      <span class="keyword">if</span> (<span class="keyword">this</span>._streamCount + frame.count_change &gt; <span class="keyword">this</span>._streamLimit) {
+        stream.upstream.unshift(frame);
+        <span class="keyword">continue</span> stream_loop;
       }
 
-      <span class="keyword">this</span>._log.trace({ stream_id: id, frame: frame }, <span class="string">'Trying to forward outgoing frame'</span>);
-      <span class="keyword">var</span> moreNeeded = <span class="keyword">this</span>._push(frame, unshiftRemainder);
+      <span class="keyword">if</span> (id === -<span class="number">1</span>) {
+        id = <span class="keyword">this</span>._enableReceiving(stream);
+      }
+
+      frame.stream = id;
+      <span class="keyword">if</span> (frame.type === <span class="string">'PUSH_PROMISE'</span>) {
+        setImmediate(<span class="keyword">this</span>._enableSending.bind(<span class="keyword">this</span>, frame.promised_stream));
+        frame.promised_stream = <span class="keyword">this</span>._enableReceiving(frame.promised_stream);
+      }
+
+      <span class="keyword">this</span>._log.trace({ s: stream, frame: frame }, <span class="string">'Trying to forward outgoing frame'</span>);
+      <span class="keyword">var</span> remainder = <span class="literal">null</span>;
+      <span class="keyword">var</span> moreNeeded = <span class="keyword">this</span>._push(frame, <span class="keyword">function</span>(remainderFrame) {
+        stream.upstream.unshift(remainder = remainderFrame);
+      });
+
+      <span class="keyword">if</span> (!remainder) {
+        <span class="keyword">this</span>._changeStreamCount(frame.count_change);
+      }
 
       <span class="keyword">if</span> (moreNeeded === <span class="literal">null</span>) {
         <span class="keyword">continue</span> stream_loop;
@@ -810,11 +831,11 @@ by child classes. It reads frames from streams and pushes them to the output buf
         </li>
         
         
-        <li id="section-36">
+        <li id="section-38">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-36">&#182;</a>
+                <a class="pilcrow" href="#section-38">&#182;</a>
               </div>
               <p>The <code>_receive</code> method is another virtual method of the <a href="flow.html">Flow class</a> that has to be
 implemented by child classes. It forwards the given frame to the appropriate stream:</p>
@@ -827,11 +848,11 @@ implemented by child classes. It forwards the given frame to the appropriate str
         </li>
         
         
-        <li id="section-37">
+        <li id="section-39">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-37">&#182;</a>
+                <a class="pilcrow" href="#section-39">&#182;</a>
               </div>
               <ul>
 <li>gets the appropriate stream from the stream registry</li>
@@ -839,16 +860,16 @@ implemented by child classes. It forwards the given frame to the appropriate str
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>  <span class="keyword">var</span> stream = <span class="keyword">this</span>._streamsIds[frame.stream];</pre></div></div>
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">var</span> stream = <span class="keyword">this</span>._streamsIn[frame.stream];</pre></div></div>
             
         </li>
         
         
-        <li id="section-38">
+        <li id="section-40">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-38">&#182;</a>
+                <a class="pilcrow" href="#section-40">&#182;</a>
               </div>
               <ul>
 <li>or creates one if it&#39;s not in <code>this.streams</code></li>
@@ -863,11 +884,11 @@ implemented by child classes. It forwards the given frame to the appropriate str
         </li>
         
         
-        <li id="section-39">
+        <li id="section-41">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-39">&#182;</a>
+                <a class="pilcrow" href="#section-41">&#182;</a>
               </div>
               <ul>
 <li>in case of PUSH_PROMISE, replaces the promised stream id with a new incoming stream</li>
@@ -877,16 +898,18 @@ implemented by child classes. It forwards the given frame to the appropriate str
             
             <div class="content"><div class='highlight'><pre>  <span class="keyword">if</span> (frame.type === <span class="string">'PUSH_PROMISE'</span>) {
     frame.promised_stream = <span class="keyword">this</span>._createIncomingStream(frame.promised_stream);
-  }</pre></div></div>
+  }
+
+  frame.count_change = <span class="keyword">this</span>._changeStreamCount.bind(<span class="keyword">this</span>);</pre></div></div>
             
         </li>
         
         
-        <li id="section-40">
+        <li id="section-42">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-40">&#182;</a>
+                <a class="pilcrow" href="#section-42">&#182;</a>
               </div>
               <ul>
 <li>and writes it to the <code>stream</code>&#39;s <code>upstream</code></li>
@@ -902,11 +925,11 @@ implemented by child classes. It forwards the given frame to the appropriate str
         </li>
         
         
-        <li id="section-41">
+        <li id="section-43">
             <div class="annotation">
               
               <div class="pilwrap for-h2">
-                <a class="pilcrow" href="#section-41">&#182;</a>
+                <a class="pilcrow" href="#section-43">&#182;</a>
               </div>
               <h2>Settings management</h2>
 
@@ -915,11 +938,11 @@ implemented by child classes. It forwards the given frame to the appropriate str
         </li>
         
         
-        <li id="section-42">
+        <li id="section-44">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-42">&#182;</a>
+                <a class="pilcrow" href="#section-44">&#182;</a>
               </div>
               
             </div>
@@ -931,11 +954,11 @@ implemented by child classes. It forwards the given frame to the appropriate str
         </li>
         
         
-        <li id="section-43">
+        <li id="section-45">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-43">&#182;</a>
+                <a class="pilcrow" href="#section-45">&#182;</a>
               </div>
               <p>Settings management initialization:</p>
 
@@ -946,11 +969,11 @@ implemented by child classes. It forwards the given frame to the appropriate str
         </li>
         
         
-        <li id="section-44">
+        <li id="section-46">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-44">&#182;</a>
+                <a class="pilcrow" href="#section-46">&#182;</a>
               </div>
               <ul>
 <li>Sending the initial settings.</li>
@@ -958,17 +981,17 @@ implemented by child classes. It forwards the given frame to the appropriate str
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>  <span class="keyword">this</span>._log.info(<span class="string">'Sending the first SETTINGS frame as part of the connection header.'</span>);
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">this</span>._log.debug(<span class="string">'Sending the first SETTINGS frame as part of the connection header.'</span>);
   <span class="keyword">this</span>.set(settings || defaultSettings);</pre></div></div>
             
         </li>
         
         
-        <li id="section-45">
+        <li id="section-47">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-45">&#182;</a>
+                <a class="pilcrow" href="#section-47">&#182;</a>
               </div>
               <ul>
 <li>Checking that the first frame the other endpoint sends is SETTINGS</li>
@@ -978,7 +1001,7 @@ implemented by child classes. It forwards the given frame to the appropriate str
             
             <div class="content"><div class='highlight'><pre>  <span class="keyword">this</span>.once(<span class="string">'receiving'</span>, <span class="keyword">function</span>(frame) {
     <span class="keyword">if</span> ((frame.stream === <span class="number">0</span>) &amp;&amp; (frame.type === <span class="string">'SETTINGS'</span>)) {
-      <span class="keyword">this</span>._log.info(<span class="string">'Receiving the first SETTINGS frame as part of the connection header.'</span>);
+      <span class="keyword">this</span>._log.debug(<span class="string">'Receiving the first SETTINGS frame as part of the connection header.'</span>);
     } <span class="keyword">else</span> {
       <span class="keyword">this</span>._log.fatal({ frame: frame }, <span class="string">'Invalid connection header: first frame is not SETTINGS.'</span>);
       <span class="keyword">this</span>.emit(<span class="string">'error'</span>);
@@ -988,11 +1011,11 @@ implemented by child classes. It forwards the given frame to the appropriate str
         </li>
         
         
-        <li id="section-46">
+        <li id="section-48">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-46">&#182;</a>
+                <a class="pilcrow" href="#section-48">&#182;</a>
               </div>
               <ul>
 <li>Forwarding SETTINGS frames to the <code>_receiveSettings</code> method</li>
@@ -1006,11 +1029,11 @@ implemented by child classes. It forwards the given frame to the appropriate str
         </li>
         
         
-        <li id="section-47">
+        <li id="section-49">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-47">&#182;</a>
+                <a class="pilcrow" href="#section-49">&#182;</a>
               </div>
               <p>Handling of incoming SETTINGS frames.</p>
 
@@ -1025,11 +1048,11 @@ implemented by child classes. It forwards the given frame to the appropriate str
         </li>
         
         
-        <li id="section-48">
+        <li id="section-50">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-48">&#182;</a>
+                <a class="pilcrow" href="#section-50">&#182;</a>
               </div>
               <p>Changing one or more settings value and sending out a SETTINGS frame</p>
 
@@ -1046,11 +1069,11 @@ implemented by child classes. It forwards the given frame to the appropriate str
         </li>
         
         
-        <li id="section-49">
+        <li id="section-51">
             <div class="annotation">
               
               <div class="pilwrap for-h2">
-                <a class="pilcrow" href="#section-49">&#182;</a>
+                <a class="pilcrow" href="#section-51">&#182;</a>
               </div>
               <h2>Lifecycle management</h2>
 
@@ -1059,11 +1082,11 @@ implemented by child classes. It forwards the given frame to the appropriate str
         </li>
         
         
-        <li id="section-50">
+        <li id="section-52">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-50">&#182;</a>
+                <a class="pilcrow" href="#section-52">&#182;</a>
               </div>
               <p>The main responsibilities of lifecycle management code:</p>
 <ul>
@@ -1086,11 +1109,11 @@ implemented by child classes. It forwards the given frame to the appropriate str
         </li>
         
         
-        <li id="section-51">
+        <li id="section-53">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-51">&#182;</a>
+                <a class="pilcrow" href="#section-53">&#182;</a>
               </div>
               <p>Generating a string of length 16 with random hexadecimal digits</p>
 
@@ -1109,11 +1132,11 @@ implemented by child classes. It forwards the given frame to the appropriate str
         </li>
         
         
-        <li id="section-52">
+        <li id="section-54">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-52">&#182;</a>
+                <a class="pilcrow" href="#section-54">&#182;</a>
               </div>
               <p>Sending a ping and calling <code>callback</code> when the answer arrives</p>
 
@@ -1138,11 +1161,11 @@ implemented by child classes. It forwards the given frame to the appropriate str
         </li>
         
         
-        <li id="section-53">
+        <li id="section-55">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-53">&#182;</a>
+                <a class="pilcrow" href="#section-55">&#182;</a>
               </div>
               <p>Answering pings</p>
 
@@ -1175,11 +1198,11 @@ implemented by child classes. It forwards the given frame to the appropriate str
         </li>
         
         
-        <li id="section-54">
+        <li id="section-56">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-54">&#182;</a>
+                <a class="pilcrow" href="#section-56">&#182;</a>
               </div>
               <p>Terminating the connection</p>
 
@@ -1204,11 +1227,11 @@ Connection.prototype._receiveGoaway = <span class="function"><span class="keywor
         </li>
         
         
-        <li id="section-55">
+        <li id="section-57">
             <div class="annotation">
               
               <div class="pilwrap for-h2">
-                <a class="pilcrow" href="#section-55">&#182;</a>
+                <a class="pilcrow" href="#section-57">&#182;</a>
               </div>
               <h2>Flow control</h2>
 
@@ -1217,11 +1240,11 @@ Connection.prototype._receiveGoaway = <span class="function"><span class="keywor
         </li>
         
         
-        <li id="section-56">
+        <li id="section-58">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-56">&#182;</a>
+                <a class="pilcrow" href="#section-58">&#182;</a>
               </div>
               
             </div>
@@ -1231,11 +1254,11 @@ Connection.prototype._receiveGoaway = <span class="function"><span class="keywor
         </li>
         
         
-        <li id="section-57">
+        <li id="section-59">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-57">&#182;</a>
+                <a class="pilcrow" href="#section-59">&#182;</a>
               </div>
               <p>Handling of initial window size of individual streams.</p>
 
@@ -1247,16 +1270,16 @@ Connection.prototype._receiveGoaway = <span class="function"><span class="keywor
   });
   <span class="keyword">this</span>.on(<span class="string">'SETTINGS_INITIAL_WINDOW_SIZE'</span>, <span class="keyword">this</span>._setInitialStreamWindowSize);
   <span class="keyword">this</span>.on(<span class="string">'SETTINGS_FLOW_CONTROL_OPTIONS'</span>, <span class="keyword">this</span>._setStreamFlowControl);
-  <span class="keyword">this</span>._streamsIds[<span class="number">0</span>].upstream.setInitialWindow = <span class="function"><span class="keyword">function</span> <span class="title">noop</span><span class="params">()</span> {</span>};</pre></div></div>
+  <span class="keyword">this</span>._streamsIn[<span class="number">0</span>].upstream.setInitialWindow = <span class="function"><span class="keyword">function</span> <span class="title">noop</span><span class="params">()</span> {</span>};</pre></div></div>
             
         </li>
         
         
-        <li id="section-58">
+        <li id="section-60">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-58">&#182;</a>
+                <a class="pilcrow" href="#section-60">&#182;</a>
               </div>
               <p>Flow control for incoming frames is not yet supported, and is turned off in the initial
 SETTINGS frame.</p>
@@ -1268,11 +1291,11 @@ SETTINGS frame.</p>
         </li>
         
         
-        <li id="section-59">
+        <li id="section-61">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-59">&#182;</a>
+                <a class="pilcrow" href="#section-61">&#182;</a>
               </div>
               <p>The initial connection flow control window is 65535 bytes.</p>
 
@@ -1283,11 +1306,11 @@ SETTINGS frame.</p>
         </li>
         
         
-        <li id="section-60">
+        <li id="section-62">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-60">&#182;</a>
+                <a class="pilcrow" href="#section-62">&#182;</a>
               </div>
               <p>A SETTINGS frame can alter the initial flow control window size for all current streams. When the
 value of SETTINGS_INITIAL_WINDOW_SIZE changes, a receiver MUST adjust the window size of all
@@ -1303,7 +1326,7 @@ the difference between the new value and the old value.</p>
   } <span class="keyword">else</span> {
     <span class="keyword">this</span>._log.debug({ size: size }, <span class="string">'Changing stream initial window size.'</span>);
     <span class="keyword">this</span>._initialStreamWindowSize = size;
-    <span class="keyword">this</span>._streamsIds.forEach(<span class="keyword">function</span>(stream) {
+    <span class="keyword">this</span>._streamsIn.forEach(<span class="keyword">function</span>(stream) {
       stream.upstream.setInitialWindow(size);
     });
   }
@@ -1312,11 +1335,11 @@ the difference between the new value and the old value.</p>
         </li>
         
         
-        <li id="section-61">
+        <li id="section-63">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-61">&#182;</a>
+                <a class="pilcrow" href="#section-63">&#182;</a>
               </div>
               <p><code>_setStreamFlowControl()</code> may be used to disable/enable flow control. In practice, it is just
 for turning off flow control since it can not be turned on.</p>

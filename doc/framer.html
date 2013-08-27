@@ -54,11 +54,6 @@
               </a>
             
               
-              <a class="source" href="logging.html">
-                logging.js
-              </a>
-            
-              
               <a class="source" href="stream.html">
                 stream.js
               </a>
@@ -89,12 +84,13 @@ the Serializer and the Deserializer</p>
             </div>
             
             <div class="content"><div class='highlight'><pre><span class="keyword">var</span> assert = process.env.HTTP2_ASSERT ? require(<span class="string">'assert'</span>) : <span class="function"><span class="keyword">function</span> <span class="title">noop</span><span class="params">()</span> {</span>};
-<span class="keyword">var</span> logging = require(<span class="string">'./logging'</span>);
 
 <span class="keyword">var</span> Transform = require(<span class="string">'stream'</span>).Transform;
 
 exports.Serializer = Serializer;
-exports.Deserializer = Deserializer;</pre></div></div>
+exports.Deserializer = Deserializer;
+
+<span class="keyword">var</span> logData = Boolean(process.env.HTTP2_LOG_DATA);</pre></div></div>
             
         </li>
         
@@ -129,7 +125,7 @@ array        buffers                     buffer</code></pre>
             </div>
             
             <div class="content"><div class='highlight'><pre><span class="function"><span class="keyword">function</span> <span class="title">Serializer</span><span class="params">(log)</span> {</span>
-  <span class="keyword">this</span>._log = (log || logging.root).child({ component: <span class="string">'serializer'</span> });
+  <span class="keyword">this</span>._log = log.child({ component: <span class="string">'serializer'</span> });
   Transform.call(<span class="keyword">this</span>, { objectMode: <span class="literal">true</span> });
 }
 Serializer.prototype = Object.create(Transform.prototype, { constructor: { value: Serializer } });</pre></div></div>
@@ -159,7 +155,9 @@ frame types (like the length of the payload).</p>
   Serializer.commonHeader(frame, buffers);
 
   <span class="keyword">for</span> (<span class="keyword">var</span> i = <span class="number">0</span>; i &lt; buffers.length; i++) {
-    <span class="keyword">this</span>._log.trace({ data: buffers[i] }, <span class="string">'Outgoing data'</span>);
+    <span class="keyword">if</span> (logData) {
+      <span class="keyword">this</span>._log.trace({ data: buffers[i] }, <span class="string">'Outgoing data'</span>);
+    }
     <span class="keyword">this</span>.push(buffers[i]);
   }
 
@@ -199,7 +197,7 @@ object  header properties        payload properties</code></pre>
             </div>
             
             <div class="content"><div class='highlight'><pre><span class="function"><span class="keyword">function</span> <span class="title">Deserializer</span><span class="params">(log)</span> {</span>
-  <span class="keyword">this</span>._log = (log || logging.root).child({ component: <span class="string">'deserializer'</span> });
+  <span class="keyword">this</span>._log = log.child({ component: <span class="string">'deserializer'</span> });
   Transform.call(<span class="keyword">this</span>, { objectMode: <span class="literal">true</span> });
   <span class="keyword">this</span>._next(COMMON_HEADER_SIZE);
 }
@@ -247,7 +245,9 @@ large enough. A <code>cursor</code> is used to track the progress in parsing the
             <div class="content"><div class='highlight'><pre>Deserializer.prototype._transform = <span class="function"><span class="keyword">function</span> <span class="title">_transform</span><span class="params">(chunk, encoding, done)</span> {</span>
   <span class="keyword">var</span> cursor = <span class="number">0</span>;
 
-  <span class="keyword">this</span>._log.trace({ data: chunk }, <span class="string">'Incoming data'</span>);
+  <span class="keyword">if</span> (logData) {
+    <span class="keyword">this</span>._log.trace({ data: chunk }, <span class="string">'Incoming data'</span>);
+  }
 
   <span class="keyword">while</span>(cursor &lt; chunk.length) {</pre></div></div>
             
@@ -1234,7 +1234,21 @@ Deserializer.WINDOW_UPDATE = <span class="function"><span class="keyword">functi
               </div>
               <p><a href="https://github.com/trentm/node-bunyan#serializers">Bunyan serializers</a> to improve logging output
 for debug messages emitted in this component.</p>
-<ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>exports.serializers = {};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-49">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-49">&#182;</a>
+              </div>
+              <ul>
 <li><code>frame</code> serializer: it transforms data attributes from Buffers to hex strings and filters out
 flags that are not present.</li>
 </ul>
@@ -1242,7 +1256,7 @@ flags that are not present.</li>
             </div>
             
             <div class="content"><div class='highlight'><pre><span class="keyword">var</span> frameCounter = <span class="number">0</span>;
-logging.serializers.frame = <span class="keyword">function</span>(frame) {
+exports.serializers.frame = <span class="keyword">function</span>(frame) {
   <span class="keyword">if</span> (!frame) {
     <span class="keyword">return</span> <span class="literal">null</span>;
   }
@@ -1271,6 +1285,10 @@ logging.serializers.frame = <span class="keyword">function</span>(frame) {
     }
   }
 
+  <span class="keyword">if</span> (frame.promised_stream <span class="keyword">instanceof</span> Object) {
+    logEntry.promised_stream = <span class="string">'stream-'</span> + frame.promised_stream.id;
+  }
+
   logEntry.flags = Object.keys(frame.flags || {}).filter(<span class="keyword">function</span>(name) {
     <span class="keyword">return</span> frame.flags[name] === <span class="literal">true</span>;
   });
@@ -1281,11 +1299,11 @@ logging.serializers.frame = <span class="keyword">function</span>(frame) {
         </li>
         
         
-        <li id="section-49">
+        <li id="section-50">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-49">&#182;</a>
+                <a class="pilcrow" href="#section-50">&#182;</a>
               </div>
               <ul>
 <li><code>data</code> serializer: it simply transforms a buffer to a hex string.</li>
@@ -1293,7 +1311,7 @@ logging.serializers.frame = <span class="keyword">function</span>(frame) {
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>logging.serializers.data = <span class="keyword">function</span>(data) {
+            <div class="content"><div class='highlight'><pre>exports.serializers.data = <span class="keyword">function</span>(data) {
   <span class="keyword">return</span> data.toString(<span class="string">'hex'</span>);
 };</pre></div></div>
             

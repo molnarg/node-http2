@@ -54,11 +54,6 @@
               </a>
             
               
-              <a class="source" href="logging.html">
-                logging.js
-              </a>
-            
-              
               <a class="source" href="stream.html">
                 stream.js
               </a>
@@ -86,8 +81,7 @@
               
             </div>
             
-            <div class="content"><div class='highlight'><pre><span class="keyword">var</span> logging      = require(<span class="string">'./logging'</span>);
-<span class="keyword">var</span> Serializer   = require(<span class="string">'./framer'</span>).Serializer;
+            <div class="content"><div class='highlight'><pre><span class="keyword">var</span> Serializer   = require(<span class="string">'./framer'</span>).Serializer;
 <span class="keyword">var</span> Deserializer = require(<span class="string">'./framer'</span>).Deserializer;
 <span class="keyword">var</span> Compressor   = require(<span class="string">'./compressor'</span>).Compressor;
 <span class="keyword">var</span> Decompressor = require(<span class="string">'./compressor'</span>).Decompressor;
@@ -140,7 +134,7 @@ exports.Endpoint = Endpoint;</pre></div></div>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>  <span class="keyword">this</span>._log = (log || logging.root).child({ component: <span class="string">'endpoint'</span> });</pre></div></div>
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">this</span>._log = log.child({ component: <span class="string">'endpoint'</span>, e: <span class="keyword">this</span> });</pre></div></div>
             
         </li>
         
@@ -262,7 +256,7 @@ Endpoint.prototype = Object.create(Duplex.prototype, { constructor: { value: End
             </div>
             
             <div class="content"><div class='highlight'><pre>Endpoint.prototype._writePrelude = <span class="function"><span class="keyword">function</span> <span class="title">_writePrelude</span><span class="params">()</span> {</span>
-  <span class="keyword">this</span>._log.info(<span class="string">'Sending the client connection header prelude.'</span>);
+  <span class="keyword">this</span>._log.debug(<span class="string">'Sending the client connection header prelude.'</span>);
   <span class="keyword">this</span>.push(CLIENT_PRELUDE);
 };</pre></div></div>
             
@@ -359,7 +353,7 @@ and call it with the remaining part of the current chunk</li>
             </div>
             
             <div class="content"><div class='highlight'><pre>    <span class="keyword">if</span> (cursor === CLIENT_PRELUDE.length) {
-      <span class="keyword">this</span>._log.info(<span class="string">'Successfully received the client connection header prelude.'</span>);
+      <span class="keyword">this</span>._log.debug(<span class="string">'Successfully received the client connection header prelude.'</span>);
       <span class="keyword">delete</span> <span class="keyword">this</span>._write;
       chunk = chunk.slice(cursor - offset);
       <span class="keyword">this</span>._write(chunk, encoding, done);
@@ -529,6 +523,42 @@ Endpoint.prototype._error = <span class="function"><span class="keyword">functio
 
 Endpoint.prototype.close = <span class="function"><span class="keyword">function</span> <span class="title">close</span><span class="params">(error)</span> {</span>
   <span class="keyword">this</span>._connection.close(error);
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-23">
+            <div class="annotation">
+              
+              <div class="pilwrap for-h2">
+                <a class="pilcrow" href="#section-23">&#182;</a>
+              </div>
+              <h2>Bunyan serializers</h2>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-24">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-24">&#182;</a>
+              </div>
+              
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>exports.serializers = {};
+
+<span class="keyword">var</span> nextId = <span class="number">0</span>;
+exports.serializers.e = <span class="keyword">function</span>(endpoint) {
+  <span class="keyword">if</span> (!(<span class="string">'id'</span> <span class="keyword">in</span> endpoint)) {
+    endpoint.id = nextId;
+    nextId += <span class="number">1</span>;
+  }
+  <span class="keyword">return</span> endpoint.id;
 };</pre></div></div>
             
         </li>
