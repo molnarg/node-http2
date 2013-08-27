@@ -15,8 +15,26 @@ if (process.env.HTTP2_LOG) {
 
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 
+// Sending the request
 var request = http2.get(process.argv.pop());
 
+// Receiving the response
+request.on('response', function(response) {
+  response.pipe(process.stdout);
+  response.on('end', finish);
+});
+
+// Receiving push streams
+request.on('push', function(pushRequest) {
+  var filename = path.join(__dirname, '/push-' + push_count);
+  push_count += 1;
+  console.error('Receiving pushed resource: ' + pushRequest.url + ' -> ' + filename);
+  pushRequest.on('response', function(pushResponse) {
+    pushResponse.pipe(fs.createWriteStream(filename)).on('finish', finish);
+  });
+});
+
+// Quitting after both the response and the associated pushed resources have arrived
 var push_count = 0;
 var finished = 0;
 function finish() {
@@ -25,17 +43,3 @@ function finish() {
     process.exit();
   }
 }
-
-request.on('response', function(response) {
-  response.on('push', function(pushRequest) {
-    var filename = path.join(__dirname, '/push-' + (push_count));
-    push_count += 1;
-    console.log('Receiving pushed resource: ' + pushRequest.url + ' -> ' + filename);
-    pushRequest.on('response', function(pushResponse) {
-      pushResponse.pipe(fs.createWriteStream(filename)).on('finish', finish);
-    });
-  });
-
-  response.pipe(process.stderr);
-  response.on('end', finish);
-});
