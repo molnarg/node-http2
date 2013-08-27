@@ -1,6 +1,15 @@
 Version history
 ===============
 
+### 0.3.0 (2013-08-27) ###
+
+* Support for prioritization
+* Small API compatibility improvements (compatibility with the standard node.js HTTP API)
+* Minor push API change
+* Ability to pass an external bunyan logger when creating a Server or Agent
+* [Blog post](http://gabor.molnar.es/blog/2013/08/27/gsoc-week-number-10/)
+* [Tarball](https://github.com/molnarg/node-http2/archive/node-http2-0.3.0.tar.gz)
+
 ### 0.2.1 (2013-08-20) ###
 
 * Fixing a flow control bug
