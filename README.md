@@ -81,13 +81,12 @@ Status
 I post weekly status updates [on my blog](http://gabor.molnar.es/blog/categories/google-summer-of-code/).
 Short version: main missing items are:
 
-* prioritization
-  (issue [#19](https://github.com/molnarg/node-http2/issues/19)
-  and [#20](https://github.com/molnarg/node-http2/issues/20))
 * ALPN support for negotiating HTTP/2 over TLS (it's done with NPN for now)
   (issue [#5](https://github.com/molnarg/node-http2/issues/5))
 * Upgrade mechanism to start HTTP/2 over unencrypted channel
   (issue [#4](https://github.com/molnarg/node-http2/issues/4))
+* Other minor features found in
+  [this list](https://github.com/molnarg/node-http2/issues?labels=feature)
 
 Development
 -----------
@@ -122,12 +121,12 @@ point to understand the code.
 ### Test coverage ###
 
 To generate a code coverage report, run `npm test --coverage` (which runs very slowly, be patient).
-Code coverage summary as of version 0.2.0:
+Code coverage summary as of version 0.3.0:
 ```
-Statements   : 85.04% ( 1177/1384 )
-Branches     : 70.21% ( 370/527 )
-Functions    : 83.94% ( 162/193 )
-Lines        : 85.31% ( 1173/1375 )
+Statements   : 84.83% ( 1253/1477 )
+Branches     : 69.47% ( 405/583 )
+Functions    : 78.95% ( 165/209 )
+Lines        : 84.95% ( 1247/1468 )
 ```
 
 There's a hosted version of the detailed (line-by-line) coverage report
