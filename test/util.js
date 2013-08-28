@@ -1,3 +1,6 @@
+function noop() {}
+exports.noop = noop;
+
 if (process.env.HTTP2_LOG) {
   exports.log = require('bunyan').createLogger({
     name: 'test',
@@ -6,7 +9,6 @@ if (process.env.HTTP2_LOG) {
     serializers: require('../lib/http').serializers
   });
 } else {
-  function noop() {}
   exports.log = {
     fatal: noop,
     error: noop,
@@ -48,3 +50,6 @@ exports.concat = function concat(buffers) {
   return concatenated;
 };
 
+exports.random = function random(min, max) {
+  return min + Math.floor(Math.random() * (max - min + 1));
+};
