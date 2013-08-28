@@ -4,7 +4,8 @@ var util = require('./util');
 var Flow = require('../lib/flow').Flow;
 
 function createFlow() {
-  var flow = new Flow();
+  var flowControlId = util.random(10, 100);
+  var flow = new Flow(flowControlId);
   flow._log = util.log;
   return flow;
 }
@@ -81,6 +82,13 @@ describe('flow.js', function() {
 
       });
     });
+    describe('.disableLocalFlowControl() method', function() {
+      it('should increase `this._window` by Infinity', function() {
+        flow._send = util.noop;
+        flow.disableLocalFlowControl();
+        expect(flow._window).to.equal(Infinity);
+      });
+    });
     describe('.read() method', function() {
       describe('when the flow control queue is not empty', function() {
         it('should return the first item in the queue if the window is enough', function() {
@@ -103,6 +111,62 @@ describe('flow.js', function() {
           var expectedFragment = { stream: dataFrame.stream, type: 'DATA', data: buffer.slice(0,5) };
           expect(flow.read()).to.deep.equal(expectedFragment);
           expect(dataFrame.data).to.deep.equal(buffer.slice(5));
+        });
+      });
+    });
+    describe('.push(frame) method', function() {
+      it('should push `frame` into the output queue or the flow control queue', function() {
+        var priorityFrame = { type: 'PRIORITY', flags: {}, priority: 1 };
+        var dataFrame = { type: 'DATA', flags: {}, data: { length: 10 } };
+        flow._window = 10;
+
+        flow.push(dataFrame);     // output queue
+        flow.push(dataFrame);     // flow control queue, because of depleted window
+        flow.push(priorityFrame); // flow control queue, because it's not empty
+
+        expect(flow.read()).to.be.equal(dataFrame);
+        expect(flow._queue[0]).to.be.equal(dataFrame);
+        expect(flow._queue[1]).to.be.equal(priorityFrame);
+      });
+    });
+    describe('.write() method', function() {
+      it('call with a DATA frame should trigger sending WINDOW_UPDATE if remote flow control is not' +
+         'disabled', function(done) {
+        flow._remoteFlowControlDisabled = false;
+        flow._window = 100;
+        flow._send = util.noop;
+        flow._receive = function(frame, callback) {
+          callback();
+        };
+
+        var buffer = new Buffer(util.random(10, 100));
+        flow.write({ type: 'DATA', flags: {}, data: buffer });
+        flow.once('readable', function() {
+          expect(flow.read()).to.be.deep.equal({
+            stream: flow._flowControlId,
+            type: 'WINDOW_UPDATE',
+            window_size: buffer.length,
+            flags: {}
+          });
+          done();
+        });
+      });
+    });
+  });
+  describe('test scenario', function() {
+    describe('disabling remote flow control', function() {
+      it('should work as expected', function(done) {
+        var flow1 = createFlow();
+        var flow2 = createFlow();
+        flow1._flowControlId = flow2._flowControlId;
+        flow1._remoteFlowControlDisabled = flow2._remoteFlowControlDisabled = false;
+        flow1._send = flow1._receive = flow2._send = flow2._receive = util.noop;
+        flow1.pipe(flow2).pipe(flow1);
+
+        flow1.disableRemoteFlowControl();
+        setTimeout(function() {
+          expect(flow2._window).to.be.equal(Infinity);
+          done();
         });
       });
     });
