@@ -3,10 +3,10 @@ var util = require('./util');
 
 var Flow = require('../lib/flow').Flow;
 
-function createFlow() {
+function createFlow(log) {
   var flowControlId = util.random(10, 100);
   var flow = new Flow(flowControlId);
-  flow._log = util.log;
+  flow._log = util.log.child(log || {});
   return flow;
 }
 
@@ -108,7 +108,7 @@ describe('flow.js', function() {
           flow._window = 5;
           flow._queue = [dataFrame];
 
-          var expectedFragment = { stream: dataFrame.stream, type: 'DATA', data: buffer.slice(0,5) };
+          var expectedFragment = { stream: dataFrame.stream, flags: {}, type: 'DATA', data: buffer.slice(0,5) };
           expect(flow.read()).to.deep.equal(expectedFragment);
           expect(dataFrame.data).to.deep.equal(buffer.slice(5));
         });
@@ -154,20 +154,66 @@ describe('flow.js', function() {
     });
   });
   describe('test scenario', function() {
+    var flow1, flow2;
+    beforeEach(function() {
+      flow1 = createFlow({ flow: 1 });
+      flow2 = createFlow({ flow: 2 });
+      flow1._flowControlId = flow2._flowControlId;
+      flow1._remoteFlowControlDisabled = flow2._remoteFlowControlDisabled = false;
+      flow1._send = flow2._send = util.noop;
+      flow1._receive = flow2._receive = function(frame, callback) { callback(); };
+      flow1.pipe(flow2).pipe(flow1);
+    });
+
     describe('disabling remote flow control', function() {
       it('should work as expected', function(done) {
-        var flow1 = createFlow();
-        var flow2 = createFlow();
-        flow1._flowControlId = flow2._flowControlId;
-        flow1._remoteFlowControlDisabled = flow2._remoteFlowControlDisabled = false;
-        flow1._send = flow1._receive = flow2._send = flow2._receive = util.noop;
-        flow1.pipe(flow2).pipe(flow1);
-
         flow1.disableRemoteFlowControl();
         setTimeout(function() {
           expect(flow2._window).to.be.equal(Infinity);
           done();
         });
+      });
+    });
+    describe('sending a large data stream', function() {
+      it('should work as expected', function(done) {
+        // Sender side
+        var frameNumber = util.random(5, 8);
+        var input = [];
+        flow1._send = function _send() {
+          if (input.length >= frameNumber) {
+            this.push({ type: 'DATA', flags: { END_STREAM: true }, data: new Buffer(0) });
+            this.push(null);
+          } else {
+            var buffer = new Buffer(util.random(1000, 100000));
+            input.push(buffer);
+            this.push({ type: 'DATA', flags: {}, data: buffer });
+          }
+        };
+
+        // Receiver side
+        var output = [];
+        flow2._receive = function _receive(frame, callback) {
+          if (frame.type === 'DATA') {
+            output.push(frame.data);
+          }
+          if (frame.flags.END_STREAM) {
+            this.emit('end_stream');
+          }
+          callback();
+        };
+
+        // Checking results
+        flow2.on('end_stream', function() {
+          input = util.concat(input);
+          output = util.concat(output);
+
+          expect(input).to.deep.equal(output);
+
+          done();
+        });
+
+        // Start piping
+        flow1.read(0);
       });
     });
   });
