@@ -26,4 +26,16 @@ describe('endpoint.js', function() {
       });
     });
   });
+  describe('bunyan serializer', function() {
+    describe('`e`', function() {
+      var format = endpoint.serializers.e;
+      it('should assign a unique ID to each endpoint', function() {
+        var c = new Endpoint('CLIENT', settings, util.log.child({ role: 'client' }));
+        var s = new Endpoint('SERVER', settings, util.log.child({ role: 'server' }));
+        expect(format(c)).to.not.equal(format(s));
+        expect(format(c)).to.equal(format(c));
+        expect(format(s)).to.equal(format(s));
+      });
+    });
+  });
 });
