@@ -14,7 +14,7 @@
     "bunyan": "*"
   },
   "scripts": {
-    "test": "HTTP2_ASSERT=1 istanbul test _mocha -- --reporter spec",
+    "test": "HTTP2_ASSERT=1 istanbul test _mocha -- --reporter spec --slow 200",
     "prepublish": "docco lib/* --output doc --layout parallel --css doc/docco.css"
   },
   "repository": {
