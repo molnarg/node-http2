@@ -101,12 +101,13 @@ function execute_sequence(stream, sequence, done) {
   setImmediate(execute.bind(null, check));
 }
 
-var invalid_frames = {
+var invalid_incoming_frames = {
   IDLE: [
     { type: 'DATA', flags: {}, data: new Buffer(5) },
     { type: 'PRIORITY', flags: {}, priority: 1 },
     { type: 'WINDOW_UPDATE', flags: {}, settings: {} },
-    { type: 'PUSH_PROMISE', flags: {}, headers: {} }
+    { type: 'PUSH_PROMISE', flags: {}, headers: {} },
+    { type: 'RST_STREAM', flags: {}, error: 'CANCEL' }
   ],
   RESERVED_LOCAL: [
     { type: 'DATA', flags: {}, data: new Buffer(5) },
@@ -133,28 +134,57 @@ var invalid_frames = {
   ]
 };
 
+var invalid_outgoing_frames = {
+  IDLE: [
+    { type: 'DATA', flags: {}, data: new Buffer(5) },
+    { type: 'PRIORITY', flags: {}, priority: 1 },
+    { type: 'WINDOW_UPDATE', flags: {}, settings: {} },
+    { type: 'PUSH_PROMISE', flags: {}, headers: {} },
+    { type: 'RST_STREAM', flags: {}, error: 'CANCEL' }
+  ],
+  RESERVED_LOCAL: [
+    { type: 'DATA', flags: {}, data: new Buffer(5) },
+    { type: 'PRIORITY', flags: {}, priority: 1 },
+    { type: 'PUSH_PROMISE', flags: {}, headers: {} },
+    { type: 'WINDOW_UPDATE', flags: {}, settings: {} }
+  ],
+  RESERVED_REMOTE: [
+    { type: 'DATA', flags: {}, data: new Buffer(5) },
+    { type: 'HEADERS', flags: {}, headers: {}, priority: undefined },
+    { type: 'PUSH_PROMISE', flags: {}, headers: {} },
+    { type: 'WINDOW_UPDATE', flags: {}, settings: {} }
+  ],
+  OPEN: [
+  ],
+  HALF_CLOSED_LOCAL: [
+    { type: 'DATA', flags: {}, data: new Buffer(5) },
+    { type: 'HEADERS', flags: {}, headers: {}, priority: undefined },
+    { type: 'PUSH_PROMISE', flags: {}, headers: {} }
+  ],
+  HALF_CLOSED_REMOTE: [
+  ],
+  CLOSED: [ // TODO
+  ]
+};
+
 describe('stream.js', function() {
   describe('Stream class', function() {
     describe('._transition(sending, frame) method', function() {
-      Object.keys(invalid_frames).forEach(function(state) {
-        it('should emit error, and answer RST_STREAM for invalid incoming frames in ' + state + ' state', function(done) {
-          done = util.callNTimes(invalid_frames[state].length, done);
-
-          invalid_frames[state].forEach(function(invalid_frame) {
+      it('should emit error, and answer RST_STREAM for invalid incoming frames', function() {
+        Object.keys(invalid_incoming_frames).forEach(function(state) {
+          invalid_incoming_frames[state].forEach(function(invalid_frame) {
             var stream = createStream();
-            var error_emitted = false;
-            stream.on('error', function() {
-              error_emitted = true;
-            });
-            execute_sequence(stream, [
-              { set_state: state },
-              { incoming : invalid_frame },
-              { wait     : 10 },
-              { outgoing : { type: 'RST_STREAM', flags: {}, error: 'PROTOCOL_ERROR' } }
-            ], function sequence_ready() {
-              expect(error_emitted).to.equal(true);
-              done();
-            });
+            stream.state = state;
+            expect(stream._transition.bind(stream, false, invalid_frame)).to.throw('Uncaught, unspecified "error" event.');
+          });
+        });
+      });
+      it('should throw exception for invalid outgoing frames', function() {
+        Object.keys(invalid_outgoing_frames).forEach(function(state) {
+          invalid_outgoing_frames[state].forEach(function(invalid_frame) {
+            var stream = createStream();
+            stream.state = state;
+            expect(stream._transition.bind(stream, true, invalid_frame)).to.throw(Error);
           });
         });
       });
