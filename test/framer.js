@@ -248,4 +248,17 @@ describe('framer.js', function() {
       });
     });
   });
+
+  describe('bunyan formatter', function() {
+    describe('`frame`', function() {
+      var format = framer.serializers.frame;
+      it('should assign a unique ID to each frame', function() {
+        var frame1 = { type: 'DATA', data: new Buffer(10) };
+        var frame2 = { type: 'PRIORITY', priority: 1 };
+        expect(format(frame1).id).to.be.equal(format(frame1));
+        expect(format(frame2).id).to.be.equal(format(frame2));
+        expect(format(frame1)).to.not.be.equal(format(frame2));
+      });
+    });
+  });
 });
