@@ -1,7 +1,8 @@
 var expect = require('chai').expect;
 var util = require('./util');
 
-var Stream = require('../lib/stream').Stream;
+var stream = require('../lib/stream');
+var Stream = stream.Stream;
 
 function createStream() {
   var stream = new Stream(util.log);
@@ -304,6 +305,19 @@ describe('stream.js', function() {
 
           { active  : 0 }
         ], done);
+      });
+    });
+  });
+
+  describe('bunyan formatter', function() {
+    describe('`s`', function() {
+      var format = stream.serializers.s;
+      it('should assign a unique ID to each frame', function() {
+        var stream1 = createStream();
+        var stream2 = createStream();
+        expect(format(stream1)).to.be.equal(format(stream1));
+        expect(format(stream2)).to.be.equal(format(stream2));
+        expect(format(stream1)).to.not.be.equal(format(stream2));
       });
     });
   });
