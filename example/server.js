@@ -25,7 +25,7 @@ var server = http2.createServer(options, function(request, response) {
     response.writeHead('200');
 
     // If they download the certificate, push the private key too, they might need it.
-    if (request.url === '/localhost.crt') {
+    if (response.push && request.url === '/localhost.crt') {
       var push = response.push('/localhost.key');
       push.writeHead(200);
       fs.createReadStream(path.join(__dirname, '/localhost.key')).pipe(push);
