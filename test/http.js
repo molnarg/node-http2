@@ -51,7 +51,35 @@ describe('http.js', function() {
         });
       });
     });
-    describe('simple request with custom headers', function() {
+    describe('request with payload', function() {
+      it('should work as expected', function(done) {
+        var path = '/x';
+        var message = 'Hello world';
+
+        var server = http2.createServer(options, function(request, response) {
+          expect(request.url).to.equal(path);
+          request.once('readable', function() {
+            expect(request.read().toString()).to.equal(message);
+            response.end();
+          });
+        });
+
+        server.listen(1240, function() {
+          var request = http2.request({
+            host: 'localhost',
+            port: 1240,
+            path: path
+          });
+          request.write(message);
+          request.end();
+          request.on('response', function() {
+            server.close();
+            done();
+          });
+        });
+      });
+    });
+    describe('request with custom headers', function() {
       it('should work as expected', function(done) {
         var path = '/x';
         var message = 'Hello world';
@@ -91,7 +119,7 @@ describe('http.js', function() {
         });
       });
     });
-    describe('simple request over plain TCP', function() {
+    describe('request over plain TCP', function() {
       it('should work as expected', function(done) {
         var path = '/x';
         var message = 'Hello world';
@@ -141,7 +169,7 @@ describe('http.js', function() {
         });
       });
     });
-    describe('simple HTTPS/1 request to a HTTP/2 server', function() {
+    describe('HTTPS/1 request to a HTTP/2 server', function() {
       it('should fall back to HTTPS/1 successfully', function(done) {
         var path = '/x';
         var message = 'Hello world';
