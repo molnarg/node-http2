@@ -75,6 +75,13 @@ describe('http.js', function() {
   describe('OutgoingRequest', function() {
     function testFallbackProxyMethod(name, originalArguments, done) {
       var request = new http2.OutgoingRequest();
+
+      // When in HTTP/2 mode, this call should be ignored
+      request.stream = { reset: util.noop };
+      request[name].apply(request, originalArguments);
+      delete request.stream;
+
+      // When in fallback mode, this call should be forwarded
       request[name].apply(request, originalArguments);
       var mockFallbackRequest = { on: util.noop };
       mockFallbackRequest[name] = function() {
