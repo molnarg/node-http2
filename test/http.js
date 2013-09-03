@@ -154,7 +154,7 @@ describe('http.js', function() {
         });
       });
     });
-    describe('request with custom headers', function() {
+    describe('request with custom status code and headers', function() {
       it('should work as expected', function(done) {
         var path = '/x';
         var message = 'Hello world';
@@ -162,14 +162,29 @@ describe('http.js', function() {
         var headerValue = 'value';
 
         var server = http2.createServer(options, function(request, response) {
+          // Request URL and headers
           expect(request.url).to.equal(path);
           expect(request.headers[headerName]).to.equal(headerValue);
-          response.setHeader(headerName, headerValue);
-          expect(response.getHeader(headerName)).to.equal(headerValue);
+
+          // A header to be overwritten later
+          response.setHeader(headerName, 'to be overwritten');
+          expect(response.getHeader(headerName)).to.equal('to be overwritten');
+
+          // A header to be deleted
           response.setHeader('nonexistent', 'x');
           response.removeHeader('nonexistent');
           expect(response.getHeader('nonexistent')).to.equal(undefined);
+
+          // Don't send date
           response.sendDate = false;
+
+          // Specifying more headers, the status code and a reason phrase with `writeHead`
+          var moreHeaders = {};
+          moreHeaders[headerName] = headerValue;
+          response.writeHead(600, 'to be discarded', moreHeaders);
+          expect(response.getHeader(headerName)).to.equal(headerValue);
+
+          // Empty response body
           response.end(message);
         });
 
