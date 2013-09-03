@@ -101,6 +101,15 @@ function execute_sequence(stream, sequence, done) {
   setImmediate(execute.bind(null, check));
 }
 
+var example_frames = [
+  { type: 'PRIORITY', flags: {}, priority: 1 },
+  { type: 'WINDOW_UPDATE', flags: {}, settings: {} },
+  { type: 'RST_STREAM', flags: {}, error: 'CANCEL' },
+  { type: 'HEADERS', flags: {}, headers: {}, priority: undefined },
+  { type: 'DATA', flags: {}, data: new Buffer(5) },
+  { type: 'PUSH_PROMISE', flags: {}, headers: {}, promised_stream: new Stream(util.log) }
+];
+
 var invalid_incoming_frames = {
   IDLE: [
     { type: 'DATA', flags: {}, data: new Buffer(5) },
@@ -129,8 +138,6 @@ var invalid_incoming_frames = {
     { type: 'DATA', flags: {}, data: new Buffer(5) },
     { type: 'HEADERS', flags: {}, headers: {}, priority: undefined },
     { type: 'PUSH_PROMISE', flags: {}, headers: {} }
-  ],
-  CLOSED: [ // TODO
   ]
 };
 
@@ -162,7 +169,12 @@ var invalid_outgoing_frames = {
   ],
   HALF_CLOSED_REMOTE: [
   ],
-  CLOSED: [ // TODO
+  CLOSED: [
+    { type: 'PRIORITY', flags: {}, priority: 1 },
+    { type: 'WINDOW_UPDATE', flags: {}, settings: {} },
+    { type: 'HEADERS', flags: {}, headers: {}, priority: undefined },
+    { type: 'DATA', flags: {}, data: new Buffer(5) },
+    { type: 'PUSH_PROMISE', flags: {}, headers: {}, promised_stream: new Stream(util.log) }
   ]
 };
 
@@ -176,6 +188,26 @@ describe('stream.js', function() {
             stream.state = state;
             expect(stream._transition.bind(stream, false, invalid_frame)).to.throw('Uncaught, unspecified "error" event.');
           });
+        });
+
+        // CLOSED state as a result of incoming END_STREAM (or RST_STREAM)
+        var stream = createStream();
+        stream.headers({});
+        stream.end();
+        stream.upstream.write({ type: 'HEADERS', headers:{}, flags: { END_STREAM: true }, count_change: util.noop });
+        example_frames.forEach(function(invalid_frame) {
+          invalid_frame.count_change = util.noop;
+          expect(stream._transition.bind(stream, false, invalid_frame)).to.throw('Uncaught, unspecified "error" event.');
+        });
+
+        // CLOSED state as a result of outgoing END_STREAM
+        var stream = createStream();
+        stream.upstream.write({ type: 'HEADERS', headers:{}, flags: { END_STREAM: true }, count_change: util.noop });
+        stream.headers({});
+        stream.end();
+        example_frames.slice(3).forEach(function(invalid_frame) {
+          invalid_frame.count_change = util.noop;
+          expect(stream._transition.bind(stream, false, invalid_frame)).to.throw('Uncaught, unspecified "error" event.');
         });
       });
       it('should throw exception for invalid outgoing frames', function() {
@@ -202,6 +234,21 @@ describe('stream.js', function() {
               expect(stream.state).to.be.equal('CLOSED');
             });
           });
+      });
+      it('should ignore any incoming frame after sending reset', function() {
+        var stream = createStream();
+        stream.reset();
+        example_frames.forEach(stream._transition.bind(stream, false));
+      });
+      it('should ignore certain incoming frames after closing the stream with END_STREAM', function() {
+        var stream = createStream();
+        stream.upstream.write({ type: 'HEADERS', flags: { END_STREAM: true }, headers:{} });
+        stream.headers({});
+        stream.end();
+        example_frames.slice(0,3).forEach(function(frame) {
+          frame.count_change = util.noop;
+          stream._transition(false, frame);
+        });
       });
     });
   });
