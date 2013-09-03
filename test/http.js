@@ -56,6 +56,38 @@ describe('http.js', function() {
       });
     });
   });
+  describe('OutgoingRequest', function() {
+    function testFallbackProxyMethod(name, originalArguments, done) {
+      var request = new http2.OutgoingRequest();
+      request[name].apply(request, originalArguments);
+      var mockFallbackRequest = { on: util.noop };
+      mockFallbackRequest[name] = function() {
+        expect(arguments).to.deep.equal(originalArguments);
+        done();
+      };
+      request._fallback(mockFallbackRequest);
+    }
+    describe('method `setNoDelay(noDelay)`', function() {
+      it('should act as a proxy for the backing HTTPS agent\'s `setNoDelay` method', function(done) {
+        testFallbackProxyMethod('setNoDelay', [true], done);
+      });
+    });
+    describe('method `setSocketKeepAlive(enable, initialDelay)`', function() {
+      it('should act as a proxy for the backing HTTPS agent\'s `setSocketKeepAlive` method', function(done) {
+        testFallbackProxyMethod('setSocketKeepAlive', [true, util.random(10, 100)], done);
+      });
+    });
+    describe('method `setTimeout(timeout, [callback])`', function() {
+      it('should act as a proxy for the backing HTTPS agent\'s `setTimeout` method', function(done) {
+        testFallbackProxyMethod('setTimeout', [util.random(10, 100), util.noop], done);
+      });
+    });
+    describe('method `abort()`', function() {
+      it('should act as a proxy for the backing HTTPS agent\'s `abort` method', function(done) {
+        testFallbackProxyMethod('abort', [], done);
+      });
+    });
+  });
   describe('test scenario', function() {
     describe('simple request', function() {
       it('should work as expected', function(done) {
