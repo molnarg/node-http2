@@ -347,14 +347,16 @@ describe('http.js', function() {
 
         var server = http2.createServer(options, function(request, response) {
           expect(request.url).to.equal(path);
-          var push = response.push('/y');
-          push.end(pushedMessage);
+          var push1 = response.push('/y');
+          push1.end(pushedMessage);
+          var push2 = response.push({ path: '/y', protocol: 'https:' });
+          push2.end(pushedMessage);
           response.end(message);
         });
 
         server.listen(1235, function() {
           var request = http2.get('https://localhost:1235' + path);
-          done = util.callNTimes(4, done);
+          done = util.callNTimes(5, done);
 
           request.on('response', function(response) {
             response.on('readable', function() {
