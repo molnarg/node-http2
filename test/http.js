@@ -17,6 +17,18 @@ var options = {
 http2.globalAgent = new http2.Agent({ log: util.log });
 
 describe('http.js', function() {
+  describe('Agent', function() {
+    describe('property `maxSockets`', function() {
+      it('should be a proxy for the backing HTTPS agent\'s `maxSockets` property', function() {
+        var agent = new http2.Agent({ log: util.log });
+        var backingAgent = agent._httpsAgent;
+        var newMaxSockets = backingAgent.maxSockets + 1;
+        agent.maxSockets = newMaxSockets;
+        expect(agent.maxSockets).to.be.equal(newMaxSockets);
+        expect(backingAgent.maxSockets).to.be.equal(newMaxSockets);
+      });
+    });
+  });
   describe('test scenario', function() {
     describe('simple request', function() {
       it('should work as expected', function(done) {
