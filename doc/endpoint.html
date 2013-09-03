@@ -81,7 +81,9 @@
               
             </div>
             
-            <div class="content"><div class='highlight'><pre><span class="keyword">var</span> Serializer   = require(<span class="string">'./framer'</span>).Serializer;
+            <div class="content"><div class='highlight'><pre><span class="keyword">var</span> assert = process.env.HTTP2_ASSERT ? require(<span class="string">'assert'</span>) : <span class="function"><span class="keyword">function</span> <span class="title">noop</span><span class="params">()</span> {</span>};
+
+<span class="keyword">var</span> Serializer   = require(<span class="string">'./framer'</span>).Serializer;
 <span class="keyword">var</span> Deserializer = require(<span class="string">'./framer'</span>).Deserializer;
 <span class="keyword">var</span> Compressor   = require(<span class="string">'./compressor'</span>).Compressor;
 <span class="keyword">var</span> Decompressor = require(<span class="string">'./compressor'</span>).Decompressor;
@@ -152,12 +154,11 @@ prelude.</li>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>  <span class="keyword">if</span> (role === <span class="string">'CLIENT'</span>) {
+            <div class="content"><div class='highlight'><pre>  assert((role === <span class="string">'CLIENT'</span>) || role === <span class="string">'SERVER'</span>);
+  <span class="keyword">if</span> (role === <span class="string">'CLIENT'</span>) {
     <span class="keyword">this</span>._writePrelude();
-  } <span class="keyword">else</span> <span class="keyword">if</span> (role === <span class="string">'SERVER'</span>) {
-    <span class="keyword">this</span>._readPrelude();
   } <span class="keyword">else</span> {
-    <span class="keyword">throw</span> <span class="keyword">new</span> Error(<span class="string">'Invalid role: '</span> + role);
+    <span class="keyword">this</span>._readPrelude();
   }</pre></div></div>
             
         </li>
@@ -330,7 +331,7 @@ Endpoint.prototype = Object.create(Duplex.prototype, { constructor: { value: End
       <span class="keyword">if</span> (CLIENT_PRELUDE[cursor] !== chunk[cursor - offset]) {
         <span class="keyword">this</span>._log.fatal({ cursor: cursor, offset: offset, chunk: chunk },
                         <span class="string">'Client connection header prelude does not match.'</span>);
-        <span class="keyword">this</span>._error(<span class="string">'handshake'</span>, <span class="string">'Client connection header prelude does not match.'</span>);
+        <span class="keyword">this</span>._error(<span class="string">'handshake'</span>, <span class="string">'PROTOCOL_ERROR'</span>);
         <span class="keyword">return</span>;
       }
       cursor += <span class="number">1</span>;
