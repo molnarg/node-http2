@@ -51,6 +51,46 @@ describe('http.js', function() {
         });
       });
     });
+    describe('simple request with custom headers', function() {
+      it('should work as expected', function(done) {
+        var path = '/x';
+        var message = 'Hello world';
+        var headerName = 'name';
+        var headerValue = 'value';
+
+        var server = http2.createServer(options, function(request, response) {
+          expect(request.url).to.equal(path);
+          expect(request.headers[headerName]).to.equal(headerValue);
+          response.setHeader(headerName, headerValue);
+          expect(response.getHeader(headerName)).to.equal(headerValue);
+          response.setHeader('nonexistent', 'x');
+          response.removeHeader('nonexistent');
+          expect(response.getHeader('nonexistent')).to.equal(undefined);
+          response.end(message);
+        });
+
+        server.listen(1239, function() {
+          var headers = {};
+          headers[headerName] = headerValue;
+          var request = http2.request({
+            host: 'localhost',
+            port: 1239,
+            path: path,
+            headers: headers
+          });
+          request.end();
+          request.on('response', function(response) {
+            expect(response.headers[headerName]).to.equal(headerValue);
+            expect(response.headers['nonexistent']).to.equal(undefined);
+            response.on('readable', function() {
+              expect(response.read().toString()).to.equal(message);
+              server.close();
+              done();
+            });
+          });
+        });
+      });
+    });
     describe('simple request over plain TCP', function() {
       it('should work as expected', function(done) {
         var path = '/x';
@@ -65,7 +105,7 @@ describe('http.js', function() {
         });
 
         server.listen(1237, function() {
-          http2.request({
+          var request = http2.request({
             plain: true,
             host: 'localhost',
             port: 1237,
@@ -77,6 +117,7 @@ describe('http.js', function() {
               done();
             });
           });
+          request.end();
         });
       });
     });
