@@ -17,6 +17,15 @@ var options = {
 http2.globalAgent = new http2.Agent({ log: util.log });
 
 describe('http.js', function() {
+  describe('Server', function() {
+    describe('new Server(options)', function() {
+      it('should throw if called without \'plain\' or TLS options', function() {
+        expect(function() {
+          new http2.Server();
+        }).to.throw(Error);
+      });
+    });
+  });
   describe('Agent', function() {
     describe('property `maxSockets`', function() {
       it('should be a proxy for the backing HTTPS agent\'s `maxSockets` property', function() {
