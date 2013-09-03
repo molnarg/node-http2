@@ -169,6 +169,7 @@ describe('http.js', function() {
           response.setHeader('nonexistent', 'x');
           response.removeHeader('nonexistent');
           expect(response.getHeader('nonexistent')).to.equal(undefined);
+          response.sendDate = false;
           response.end(message);
         });
 
@@ -185,6 +186,7 @@ describe('http.js', function() {
           request.on('response', function(response) {
             expect(response.headers[headerName]).to.equal(headerValue);
             expect(response.headers['nonexistent']).to.equal(undefined);
+            expect(response.headers['date']).to.equal(undefined);
             response.on('readable', function() {
               expect(response.read().toString()).to.equal(message);
               server.close();
