@@ -47,6 +47,14 @@ describe('http.js', function() {
         expect(backingAgent.maxSockets).to.be.equal(newMaxSockets);
       });
     });
+    describe('method `request(options, [callback])`', function() {
+      it('should throw when trying to use with \'http\' scheme', function() {
+        expect(function() {
+          var agent = new http2.Agent({ log: util.log });
+          agent.request({ protocol: 'http:' });
+        }).to.throw(Error);
+      });
+    });
   });
   describe('test scenario', function() {
     describe('simple request', function() {
