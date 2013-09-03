@@ -1,6 +1,12 @@
 Version history
 ===============
 
+### 0.3.1 (2013-09-03) ###
+
+* Lot of testing, bugfixes
+* [Blog post](http://gabor.molnar.es/blog/2013/09/03/gsoc-week-number-11/)
+* [Tarball](https://github.com/molnarg/node-http2/archive/node-http2-0.3.1.tar.gz)
+
 ### 0.3.0 (2013-08-27) ###
 
 * Support for prioritization
