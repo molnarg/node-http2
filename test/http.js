@@ -23,6 +23,9 @@ describe('http.js', function() {
         expect(function() {
           new http2.Server();
         }).to.throw(Error);
+        expect(function() {
+          http2.createServer(util.noop);
+        }).to.throw(Error);
       });
     });
     describe('property `timeout`', function() {
