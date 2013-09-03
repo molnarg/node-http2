@@ -139,8 +139,7 @@ var invalid_outgoing_frames = {
     { type: 'DATA', flags: {}, data: new Buffer(5) },
     { type: 'PRIORITY', flags: {}, priority: 1 },
     { type: 'WINDOW_UPDATE', flags: {}, settings: {} },
-    { type: 'PUSH_PROMISE', flags: {}, headers: {} },
-    { type: 'RST_STREAM', flags: {}, error: 'CANCEL' }
+    { type: 'PUSH_PROMISE', flags: {}, headers: {} }
   ],
   RESERVED_LOCAL: [
     { type: 'DATA', flags: {}, data: new Buffer(5) },
