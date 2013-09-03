@@ -120,16 +120,46 @@ describe('http.js', function() {
 
         server.listen(1237, function() {
           done = util.callNTimes(2, done);
+          // 1. request
           http2.get('https://localhost:1237' + path, function(response) {
             response.on('readable', function() {
               expect(response.read().toString()).to.equal(message);
               done();
             });
           });
+          // 2. request
           http2.get('https://localhost:1237' + path, function(response) {
             response.on('readable', function() {
               expect(response.read().toString()).to.equal(message);
               done();
+            });
+          });
+        });
+      });
+    });
+    describe('two subsequent request', function() {
+      it('should use the same HTTP/2 connection', function(done) {
+        var path = '/x';
+        var message = 'Hello world';
+
+        var server = http2.createServer(options, function(request, response) {
+          expect(request.url).to.equal(path);
+          response.end(message);
+        });
+
+        server.listen(1238, function() {
+          // 1. request
+          http2.get('https://localhost:1238' + path, function(response) {
+            response.on('readable', function() {
+              expect(response.read().toString()).to.equal(message);
+
+              // 2. request
+              http2.get('https://localhost:1238' + path, function(response) {
+                response.on('readable', function() {
+                  expect(response.read().toString()).to.equal(message);
+                  done();
+                });
+              });
             });
           });
         });
