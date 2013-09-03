@@ -39,6 +39,35 @@ describe('http.js', function() {
         });
       });
     });
+    describe('simple request over plain TCP', function() {
+      it('should work as expected', function(done) {
+        var path = '/x';
+        var message = 'Hello world';
+
+        var server = http2.createServer({
+          plain: true,
+          log: util.log
+        }, function(request, response) {
+          expect(request.url).to.equal(path);
+          response.end(message);
+        });
+
+        server.listen(1237, function() {
+          http2.request({
+            plain: true,
+            host: 'localhost',
+            port: 1237,
+            path: path
+          }, function(response) {
+            response.on('readable', function() {
+              expect(response.read().toString()).to.equal(message);
+              server.close();
+              done();
+            });
+          });
+        });
+      });
+    });
     describe('request to an HTTPS/1 server', function() {
       it('should fall back to HTTPS/1 successfully', function(done) {
         var path = '/x';
