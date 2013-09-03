@@ -25,6 +25,16 @@ describe('http.js', function() {
         }).to.throw(Error);
       });
     });
+    describe('property `timeout`', function() {
+      it('should be a proxy for the backing HTTPS server\'s `timeout` property', function() {
+        var server = new http2.Server(options);
+        var backingServer = server._server;
+        var newTimeout = 10;
+        server.timeout = newTimeout;
+        expect(server.timeout).to.be.equal(newTimeout);
+        expect(backingServer.timeout).to.be.equal(newTimeout);
+      });
+    });
   });
   describe('Agent', function() {
     describe('property `maxSockets`', function() {
