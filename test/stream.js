@@ -188,6 +188,22 @@ describe('stream.js', function() {
           });
         });
       });
+      it('should close the stream when there\'s an incoming or outgoing RST_STREAM', function() {
+        [
+          'RESERVED_LOCAL',
+          'RESERVED_REMOTE',
+          'OPEN',
+          'HALF_CLOSED_LOCAL',
+          'HALF_CLOSED_REMOTE'
+        ].forEach(function(state) {
+            [true, false].forEach(function(sending) {
+              var stream = createStream();
+              stream.state = state;
+              stream._transition(sending, { type: 'RST_STREAM', flags: {} });
+              expect(stream.state).to.be.equal('CLOSED');
+            });
+          });
+      });
     });
   });
   describe('test scenario', function() {
