@@ -2,7 +2,9 @@ var expect = require('chai').expect;
 var util = require('./util');
 
 var compressor = require('../lib/compressor');
-var CompressionContext = compressor.CompressionContext;
+var HeaderTable = compressor.HeaderTable;
+var HeaderSetCompressor = compressor.HeaderSetCompressor;
+var HeaderSetDecompressor = compressor.HeaderSetDecompressor;
 var Compressor = compressor.Compressor;
 var Decompressor = compressor.Decompressor;
 
@@ -41,11 +43,11 @@ var test_headers = [{
   buffer: new Buffer('44' + '162F6D792D6578616D706C652F696E6465782E68746D6C', 'hex')
 }, {
   header: {
-    name: 12,
+    name: 11,
     value: 'my-user-agent',
     index: Infinity
   },
-  buffer: new Buffer('4D' + '0D6D792D757365722D6167656E74', 'hex')
+  buffer: new Buffer('4C' + '0D6D792D757365722D6167656E74', 'hex')
 }, {
   header: {
     name: 'x-my-header',
@@ -55,39 +57,39 @@ var test_headers = [{
   buffer: new Buffer('40' + '0B782D6D792D686561646572' + '056669727374', 'hex')
 }, {
   header: {
-    name: 38,
-    value: 38,
+    name: 30,
+    value: 30,
     index: -1
   },
-  buffer: new Buffer('A6', 'hex')
+  buffer: new Buffer('9e', 'hex')
 }, {
   header: {
-    name: 40,
-    value: 40,
+    name: 32,
+    value: 32,
     index: -1
   },
-  buffer: new Buffer('A8', 'hex')
+  buffer: new Buffer('a0', 'hex')
 }, {
   header: {
     name: 3,
     value: '/my-example/resources/script.js',
-    index: 38
+    index: 30
   },
-  buffer: new Buffer('0426' + '1F2F6D792D6578616D706C652F7265736F75726365732F7363726970742E6A73', 'hex')
+  buffer: new Buffer('041e' + '1F2F6D792D6578616D706C652F7265736F75726365732F7363726970742E6A73', 'hex')
 }, {
   header: {
-    name: 40,
+    name: 32,
     value: 'second',
     index: Infinity
   },
-  buffer: new Buffer('5F0A' + '067365636F6E64', 'hex')
+  buffer: new Buffer('5F02' + '067365636F6E64', 'hex')
 }, {
   header: {
-    name: 40,
+    name: 32,
     value: 'third',
     index: -1
   },
-  buffer: new Buffer('7F0A' + '057468697264', 'hex')
+  buffer: new Buffer('7F02' + '057468697264', 'hex')
 }];
 
 var test_header_sets = [{
@@ -108,7 +110,7 @@ var test_header_sets = [{
   headers: {
     ':path': '/my-example/resources/script.js',
     'user-agent': 'my-user-agent',
-    'x-my-header': ['second', 'third']
+    'x-my-header': ['third', 'second']
   },
   buffer: test_headers[7].buffer
 }, {
@@ -121,25 +123,15 @@ var test_header_sets = [{
 }];
 
 describe('compressor.js', function() {
-  describe('CompressionContext', function() {
-    describe('static method .equal([name1, value1], [name2, value2])', function() {
-      var equal = CompressionContext.equal;
-      it('decides if the two headers are considered equal', function() {
-        expect(equal(['name', 'value'], ['name', 'value'])).to.be.equal(true);
-        expect(equal(['name', 'value'], ['nAmE', 'value'])).to.be.equal(true);
-        expect(equal(['NaMe', 'value'], ['nAmE', 'value'])).to.be.equal(true);
-        expect(equal(['name', 'VaLuE'], ['name', 'value'])).to.be.equal(false);
-        expect(equal(['NaMe', 'VaLuE'], ['name', 'value'])).to.be.equal(false);
-      });
-    });
+  describe('HeaderTable', function() {
   });
 
-  describe('Compressor', function() {
+  describe('HeaderSetCompressor', function() {
     describe('static method .integer(I, N)', function() {
       it('should return an array of buffers that represent the N-prefix coded form of the integer I', function() {
         for (var i = 0; i < test_strings.length; i++) {
           var test = test_strings[i];
-          expect(util.concat(Compressor.string(test.string))).to.deep.equal(test.buffer);
+          expect(util.concat(HeaderSetCompressor.string(test.string))).to.deep.equal(test.buffer);
         }
       });
     });
@@ -147,7 +139,7 @@ describe('compressor.js', function() {
       it('should return an array of buffers that represent the encoded form of the string', function() {
         for (var i = 0; i < test_strings.length; i++) {
           var test = test_strings[i];
-          expect(util.concat(Compressor.string(test.string))).to.deep.equal(test.buffer);
+          expect(util.concat(HeaderSetCompressor.string(test.string))).to.deep.equal(test.buffer);
         }
       });
     });
@@ -155,19 +147,19 @@ describe('compressor.js', function() {
       it('should return an array of buffers that represent the encoded form of the header', function() {
         for (var i = 0; i < test_headers.length; i++) {
           var test = test_headers[i];
-          expect(util.concat(Compressor.header(test.header))).to.deep.equal(test.buffer);
+          expect(util.concat(HeaderSetCompressor.header(test.header))).to.deep.equal(test.buffer);
         }
       });
     });
   });
 
-  describe('Decompressor', function() {
+  describe('HeaderSetDecompressor', function() {
     describe('static method .integer(buffer, N)', function() {
       it('should return the parsed N-prefix coded number and increase the cursor property of buffer', function() {
         for (var i = 0; i < test_integers.length; i++) {
           var test = test_integers[i];
           test.buffer.cursor = 0;
-          expect(Decompressor.integer(test.buffer, test.N)).to.equal(test.I);
+          expect(HeaderSetDecompressor.integer(test.buffer, test.N)).to.equal(test.I);
           expect(test.buffer.cursor).to.equal(test.buffer.length);
         }
       });
@@ -177,7 +169,7 @@ describe('compressor.js', function() {
         for (var i = 0; i < test_strings.length; i++) {
           var test = test_strings[i];
           test.buffer.cursor = 0;
-          expect(Decompressor.string(test.buffer)).to.equal(test.string);
+          expect(HeaderSetDecompressor.string(test.buffer)).to.equal(test.string);
           expect(test.buffer.cursor).to.equal(test.buffer.length);
         }
       });
@@ -187,11 +179,13 @@ describe('compressor.js', function() {
         for (var i = 0; i < test_headers.length; i++) {
           var test = test_headers[i];
           test.buffer.cursor = 0;
-          expect(Decompressor.header(test.buffer)).to.deep.equal(test.header);
+          expect(HeaderSetDecompressor.header(test.buffer)).to.deep.equal(test.header);
           expect(test.buffer.cursor).to.equal(test.buffer.length);
         }
       });
     });
+  });
+  describe('Decompressor', function() {
     describe('method decompress(buffer)', function() {
       it('should return the parsed header set in { name1: value1, name2: [value2, value3], ... } format', function() {
         var decompressor = new Decompressor('REQUEST', util.log);
@@ -238,8 +232,6 @@ describe('compressor.js', function() {
           var decompressed = decompressor.decompress(compressed);
           expect(headers).to.deep.equal(decompressed);
           expect(compressor._table).to.deep.equal(decompressor._table);
-          expect(compressor._reference).to.deep.equal(decompressor._reference);
-          expect(compressor._working).to.deep.equal(compressor._working);
         }
       });
     });
