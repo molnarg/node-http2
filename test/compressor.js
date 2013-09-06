@@ -230,7 +230,7 @@ describe('compressor.js', function() {
           var headers = test_header_sets[i%4].headers;
           var compressed = compressor.compress(headers);
           var decompressed = decompressor.decompress(compressed);
-          expect(headers).to.deep.equal(decompressed);
+          expect(decompressed).to.deep.equal(headers);
           expect(compressor._table).to.deep.equal(decompressor._table);
         }
       });
