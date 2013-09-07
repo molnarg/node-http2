@@ -1,7 +1,8 @@
 node-http2
 ==========
 
-An HTTP/2 server implementation for node.js, developed as a [Google Summer of Code
+An HTTP/2 ([draft-ietf-httpbis-http2-06](http://tools.ietf.org/html/draft-ietf-httpbis-http2-06))
+client and server implementation for node.js, developed as a [Google Summer of Code
 project](https://google-melange.appspot.com/gsoc/project/google/gsoc2013/molnarg/5001).
 
 Installation
