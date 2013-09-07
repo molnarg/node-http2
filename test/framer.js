@@ -130,7 +130,7 @@ var test_frames = [{
 }, {
   frame: {
     type: 'WINDOW_UPDATE',
-    flags: { END_FLOW_CONTROL: false },
+    flags: { },
     stream: 10,
     length: 4,
 

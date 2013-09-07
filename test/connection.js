@@ -74,8 +74,8 @@ describe('connection.js', function() {
             done();
           });
 
-          connection._setStreamFlowControl(true);
-          connection._setStreamFlowControl(false);
+          connection._setLocalFlowControl(true);
+          connection._setLocalFlowControl(false);
         });
       });
       describe('manipulating flow control window after flow control was turned off', function() {
@@ -87,7 +87,7 @@ describe('connection.js', function() {
             done();
           });
 
-          connection._setStreamFlowControl(true);
+          connection._setLocalFlowControl(true);
           connection._setInitialStreamWindowSize(10);
         });
       });
@@ -95,15 +95,15 @@ describe('connection.js', function() {
         it('should be ignored', function() {
           var connection = new Connection(1, settings, util.log);
 
-          connection._setStreamFlowControl(true);
-          connection._setStreamFlowControl(true);
+          connection._setLocalFlowControl(true);
+          connection._setLocalFlowControl(true);
         });
       });
       describe('enabling flow control when already enabled', function() {
         it('should be ignored', function() {
           var connection = new Connection(1, settings, util.log);
 
-          connection._setStreamFlowControl(false);
+          connection._setLocalFlowControl(false);
         });
       });
       describe('unsolicited ping answer', function() {

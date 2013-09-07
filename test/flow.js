@@ -165,15 +165,6 @@ describe('flow.js', function() {
       flow1.pipe(flow2).pipe(flow1);
     });
 
-    describe('disabling remote flow control', function() {
-      it('should work as expected', function(done) {
-        flow1.disableRemoteFlowControl();
-        setTimeout(function() {
-          expect(flow2._window).to.be.equal(Infinity);
-          done();
-        });
-      });
-    });
     describe('sending a large data stream', function() {
       it('should work as expected', function(done) {
         // Sender side
