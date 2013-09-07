@@ -14,7 +14,8 @@ var frame_types = {
   PUSH_PROMISE:  ['promised_stream', 'data'],
   PING:          ['data'],
   GOAWAY:        ['last_stream', 'error'],
-  WINDOW_UPDATE: ['window_size']
+  WINDOW_UPDATE: ['window_size'],
+  CONTINUATION:  ['data']
 };
 
 var test_frames = [{
@@ -136,6 +137,17 @@ var test_frames = [{
     window_size: 0x12345678
   },
   buffer: new Buffer('0004' + '09' + '00' + '0000000A' +   '12345678', 'hex')
+}, {
+  frame: {
+    type: 'CONTINUATION',
+    flags: { END_STREAM: false, RESERVED: false, END_HEADERS: true },
+    stream: 10,
+    length: 4,
+
+    data: new Buffer('12345678', 'hex')
+  },
+  // length + type + flags + stream +   content
+  buffer: new Buffer('0004' + '0A' + '04' + '0000000A' +   '12345678', 'hex')
 }];
 
 // Concatenate an array of buffers and then cut them into random size buffers
