@@ -234,7 +234,7 @@ control window size of 65535 bytes.</p>
 
   <span class="keyword">this</span>._ended = <span class="literal">false</span>;
   <span class="keyword">this</span>._received = <span class="number">0</span>;
-  <span class="keyword">this</span>._remoteFlowControlDisabled = <span class="literal">true</span>;
+  <span class="keyword">this</span>._remoteFlowControlDisabled = <span class="literal">false</span>;
 }
 Flow.prototype = Object.create(Duplex.prototype, { constructor: { value: Flow } });</pre></div></div>
             
@@ -345,20 +345,13 @@ a WINDOW_UPDATE that restores the flow control window of the remote end.</p>
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-13">&#182;</a>
               </div>
-              <p>Remote flow control is currently disabled by default, but in the future, it may be turned off
-using the <code>disableRemoteFlowControl</code> method.</p>
+              <p>Must be called after sending a SETTINGS frame that turns off flow control on the remote side.</p>
 
             </div>
             
             <div class="content"><div class='highlight'><pre>Flow.prototype.disableRemoteFlowControl = <span class="function"><span class="keyword">function</span> <span class="title">disableRemoteFlowControl</span><span class="params">()</span> {</span>
+  <span class="keyword">this</span>._log.debug(<span class="string">'Turning off remote flow control'</span>);
   <span class="keyword">this</span>._remoteFlowControlDisabled = <span class="literal">true</span>;
-  <span class="keyword">this</span>.push({
-    type: <span class="string">'WINDOW_UPDATE'</span>,
-    stream: <span class="keyword">this</span>._flowControlId,
-    flags: {
-      END_FLOW_CONTROL: <span class="literal">true</span>
-    }
-  });
 };</pre></div></div>
             
         </li>

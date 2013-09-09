@@ -349,8 +349,8 @@ Stream.prototype.priority = <span class="function"><span class="keyword">functio
     }
 
     <span class="keyword">this</span>._log.debug({ priority: priority }, <span class="string">'Changing priority'</span>);
-    <span class="keyword">this</span>._priority = priority;
     <span class="keyword">this</span>.emit(<span class="string">'priority'</span>, priority);
+    <span class="keyword">this</span>._priority = priority;
   }
 };</pre></div></div>
             
