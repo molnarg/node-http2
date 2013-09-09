@@ -9,58 +9,56 @@ var settings = {
 };
 
 var MAX_PRIORITY = Math.pow(2, 31) - 1;
+var MAX_RANDOM_PRIORITY = 10;
 
 function randomPriority() {
-  return Math.floor(Math.random() * (MAX_PRIORITY + 1));
+  return Math.floor(Math.random() * (MAX_RANDOM_PRIORITY + 1));
 }
 
-function expectPriorityOrder(streams) {
-  var previousPriority = -1;
-  for (var j = 0; j < streams.length; j++) {
-    var priority = streams[j]._priority;
-    expect(priority).to.be.at.least(previousPriority);
-    previousPriority = priority;
-  }
+function expectPriorityOrder(priorities) {
+  priorities.forEach(function(bucket, priority) {
+    bucket.forEach(function(stream) {
+      expect(stream._priority).to.be.equal(priority);
+    });
+  });
 }
 
 describe('connection.js', function() {
   describe('Connection class', function() {
     describe('method ._insert(stream)', function() {
-      it('should insert the stream in _streamsOut in a place determined by stream._priority', function() {
+      it('should insert the stream in _streamPriorities in a place determined by stream._priority', function() {
         var streams = [];
-        var connection = Object.create(Connection.prototype, { _streamsOut: { value: streams }});
+        var connection = Object.create(Connection.prototype, { _streamPriorities: { value: streams }});
         var streamCount = 10;
 
-        // Inserting streams with random priority
         for (var i = 0; i < streamCount; i++) {
           var stream = { _priority: randomPriority() };
-          connection._insert(stream);
+          connection._insert(stream, stream._priority);
+          expect(connection._streamPriorities[stream._priority]).to.include(stream);
         }
 
-        // Resulting _streamsOut should be ordered by priority
-        expect(streams.length).to.equal(streamCount);
-        expectPriorityOrder(streams);
+        expectPriorityOrder(connection._streamPriorities);
       });
     });
     describe('method ._reprioritize(stream)', function() {
-      it('should eject and then insert the stream in _streamsOut in a place determined by stream._priority', function() {
+      it('should eject and then insert the stream in _streamPriorities in a place determined by stream._priority', function() {
         var streams = [];
-        var connection = Object.create(Connection.prototype, { _streamsOut: { value: streams }});
+        var connection = Object.create(Connection.prototype, { _streamPriorities: { value: streams }});
         var streamCount = 10;
+        var oldPriority, newPriority, stream;
 
-        // Inserting streams with random priority
         for (var i = 0; i < streamCount; i++) {
-          var stream = { _priority: randomPriority() };
-          connection._insert(stream);
+          oldPriority = randomPriority();
+          while ((newPriority = randomPriority()) === oldPriority);
+          stream = { _priority: oldPriority };
+          connection._insert(stream, oldPriority);
+          connection._reprioritize(stream, newPriority);
+          stream._priority = newPriority;
+
+          expect(connection._streamPriorities[newPriority]).to.include(stream);
+          expect(connection._streamPriorities[oldPriority] || []).to.not.include(stream);
         }
 
-        // Reprioritizing stream
-        stream = streams[Math.floor(Math.random() * streamCount)];
-        stream._priority = randomPriority();
-        connection._reprioritize(stream);
-
-        // Resulting _streamsOut should be ordered by priority
-        expect(streams.length).to.equal(streamCount);
         expectPriorityOrder(streams);
       });
     });
