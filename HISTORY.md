@@ -1,6 +1,17 @@
 Version history
 ===============
 
+### 0.4.0 (2013-09-09) ###
+
+* Upgrade to the latest draft: [draft-ietf-httpbis-http2-06][draft-06]
+* Support for HTTP trailers
+* Support for TLS SNI (Server Name Indication)
+* Improved stream scheduling algorithm
+* [Blog post](http://gabor.molnar.es/blog/2013/09/09/gsoc-week-number-12/)
+* [Tarball](https://github.com/molnarg/node-http2/archive/node-http2-0.4.0.tar.gz)
+
+[draft-06]: http://tools.ietf.org/html/draft-ietf-httpbis-http2-06
+
 ### 0.3.1 (2013-09-03) ###
 
 * Lot of testing, bugfixes
