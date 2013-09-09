@@ -124,8 +124,9 @@ array        buffers                     buffer</code></pre>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre><span class="function"><span class="keyword">function</span> <span class="title">Serializer</span><span class="params">(log)</span> {</span>
+            <div class="content"><div class='highlight'><pre><span class="function"><span class="keyword">function</span> <span class="title">Serializer</span><span class="params">(log, sizeLimit)</span> {</span>
   <span class="keyword">this</span>._log = log.child({ component: <span class="string">'serializer'</span> });
+  <span class="keyword">this</span>._sizeLimit = sizeLimit || MAX_PAYLOAD_SIZE;
   Transform.call(<span class="keyword">this</span>, { objectMode: <span class="literal">true</span> });
 }
 Serializer.prototype = Object.create(Transform.prototype, { constructor: { value: Serializer } });</pre></div></div>
@@ -153,6 +154,8 @@ frame types (like the length of the payload).</p>
   <span class="keyword">var</span> buffers = [];
   Serializer[frame.type](frame, buffers);
   Serializer.commonHeader(frame, buffers);
+
+  assert(buffers[<span class="number">0</span>].readUInt16BE(<span class="number">0</span>) &lt;= <span class="keyword">this</span>._sizeLimit, <span class="string">'Frame too large!'</span>);
 
   <span class="keyword">for</span> (<span class="keyword">var</span> i = <span class="number">0</span>; i &lt; buffers.length; i++) {
     <span class="keyword">if</span> (logData) {
@@ -196,8 +199,9 @@ object  header properties        payload properties</code></pre>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre><span class="function"><span class="keyword">function</span> <span class="title">Deserializer</span><span class="params">(log)</span> {</span>
+            <div class="content"><div class='highlight'><pre><span class="function"><span class="keyword">function</span> <span class="title">Deserializer</span><span class="params">(log, sizeLimit)</span> {</span>
   <span class="keyword">this</span>._log = log.child({ component: <span class="string">'deserializer'</span> });
+  <span class="keyword">this</span>._sizeLimit = sizeLimit || MAX_PAYLOAD_SIZE;
   Transform.call(<span class="keyword">this</span>, { objectMode: <span class="literal">true</span> });
   <span class="keyword">this</span>._next(COMMON_HEADER_SIZE);
 }
@@ -288,7 +292,11 @@ deserializer waits for the specified length payload.</p>
             
             <div class="content"><div class='highlight'><pre>    <span class="keyword">if</span> ((<span class="keyword">this</span>._cursor === <span class="keyword">this</span>._buffer.length) &amp;&amp; <span class="keyword">this</span>._waitingForHeader) {
       Deserializer.commonHeader(<span class="keyword">this</span>._buffer, <span class="keyword">this</span>._frame);
-      <span class="keyword">this</span>._next(<span class="keyword">this</span>._frame.length);
+      <span class="keyword">if</span> (<span class="keyword">this</span>._frame.length &lt;= <span class="keyword">this</span>._sizeLimit) {
+        <span class="keyword">this</span>._next(<span class="keyword">this</span>._frame.length);
+      } <span class="keyword">else</span> {
+        <span class="keyword">this</span>.emit(<span class="string">'error'</span>, <span class="string">'FRAME_TOO_LARGE'</span>);
+      }
     }</pre></div></div>
             
         </li>
@@ -352,7 +360,7 @@ will also run.</p>
               <p>HTTP/2.0 frames share a common base format consisting of an 8-byte header followed by 0 to 65535
 bytes of data.</p>
 <p>Additional size limits can be set by specific application uses. HTTP limits the frame size to
-16,383 octets. This limitation is enforced on the connection layer.</p>
+16,383 octets.</p>
 <pre><code> 0                   1                   2                   3
  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -408,7 +416,7 @@ Serializer.commonHeader = <span class="function"><span class="keyword">function<
   <span class="keyword">for</span> (<span class="keyword">var</span> i = <span class="number">0</span>; i &lt; buffers.length; i++) {
     size += buffers[i].length;
   }
-  assert(size &lt; MAX_PAYLOAD_SIZE, <span class="string">'Too large frame: '</span> + size + <span class="string">' bytes'</span>);
+  assert(size &lt;= MAX_PAYLOAD_SIZE, <span class="string">'Frame too large!'</span>);
   headerBuffer.writeUInt16BE(size, <span class="number">0</span>);
 
   <span class="keyword">var</span> typeId = frameTypes.indexOf(frame.type);  <span class="comment">// If we are here then the type is valid for sure</span>
@@ -778,12 +786,12 @@ typeSpecificAttributes.SETTINGS = [<span class="string">'settings'</span>];</pre
 +---------------+-----------------------------------------------+
 |                        Value (32)                             |
 +---------------------------------------------------------------+</code></pre>
-<p>A SETTINGS frame is not required to include every defined setting; senders can include only those
-parameters for which it has accurate values and a need to convey. When multiple parameters are
-sent, they SHOULD be sent in order of numerically lowest ID to highest ID. A single SETTINGS
-frame MUST NOT contain multiple values for the same ID. If the receiver of a SETTINGS frame
-discovers multiple values for the same ID, it MUST ignore all values for that ID except the first
-one.</p>
+<p>Each setting in a SETTINGS frame replaces the existing value for that setting.  Settings are
+processed in the order in which they appear, and a receiver of a SETTINGS frame does not need to
+maintain any state other than the current value of settings.  Therefore, the value of a setting
+is the last value that is seen by a receiver. This permits the inclusion of the same settings
+multiple times in the same SETTINGS frame, though doing so does nothing other than waste
+connection capacity.</p>
 
             </div>
             
@@ -816,11 +824,12 @@ Deserializer.SETTINGS = <span class="function"><span class="keyword">function</s
   <span class="keyword">for</span> (<span class="keyword">var</span> i = <span class="number">0</span>; i &lt; buffer.length / <span class="number">8</span>; i++) {
     <span class="keyword">var</span> id = buffer.readUInt32BE(i*<span class="number">8</span>) &amp; <span class="number">0xffffff</span>;
     <span class="keyword">var</span> setting = definedSettings[id];
-    <span class="keyword">var</span> value = buffer.readUInt32BE(i*<span class="number">8</span> + <span class="number">4</span>);
-    <span class="keyword">if</span> (!setting || (setting.name <span class="keyword">in</span> frame.settings)) {
-      <span class="keyword">continue</span>;
+    <span class="keyword">if</span> (setting) {
+      <span class="keyword">var</span> value = buffer.readUInt32BE(i*<span class="number">8</span> + <span class="number">4</span>);
+      frame.settings[setting.name] = setting.flag ? Boolean(value &amp; <span class="number">0x1</span>) : value;
+    } <span class="keyword">else</span> {
+      <span class="comment">/* Unknown setting, ignoring */</span>
     }
-    frame.settings[setting.name] = setting.flag ? Boolean(value &amp; <span class="number">0x1</span>) : value;
   }
 };</pre></div></div>
             
@@ -1130,18 +1139,13 @@ Deserializer.GOAWAY = <span class="function"><span class="keyword">function</spa
                 <a class="pilcrow" href="#section-43">&#182;</a>
               </div>
               <p>The WINDOW_UPDATE frame (type=0x9) is used to implement flow control.</p>
-<p>The WINDOW_UPDATE frame defines the following flags:</p>
-<ul>
-<li>END_FLOW_CONTROL (0x1):
-Bit 1 being set indicates that flow control for the identified stream
-or connection has been ended; subsequent frames do not need to be flow controlled.</li>
-</ul>
+<p>The WINDOW_UPDATE frame does not define any flags.</p>
 
             </div>
             
             <div class="content"><div class='highlight'><pre>frameTypes[<span class="number">0x9</span>] = <span class="string">'WINDOW_UPDATE'</span>;
 
-frameFlags.WINDOW_UPDATE = [<span class="string">'END_FLOW_CONTROL'</span>];
+frameFlags.WINDOW_UPDATE = [];
 
 typeSpecificAttributes.WINDOW_UPDATE = [<span class="string">'window_size'</span>];</pre></div></div>
             
@@ -1181,7 +1185,7 @@ Deserializer.WINDOW_UPDATE = <span class="function"><span class="keyword">functi
               <div class="pilwrap for-h2">
                 <a class="pilcrow" href="#section-45">&#182;</a>
               </div>
-              <h2><a href="http://http2.github.io/http2-spec/#ErrorCodes">Error Codes</a></h2>
+              <h2><a href="http://http2.github.io/http2-spec/#CONTINUATION">CONTINUATION</a></h2>
 
             </div>
             
@@ -1193,6 +1197,57 @@ Deserializer.WINDOW_UPDATE = <span class="function"><span class="keyword">functi
               
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-46">&#182;</a>
+              </div>
+              <p>The CONTINUATION frame (type=0xA) is used to continue a sequence of header block fragments.</p>
+<p>The CONTINUATION frame defines the following flags:</p>
+<ul>
+<li>END_STREAM (0x1):
+Bit 1 being set indicates that this frame is the last that the endpoint will send for the
+identified stream.</li>
+<li>RESERVED (0x2):
+Bit 2 is reserved for future use.</li>
+<li>END_HEADERS (0x4):
+The END_HEADERS bit indicates that this frame ends the sequence of header block fragments
+necessary to provide a complete set of headers.</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>frameTypes[<span class="number">0xA</span>] = <span class="string">'CONTINUATION'</span>;
+
+frameFlags.CONTINUATION = [<span class="string">'END_STREAM'</span>, <span class="string">'RESERVED'</span>, <span class="string">'END_HEADERS'</span>];
+
+typeSpecificAttributes.CONTINUATION = [<span class="string">'headers'</span>, <span class="string">'data'</span>];
+
+Serializer.CONTINUATION = <span class="function"><span class="keyword">function</span> <span class="title">writeContinuation</span><span class="params">(frame, buffers)</span> {</span>
+  buffers.push(frame.data);
+};
+
+Deserializer.CONTINUATION = <span class="function"><span class="keyword">function</span> <span class="title">readContinuation</span><span class="params">(buffer, frame)</span> {</span>
+  frame.data = buffer;
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-47">
+            <div class="annotation">
+              
+              <div class="pilwrap for-h2">
+                <a class="pilcrow" href="#section-47">&#182;</a>
+              </div>
+              <h2><a href="http://http2.github.io/http2-spec/#ErrorCodes">Error Codes</a></h2>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-48">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-48">&#182;</a>
               </div>
               
             </div>
@@ -1213,11 +1268,11 @@ Deserializer.WINDOW_UPDATE = <span class="function"><span class="keyword">functi
         </li>
         
         
-        <li id="section-47">
+        <li id="section-49">
             <div class="annotation">
               
               <div class="pilwrap for-h2">
-                <a class="pilcrow" href="#section-47">&#182;</a>
+                <a class="pilcrow" href="#section-49">&#182;</a>
               </div>
               <h2>Logging</h2>
 
@@ -1226,11 +1281,11 @@ Deserializer.WINDOW_UPDATE = <span class="function"><span class="keyword">functi
         </li>
         
         
-        <li id="section-48">
+        <li id="section-50">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-48">&#182;</a>
+                <a class="pilcrow" href="#section-50">&#182;</a>
               </div>
               <p><a href="https://github.com/trentm/node-bunyan#serializers">Bunyan serializers</a> to improve logging output
 for debug messages emitted in this component.</p>
@@ -1242,11 +1297,11 @@ for debug messages emitted in this component.</p>
         </li>
         
         
-        <li id="section-49">
+        <li id="section-51">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-49">&#182;</a>
+                <a class="pilcrow" href="#section-51">&#182;</a>
               </div>
               <ul>
 <li><code>frame</code> serializer: it transforms data attributes from Buffers to hex strings and filters out
@@ -1299,11 +1354,11 @@ exports.serializers.frame = <span class="keyword">function</span>(frame) {
         </li>
         
         
-        <li id="section-50">
+        <li id="section-52">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-50">&#182;</a>
+                <a class="pilcrow" href="#section-52">&#182;</a>
               </div>
               <ul>
 <li><code>data</code> serializer: it simply transforms a buffer to a hex string.</li>

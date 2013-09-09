@@ -416,7 +416,9 @@ and call it with the remaining part of the current chunk</li>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>Endpoint.prototype._initializeDataFlow = <span class="function"><span class="keyword">function</span> <span class="title">_initializeDataFlow</span><span class="params">(role, settings)</span> {</span>
+            <div class="content"><div class='highlight'><pre><span class="keyword">var</span> MAX_HTTP_PAYLOAD_SIZE = <span class="number">16383</span>;
+
+Endpoint.prototype._initializeDataFlow = <span class="function"><span class="keyword">function</span> <span class="title">_initializeDataFlow</span><span class="params">(role, settings)</span> {</span>
   <span class="keyword">var</span> firstStreamId, compressorRole, decompressorRole;
   <span class="keyword">if</span> (role === <span class="string">'CLIENT'</span>) {
     firstStreamId = <span class="number">1</span>;
@@ -428,8 +430,8 @@ and call it with the remaining part of the current chunk</li>
     decompressorRole = <span class="string">'REQUEST'</span>;
   }
 
-  <span class="keyword">this</span>._serializer   = <span class="keyword">new</span> Serializer(<span class="keyword">this</span>._log);
-  <span class="keyword">this</span>._deserializer = <span class="keyword">new</span> Deserializer(<span class="keyword">this</span>._log);
+  <span class="keyword">this</span>._serializer   = <span class="keyword">new</span> Serializer(<span class="keyword">this</span>._log, MAX_HTTP_PAYLOAD_SIZE);
+  <span class="keyword">this</span>._deserializer = <span class="keyword">new</span> Deserializer(<span class="keyword">this</span>._log, MAX_HTTP_PAYLOAD_SIZE);
   <span class="keyword">this</span>._compressor   = <span class="keyword">new</span> Compressor(compressorRole, <span class="keyword">this</span>._log);
   <span class="keyword">this</span>._decompressor = <span class="keyword">new</span> Decompressor(decompressorRole, <span class="keyword">this</span>._log);
   <span class="keyword">this</span>._connection   = <span class="keyword">new</span> Connection(firstStreamId, settings, <span class="keyword">this</span>._log);
