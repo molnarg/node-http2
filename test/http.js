@@ -345,6 +345,38 @@ describe('http.js', function() {
         });
       });
     });
+    describe('request and response with trailers', function() {
+      it('should work as expected', function(done) {
+        var path = '/x';
+        var message = 'Hello world';
+        var requestTrailers = { 'content-md5': 'x' };
+        var responseTrailers = { 'content-md5': 'y' };
+
+        var server = http2.createServer(options, function(request, response) {
+          expect(request.url).to.equal(path);
+          request.on('data', util.noop);
+          request.once('end', function() {
+            expect(request.trailers).to.deep.equal(requestTrailers);
+            response.write(message);
+            response.addTrailers(responseTrailers);
+            response.end();
+          });
+        });
+
+        server.listen(1241, function() {
+          var request = http2.request('https://localhost:1241' + path);
+          request.addTrailers(requestTrailers);
+          request.end();
+          request.on('response', function(response) {
+            response.on('data', util.noop);
+            response.once('end', function() {
+              expect(response.trailers).to.deep.equal(responseTrailers);
+              done();
+            });
+          });
+        });
+      });
+    });
     describe('server push', function() {
       it('should work as expected', function(done) {
         var path = '/x';
