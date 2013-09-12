@@ -162,7 +162,6 @@ describe('flow.js', function() {
       flow1._remoteFlowControlDisabled = flow2._remoteFlowControlDisabled = false;
       flow1._send = flow2._send = util.noop;
       flow1._receive = flow2._receive = function(frame, callback) { callback(); };
-      flow1.pipe(flow2).pipe(flow1);
     });
 
     describe('sending a large data stream', function() {
@@ -204,7 +203,7 @@ describe('flow.js', function() {
         });
 
         // Start piping
-        flow1.read(0);
+        flow1.pipe(flow2).pipe(flow1);
       });
     });
   });
