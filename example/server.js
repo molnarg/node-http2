@@ -21,7 +21,6 @@ var server = http2.createServer(options, function(request, response) {
   var filename = path.join(__dirname, request.url);
 
   if ((filename.indexOf(__dirname) === 0) && fs.existsSync(filename) && fs.statSync(filename).isFile()) {
-    var filestream = fs.createReadStream(filename);
     response.writeHead('200');
 
     // If they download the certificate, push the private key too, they might need it.
@@ -31,7 +30,7 @@ var server = http2.createServer(options, function(request, response) {
       fs.createReadStream(path.join(__dirname, '/localhost.key')).pipe(push);
     }
 
-    filestream.pipe(response);
+    fs.createReadStream(filename).pipe(response);
 
   } else {
     response.writeHead('404');
