@@ -23,7 +23,6 @@ var test_frames = [{
     type: 'DATA',
     flags: { END_STREAM: false, RESERVED: false },
     stream: 10,
-    length: 4,
 
     data: new Buffer('12345678', 'hex')
   },
@@ -35,7 +34,6 @@ var test_frames = [{
     type: 'HEADERS',
     flags: { END_STREAM: false, RESERVED: false, END_HEADERS: false, PRIORITY: false },
     stream: 15,
-    length: 4,
 
     data: new Buffer('12345678', 'hex')
   },
@@ -46,7 +44,6 @@ var test_frames = [{
     type: 'HEADERS',
     flags: { END_STREAM: false, RESERVED: false, END_HEADERS: false, PRIORITY: true },
     stream: 15,
-    length: 8,
 
     priority: 3,
     data: new Buffer('12345678', 'hex')
@@ -58,7 +55,6 @@ var test_frames = [{
     type: 'PRIORITY',
     flags: { },
     stream: 10,
-    length: 4,
 
     priority: 3
   },
@@ -69,7 +65,6 @@ var test_frames = [{
     type: 'RST_STREAM',
     flags: { },
     stream: 10,
-    length: 4,
 
     error: 'INTERNAL_ERROR'
   },
@@ -80,7 +75,6 @@ var test_frames = [{
     type: 'SETTINGS',
     flags: { },
     stream: 10,
-    length: 24,
 
     settings: {
       SETTINGS_MAX_CONCURRENT_STREAMS: 0x01234567,
@@ -97,7 +91,6 @@ var test_frames = [{
     type: 'PUSH_PROMISE',
     flags: { END_PUSH_PROMISE: false },
     stream: 15,
-    length: 8,
 
     promised_stream: 3,
     data: new Buffer('12345678', 'hex')
@@ -109,7 +102,6 @@ var test_frames = [{
     type: 'PING',
     flags: { PONG: false },
     stream: 15,
-    length: 8,
 
     data: new Buffer('1234567887654321', 'hex')
   },
@@ -120,7 +112,6 @@ var test_frames = [{
     type: 'GOAWAY',
     flags: { },
     stream: 10,
-    length: 8,
 
     last_stream: 0x12345678,
     error: 'PROTOCOL_ERROR'
@@ -132,7 +123,6 @@ var test_frames = [{
     type: 'WINDOW_UPDATE',
     flags: { },
     stream: 10,
-    length: 4,
 
     window_size: 0x12345678
   },
@@ -142,7 +132,6 @@ var test_frames = [{
     type: 'CONTINUATION',
     flags: { END_STREAM: false, RESERVED: false, END_HEADERS: true },
     stream: 10,
-    length: 4,
 
     data: new Buffer('12345678', 'hex')
   },
@@ -211,12 +200,11 @@ describe('framer.js', function() {
 
   describe('Deserializer', function() {
     describe('static method .commonHeader(header_buffer, frame)', function() {
-      it('should augment the frame object with these properties: { length, type, flags, stream })', function() {
+      it('should augment the frame object with these properties: { type, flags, stream })', function() {
         for (var i = 0; i < test_frames.length; i++) {
           var test = test_frames[i], frame = {};
           Deserializer.commonHeader(test.buffer.slice(0,8), frame);
           expect(frame).to.deep.equal({
-            length: test.frame.length,
             type:   test.frame.type,
             flags:  test.frame.flags,
             stream: test.frame.stream
@@ -233,7 +221,6 @@ describe('framer.js', function() {
           for (var i = 0; i < tests.length; i++) {
             var test = tests[i];
             var frame = {
-              length: test.frame.length,
               type:   test.frame.type,
               flags:  test.frame.flags,
               stream: test.frame.stream
@@ -253,9 +240,7 @@ describe('framer.js', function() {
         shuffled.forEach(stream.write.bind(stream));
 
         for (var j = 0; j < test_frames.length; j++) {
-          var parsed_frame = stream.read();
-          parsed_frame.length = test_frames[j].frame.length;
-          expect(parsed_frame).to.be.deep.equal(test_frames[j].frame);
+          expect(stream.read()).to.be.deep.equal(test_frames[j].frame);
         }
       });
     });

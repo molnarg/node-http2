@@ -103,12 +103,12 @@ describe('flow.js', function() {
         });
         it('should also split DATA frames when needed', function() {
           var buffer = new Buffer(10);
-          var dataFrame = { stream: util.random(0, 100), type: 'DATA', flags: {}, data: buffer };
+          var dataFrame = { type: 'DATA', flags: {}, stream: util.random(0, 100), data: buffer };
           flow._send = util.noop;
           flow._window = 5;
           flow._queue = [dataFrame];
 
-          var expectedFragment = { stream: dataFrame.stream, flags: {}, type: 'DATA', data: buffer.slice(0,5) };
+          var expectedFragment = { flags: {}, type: 'DATA', stream: dataFrame.stream, data: buffer.slice(0,5) };
           expect(flow.read()).to.deep.equal(expectedFragment);
           expect(dataFrame.data).to.deep.equal(buffer.slice(5));
         });
@@ -143,10 +143,10 @@ describe('flow.js', function() {
         flow.write({ type: 'DATA', flags: {}, data: buffer });
         flow.once('readable', function() {
           expect(flow.read()).to.be.deep.equal({
-            stream: flow._flowControlId,
             type: 'WINDOW_UPDATE',
-            window_size: buffer.length,
-            flags: {}
+            flags: {},
+            stream: flow._flowControlId,
+            window_size: buffer.length
           });
           done();
         });
