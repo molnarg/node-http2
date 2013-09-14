@@ -27,14 +27,12 @@ Examples
 ### Using as a server ###
 
 ```javascript
-var http2 = require('http2');
-
 var options = {
   key: fs.readFileSync('./example/localhost.key'),
   cert: fs.readFileSync('./example/localhost.crt')
 };
 
-http2.createServer(options, function(request, response) {
+require('http2').createServer(options, function(request, response) {
   response.end('Hello world!');
 }).listen(8080);
 ```
@@ -42,13 +40,9 @@ http2.createServer(options, function(request, response) {
 ### Using as a client ###
 
 ```javascript
-var http2 = require('http2');
-
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 
-var request = http2.get('https://localhost:8080/');
-
-request.on('response', function(response) {
+require('http2').get('https://localhost:8080/', function(response) {
   response.pipe(process.stdout);
 });
 ```
