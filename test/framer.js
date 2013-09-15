@@ -139,19 +139,6 @@ var test_frames = [{
   buffer: new Buffer('0004' + '0A' + '04' + '0000000A' +   '12345678', 'hex')
 }];
 
-// Concatenate an array of buffers and then cut them into random size buffers
-function shuffle_buffers(buffers) {
-  var concatenated = util.concat(buffers), output = [], written = 0;
-
-  while (written < concatenated.length) {
-    var chunk_size = Math.min(concatenated.length - written, Math.ceil(Math.random()*20));
-    output.push(concatenated.slice(written, written + chunk_size));
-    written += chunk_size;
-  }
-
-  return output;
-}
-
 describe('framer.js', function() {
   describe('Serializer', function() {
     describe('static method .commonHeader({ type, flags, stream }, buffer_array)', function() {
@@ -236,7 +223,7 @@ describe('framer.js', function() {
       it('should transform buffers to appropriate frame object', function() {
         var stream = new Deserializer(util.log);
 
-        var shuffled = shuffle_buffers(test_frames.map(function(test) { return test.buffer; }));
+        var shuffled = util.shuffleBuffers(test_frames.map(function(test) { return test.buffer; }));
         shuffled.forEach(stream.write.bind(stream));
 
         for (var j = 0; j < test_frames.length; j++) {

@@ -59,3 +59,16 @@ exports.concat = function concat(buffers) {
 exports.random = function random(min, max) {
   return min + Math.floor(Math.random() * (max - min + 1));
 };
+
+// Concatenate an array of buffers and then cut them into random size buffers
+exports.shuffleBuffers = function shuffleBuffers(buffers) {
+  var concatenated = exports.concat(buffers), output = [], written = 0;
+
+  while (written < concatenated.length) {
+    var chunk_size = Math.min(concatenated.length - written, Math.ceil(Math.random()*20));
+    output.push(concatenated.slice(written, written + chunk_size));
+    written += chunk_size;
+  }
+
+  return output;
+}
