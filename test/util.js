@@ -1,11 +1,24 @@
+var path = require('path');
+var fs = require('fs');
+var spawn = require('child_process').spawn;
+
 function noop() {}
 exports.noop = noop;
 
 if (process.env.HTTP2_LOG) {
+  var logOutput = process.stderr;
+  if (process.stderr.isTTY) {
+    var bin = path.resolve(path.dirname(require.resolve('bunyan')), '..', 'bin', 'bunyan');
+    if(bin && fs.existsSync(bin)) {
+      logOutput = spawn(bin, ['-o', 'short'], {
+        stdio: [null, process.stderr, process.stderr]
+      }).stdin;
+    }
+  }
   exports.createLogger = function(name) {
     return require('bunyan').createLogger({
       name: name,
-      stream: process.stderr,
+      stream: logOutput,
       level: process.env.HTTP2_LOG,
       serializers: require('../lib/http').serializers
     });

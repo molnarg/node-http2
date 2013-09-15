@@ -135,18 +135,17 @@ creating a server or agent.
 When using the example server or client, it's very easy to turn logging on: set the `HTTP2_LOG`
 environment variable to `fatal`, `error`, `warn`, `info`, `debug` or `trace` (the logging level).
 To log every single incoming and outgoing data chunk, use `HTTP2_LOG_DATA=1` besides
-`HTTP2_LOG=trace`. Log output goes to the standard error output, and is in JSON format. It can be
-pretty printed using the bunyan command line tool.
+`HTTP2_LOG=trace`. Log output goes to the standard error output. If the standard error is redirected
+into a file, then the log output is in bunyan's JSON format for easier post-mortem analysis.
 
 Running the example server and client with `info` level logging output:
 
 ```bash
-$ HTTP2_LOG=info node ./example/server.js 2> >(bunyan -o short)
+$ HTTP2_LOG=info node ./example/server.js
 ```
 
 ```bash
-$ HTTP2_LOG=info node ./example/client.js 'http://localhost:8080/server.js' \
-  >/dev/null 2> >(bunyan -o short)
+$ HTTP2_LOG=info node ./example/client.js 'http://localhost:8080/server.js' >/dev/null
 ```
 
 Contributors
