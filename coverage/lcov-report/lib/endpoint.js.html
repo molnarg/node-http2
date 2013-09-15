@@ -183,16 +183,16 @@
     <h1>Code coverage report for <span class="entity">lib/endpoint.js</span></h1>
     <h2>
         
-        Statements: <span class="metric">100% <small>(84 / 84)</small></span> &nbsp;&nbsp;&nbsp;&nbsp;
+        Statements: <span class="metric">100% <small>(90 / 90)</small></span> &nbsp;&nbsp;&nbsp;&nbsp;
         
         
-        Branches: <span class="metric">88.89% <small>(16 / 18)</small></span> &nbsp;&nbsp;&nbsp;&nbsp;
+        Branches: <span class="metric">94.44% <small>(17 / 18)</small></span> &nbsp;&nbsp;&nbsp;&nbsp;
         
         
-        Functions: <span class="metric">92.86% <small>(13 / 14)</small></span> &nbsp;&nbsp;&nbsp;&nbsp;
+        Functions: <span class="metric">100% <small>(13 / 13)</small></span> &nbsp;&nbsp;&nbsp;&nbsp;
         
         
-        Lines: <span class="metric">100% <small>(84 / 84)</small></span> &nbsp;&nbsp;&nbsp;&nbsp;
+        Lines: <span class="metric">100% <small>(90 / 90)</small></span> &nbsp;&nbsp;&nbsp;&nbsp;
         
     </h2>
     <div class="path"><a href="../index.html">All files</a> &#187; <a href="index.html">lib/</a> &#187; endpoint.js</div>
@@ -398,7 +398,14 @@
 197
 198
 199
-200</td><td class="line-coverage"><span class="cline-any cline-yes">1</span>
+200
+201
+202
+203
+204
+205
+206
+207</td><td class="line-coverage"><span class="cline-any cline-yes">1</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1</span>
 <span class="cline-any cline-yes">1</span>
@@ -539,18 +546,22 @@
 <span class="cline-any cline-yes">24</span>
 <span class="cline-any cline-yes">24</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">24</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-yes">155</span>
+<span class="cline-any cline-yes">155</span>
+<span class="cline-any cline-yes">155</span>
+<span class="cline-any cline-yes">130</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">155</span>
+<span class="cline-any cline-yes">67</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">155</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1</span>
-<span class="cline-any cline-yes">293</span>
-<span class="cline-any cline-yes">293</span>
-<span class="cline-any cline-yes">178</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1</span>
-<span class="cline-any cline-yes">51</span>
+<span class="cline-any cline-yes">50</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -574,7 +585,10 @@
 <span class="cline-any cline-yes">24</span>
 <span class="cline-any cline-yes">24</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">24</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
 <span class="cline-any cline-yes">1</span>
 <span class="cline-any cline-yes">1</span>
 <span class="cline-any cline-yes">1</span>
@@ -597,7 +611,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">6</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">var assert = process.env.HTTP2_ASSERT ? requi<span class="fstat-no" title="function not covered" ><span class="branch-1 cbranch-no" title="branch not covered" >re('assert') : function noop() {</span>};</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">var assert = require('assert');
 &nbsp;
 var Serializer   = require('./framer').Serializer;
 var Deserializer = require('./framer').Deserializer;
@@ -737,15 +751,19 @@ Endpoint.prototype._initializeDataFlow = function _initializeDataFlow(role, sett
 &nbsp;
   this._connection.pipe(this._compressor).pipe(this._serializer);
   this._deserializer.pipe(this._decompressor).pipe(this._connection);
-&nbsp;
-  this._serializer.on('readable', this._read.bind(this));
 };
 &nbsp;
+var noread = {};
 Endpoint.prototype._read = function _read() {
-  var moreNeeded = true, chunk;
+  this._readableState.sync = true;
+  var moreNeeded = noread, chunk;
   while (moreNeeded &amp;&amp; (chunk = this._serializer.read())) {
     moreNeeded = this.push(chunk);
   }
+  if (moreNeeded === noread) {
+    this._serializer.once('readable', this._read.bind(this));
+  }
+  this._readableState.sync = false;
 };
 &nbsp;
 Endpoint.prototype._write = function _write(chunk, encoding, done) {
@@ -772,11 +790,14 @@ Endpoint.prototype._initializeErrorHandling = function _initializeErrorHandling(
   this._compressor.on('error', this._error.bind(this, 'compressor'));
   this._decompressor.on('error', this._error.bind(this, 'decompressor'));
   this._connection.on('error', this._error.bind(this, 'connection'));
+&nbsp;
+  this._connection.on('peerError', this.emit.bind(this, 'peerError'));
 };
 &nbsp;
 Endpoint.prototype._error = function _error(component, error) {
-  this._log.fatal({ component: component, message: error }, 'Fatal error, closing connection');
+  this._log.fatal({ source: component, message: error }, 'Fatal error, closing connection');
   this.close(error);
+  setImmediate(this.emit.bind(this, 'error', error));
 };
 &nbsp;
 Endpoint.prototype.close = function close(error) {
@@ -801,7 +822,7 @@ exports.serializers.e = function(endpoint) {
 
 </div>
 <div class="footer">
-    <div class="meta">Generated by <a href="http://istanbul-js.org/" target="_blank">istanbul</a> at Mon Sep 09 2013 22:37:39 GMT+0200 (CEST)</div>
+    <div class="meta">Generated by <a href="http://istanbul-js.org/" target="_blank">istanbul</a> at Sun Sep 15 2013 21:53:43 GMT+0200 (CEST)</div>
 </div>
 
 <script src="../prettify.js"></script>

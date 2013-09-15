@@ -183,16 +183,16 @@
     <h1>Code coverage report for <span class="entity">lib/http.js</span></h1>
     <h2>
         
-        Statements: <span class="metric">91.15% <small>(371 / 407)</small></span> &nbsp;&nbsp;&nbsp;&nbsp;
+        Statements: <span class="metric">92.1% <small>(373 / 405)</small></span> &nbsp;&nbsp;&nbsp;&nbsp;
         
         
-        Branches: <span class="metric">80.26% <small>(122 / 152)</small></span> &nbsp;&nbsp;&nbsp;&nbsp;
+        Branches: <span class="metric">77.27% <small>(119 / 154)</small></span> &nbsp;&nbsp;&nbsp;&nbsp;
         
         
-        Functions: <span class="metric">91.94% <small>(57 / 62)</small></span> &nbsp;&nbsp;&nbsp;&nbsp;
+        Functions: <span class="metric">92.06% <small>(58 / 63)</small></span> &nbsp;&nbsp;&nbsp;&nbsp;
         
         
-        Lines: <span class="metric">91.15% <small>(371 / 407)</small></span> &nbsp;&nbsp;&nbsp;&nbsp;
+        Lines: <span class="metric">92.1% <small>(373 / 405)</small></span> &nbsp;&nbsp;&nbsp;&nbsp;
         
     </h2>
     <div class="path"><a href="../index.html">All files</a> &#187; <a href="index.html">lib/</a> &#187; http.js</div>
@@ -1165,11 +1165,7 @@
 964
 965
 966
-967
-968
-969
-970
-971</td><td class="line-coverage"><span class="cline-any cline-neutral">&nbsp;</span>
+967</td><td class="line-coverage"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1307,6 +1303,7 @@
 <span class="cline-any cline-yes">1</span>
 <span class="cline-any cline-yes">1</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
 <span class="cline-any cline-yes">1</span>
 <span class="cline-any cline-yes">1</span>
 <span class="cline-any cline-yes">1</span>
@@ -1409,6 +1406,16 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-yes">60</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">60</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1477,6 +1484,8 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1663,20 +1672,9 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">12</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">12</span>
-<span class="cline-any cline-yes">48</span>
-<span class="cline-any cline-yes">48</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">48</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">12</span>
+<span class="cline-any cline-yes">12</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">12</span>
@@ -2091,12 +2089,6 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">12</span>
-<span class="cline-any cline-yes">12</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">12</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -2230,7 +2222,7 @@
 //   - **Event: 'timeout'**: HTTP/2 sockets won't timeout because of application level keepalive
 //     (PING frames)
 //   - **Event: 'connect'**: not in the spec, yet (see [http-spec#230][connect])
-//   - **server.setTimeout(msecs, callback)**
+//   - **server.setTimeout(msecs, [callback])**
 //   - **server.timeout**
 //
 // - **Class: http2.ServerResponse**
@@ -2280,6 +2272,7 @@ var https = require('https');
 exports.STATUS_CODES = http.STATUS_CODES;
 exports.IncomingMessage = IncomingMessage;
 exports.OutgoingMessage = OutgoingMessage;
+exports.Endpoint = Endpoint;
 &nbsp;
 var deprecatedHeaders = [
   'connection',
@@ -2379,6 +2372,16 @@ IncomingMessage.prototype._onTrailers = function _onTrailers(trailers) {
 &nbsp;
 IncomingMessage.prototype.setTimeout = noop;
 &nbsp;
+IncomingMessage.prototype._checkSpecialHeader = function _checkSpecialHeader(key, value) {
+  <span class="missing-if-branch" title="if path not taken"" >I</span>if ((typeof value !== 'string') || (value.length === 0)) {
+<span class="cstat-no" title="statement not covered" >    this._log.error({ key: key, value: value }, 'Invalid special header field');</span>
+<span class="cstat-no" title="statement not covered" >    this.stream.emit('error', 'PROTOCOL_ERROR');</span>
+  }
+&nbsp;
+  return value;
+}
+;
+&nbsp;
 // OutgoingMessage class
 // ---------------------
 &nbsp;
@@ -2390,7 +2393,7 @@ function OutgoingMessage() {
   this._trailers = undefined;
   this.headersSent = false;
 &nbsp;
-  this.on('finish', this._finish.bind(this));
+  this.on('finish', this._finish);
 }
 OutgoingMessage.prototype = Object.create(Writable.prototype, { constructor: { value: OutgoingMessage } });
 &nbsp;
@@ -2446,6 +2449,8 @@ OutgoingMessage.prototype.addTrailers = function addTrailers(trailers) {
 };
 &nbsp;
 OutgoingMessage.prototype.setTimeout = noop;
+&nbsp;
+OutgoingMessage.prototype._checkSpecialHeader = IncomingMessage.prototype._checkSpecialHeader;
 &nbsp;
 // Server side
 // ===========
@@ -2581,7 +2586,7 @@ Object.defineProperty(Server.prototype, 'timeout', {
 // `server` to `this` since that means a listener. Instead, we forward the subscriptions.
 Server.prototype.on = function on(event, listener) {
   <span class="missing-if-branch" title="if path not taken"" >I</span>if ((event === 'upgrade') || (event === 'timeout')) {
-<span class="cstat-no" title="statement not covered" >    this._server.on(event, listener.bind(this));</span>
+<span class="cstat-no" title="statement not covered" >    this._server.on(event, listener &amp;&amp; listener.bind(this));</span>
   } else {
     EventEmitter.prototype.on.call(this, event, listener);
   }
@@ -2632,21 +2637,10 @@ IncomingRequest.prototype._onHeaders = function _onHeaders(headers) {
   // * All HTTP/2.0 requests MUST include exactly one valid value for all of these header fields. A
   //   server MUST treat the absence of any of these header fields, presence of multiple values, or
   //   an invalid value as a stream error of type PROTOCOL_ERROR.
-  var mapping = {
-    ':method': 'method',
-    ':scheme': 'scheme',
-    ':host': 'host',
-    ':path': 'url'
-  };
-  for (var name in mapping) {
-    var value = headers[name];
-    <span class="missing-if-branch" title="if path not taken"" >I</span>if ((typeof value !== 'string') || (value.length === 0)) {
-<span class="cstat-no" title="statement not covered" >      this._log.error({ key: name, value: value }, 'Invalid or missing special header field');</span>
-<span class="cstat-no" title="statement not covered" >      this.stream.emit('error', 'PROTOCOL_ERROR');</span>
-<span class="cstat-no" title="statement not covered" >      return;</span>
-    }
-    this[mapping[name]] = value;
-  }
+  this.method = this._checkSpecialHeader(':method', headers[':method']);
+  this.scheme = this._checkSpecialHeader(':scheme', headers[':scheme']);
+  this.host   = this._checkSpecialHeader(':host'  , headers[':host']  );
+  this.url    = this._checkSpecialHeader(':path'  , headers[':path']  );
 &nbsp;
   // * Host header is included in the headers object for backwards compatibility.
   this.headers.host = this.host;
@@ -2748,7 +2742,7 @@ OutgoingResponse.prototype.push = function push(options) {
 // `request`. See `Server.prototype.on` for explanation.
 OutgoingResponse.prototype.on = function on(event, listener) {
   <span class="missing-if-branch" title="if path not taken"" >I</span>if (this.request &amp;&amp; (<span class="branch-1 cbranch-no" title="branch not covered" >event === 'timeout')</span>) {
-<span class="cstat-no" title="statement not covered" >    this.request.on(event, listener.bind(this));</span>
+<span class="cstat-no" title="statement not covered" >    this.request.on(event, listener &amp;&amp; listener.bind(this));</span>
   } else {
     OutgoingMessage.prototype.on.call(this, event, listener);
   }
@@ -2988,7 +2982,7 @@ OutgoingRequest.prototype.setPriority = <span class="fstat-no" title="function n
 // `request`. See `Server.prototype.on` for explanation.
 OutgoingRequest.prototype.on = function on(event, listener) {
   <span class="missing-if-branch" title="if path not taken"" >I</span>if (this.request &amp;&amp; (<span class="branch-1 cbranch-no" title="branch not covered" >event === 'upgrade')</span>) {
-<span class="cstat-no" title="statement not covered" >    this.request.on(event, listener.bind(this));</span>
+<span class="cstat-no" title="statement not covered" >    this.request.on(event, listener &amp;&amp; listener.bind(this));</span>
   } else {
     OutgoingMessage.prototype.on.call(this, event, listener);
   }
@@ -3062,13 +3056,7 @@ IncomingResponse.prototype._onHeaders = function _onHeaders(headers) {
   //   values, or an invalid value as a stream error of type PROTOCOL_ERROR.
   // * HTTP/2.0 does not define a way to carry the reason phrase that is included in an HTTP/1.1
   //   status line.
-  var statusCode = headers[':status'];
-  <span class="missing-if-branch" title="if path not taken"" >I</span>if ((typeof statusCode !== 'string') || (statusCode.length === 0)) {
-<span class="cstat-no" title="statement not covered" >    this._log.error({ key: ':status', value: statusCode }, 'Invalid header field');</span>
-<span class="cstat-no" title="statement not covered" >    this.stream.emit('error', 'PROTOCOL_ERROR');</span>
-<span class="cstat-no" title="statement not covered" >    return;</span>
-  }
-  this.statusCode = statusCode;
+  this.statusCode = this._checkSpecialHeader(':status', headers[':status']);
 &nbsp;
   // * Handling regular headers.
   IncomingMessage.prototype._onHeaders.call(this, headers);
@@ -3114,7 +3102,7 @@ IncomingPromise.prototype._onPromise = OutgoingRequest.prototype._onPromise;
 
 </div>
 <div class="footer">
-    <div class="meta">Generated by <a href="http://istanbul-js.org/" target="_blank">istanbul</a> at Mon Sep 09 2013 22:37:39 GMT+0200 (CEST)</div>
+    <div class="meta">Generated by <a href="http://istanbul-js.org/" target="_blank">istanbul</a> at Sun Sep 15 2013 21:53:43 GMT+0200 (CEST)</div>
 </div>
 
 <script src="../prettify.js"></script>
