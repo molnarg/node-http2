@@ -1,6 +1,13 @@
 Version history
 ===============
 
+### 0.4.1 (2013-09-15) ###
+
+* Major performance improvements
+* Minor improvements to error handling
+* [Blog post](http://gabor.molnar.es/blog/2013/09/15/gsoc-week-number-13/)
+* [Tarball](https://github.com/molnarg/node-http2/archive/node-http2-0.4.1.tar.gz)
+
 ### 0.4.0 (2013-09-09) ###
 
 * Upgrade to the latest draft: [draft-ietf-httpbis-http2-06][draft-06]
