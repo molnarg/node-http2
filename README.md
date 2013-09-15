@@ -116,12 +116,12 @@ point to understand the code.
 ### Test coverage ###
 
 To generate a code coverage report, run `npm test --coverage` (which runs very slowly, be patient).
-Code coverage summary as of version 0.4.0:
+Code coverage summary as of version 0.4.1:
 ```
-Statements   : 93.44% ( 1482/1586 )
-Branches     : 86.13% ( 559/649 )
-Functions    : 92.34% ( 193/209 )
-Lines        : 93.42% ( 1476/1580 )
+Statements   : 93.33% ( 1538/1648 )
+Branches     : 84.91% ( 585/689 )
+Functions    : 95.65% ( 198/207 )
+Lines        : 93.3% ( 1532/1642 )
 ```
 
 There's a hosted version of the detailed (line-by-line) coverage report
