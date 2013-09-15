@@ -2,6 +2,8 @@ var fs = require('fs');
 var path = require('path');
 var http2 = require('..');
 
+var serverjs = fs.readFileSync(path.join(__dirname, './server.js'));
+
 if (process.env.HTTP2_LOG) {
   var log = require('bunyan').createLogger({
     name: 'server',
@@ -20,7 +22,13 @@ var options = {
 var server = http2.createServer(options, function(request, response) {
   var filename = path.join(__dirname, request.url);
 
-  if ((filename.indexOf(__dirname) === 0) && fs.existsSync(filename) && fs.statSync(filename).isFile()) {
+  // Serving server.js from cache. Useful for microbenchmarks.
+  if (request.url === '/server.js') {
+    response.end(serverjs);
+  }
+
+  // Reading file from disk if it exists and is safe.
+  else if ((filename.indexOf(__dirname) === 0) && fs.existsSync(filename) && fs.statSync(filename).isFile()) {
     response.writeHead('200');
 
     // If they download the certificate, push the private key too, they might need it.
@@ -31,8 +39,10 @@ var server = http2.createServer(options, function(request, response) {
     }
 
     fs.createReadStream(filename).pipe(response);
+  }
 
-  } else {
+  // Otherwise responding with 404.
+  else {
     response.writeHead('404');
     response.end();
   }
