@@ -2,13 +2,19 @@ function noop() {}
 exports.noop = noop;
 
 if (process.env.HTTP2_LOG) {
-  exports.log = require('bunyan').createLogger({
-    name: 'test',
-    stream: process.stderr,
-    level: process.env.HTTP2_LOG,
-    serializers: require('../lib/http').serializers
-  });
+  exports.createLogger = function(name) {
+    return require('bunyan').createLogger({
+      name: name,
+      stream: process.stderr,
+      level: process.env.HTTP2_LOG,
+      serializers: require('../lib/http').serializers
+    });
+  };
+  exports.log = exports.createLogger('test');
 } else {
+  exports.createLogger = function() {
+    return exports.log;
+  };
   exports.log = {
     fatal: noop,
     error: noop,

@@ -4,19 +4,10 @@ var http2 = require('..');
 
 var serverjs = fs.readFileSync(path.join(__dirname, './server.js'));
 
-if (process.env.HTTP2_LOG) {
-  var log = require('bunyan').createLogger({
-    name: 'server',
-    stream: process.stderr,
-    level: process.env.HTTP2_LOG,
-    serializers: http2.serializers
-  });
-}
-
 var options = {
   key: fs.readFileSync(path.join(__dirname, '/localhost.key')),
   cert: fs.readFileSync(path.join(__dirname, '/localhost.crt')),
-  log: log
+  log: require('../test/util').createLogger('server')
 };
 
 var server = http2.createServer(options, function(request, response) {
