@@ -99,7 +99,7 @@ exports.Compressor = Compressor;
 exports.Decompressor = Decompressor;
 
 <span class="keyword">var</span> TransformStream = require(<span class="string">'stream'</span>).Transform;
-<span class="keyword">var</span> assert = process.env.HTTP2_ASSERT ? require(<span class="string">'assert'</span>) : <span class="function"><span class="keyword">function</span> <span class="title">noop</span><span class="params">()</span> {</span>};
+<span class="keyword">var</span> assert = require(<span class="string">'assert'</span>);
 <span class="keyword">var</span> util = require(<span class="string">'util'</span>);</pre></div></div>
             
         </li>
@@ -170,6 +170,19 @@ process (not part of the spec, <code>emitted</code> flag)</li>
 <li>Headers to be kept: headers that should not be removed as the last step of the encoding process
 (not part of the spec, <code>keep</code> flag)</li>
 </ul>
+<p>Relations of the sets:</p>
+<pre><code>,----------------------------------.
+|           Header Table           |
+|                                  |
+|  ,----------------------------.  |
+|  |        Reference Set       |  |
+|  |                            |  |
+|  |  ,---------.  ,---------.  |  |
+|  |  |  Keep   |  | Emitted |  |  |
+|  |  |         |  |         |  |  |
+|  |  `---------&#39;  `---------&#39;  |  |
+|  `----------------------------&#39;  |
+`----------------------------------&#39;</code></pre>
 
             </div>
             
@@ -206,7 +219,7 @@ length in bytes, of its value&#39;s length in bytes and of 32 bytes.</li>
             <div class="content"><div class='highlight'><pre><span class="keyword">var</span> DEFAULT_HEADER_TABLE_LIMIT = <span class="number">4096</span>;
 
 <span class="function"><span class="keyword">function</span> <span class="title">size</span><span class="params">(entry)</span> {</span>
-  <span class="keyword">return</span> <span class="keyword">new</span> Buffer(entry[<span class="number">0</span>] + entry[<span class="number">1</span>], <span class="string">'utf8'</span>).length + <span class="number">32</span>;
+  <span class="keyword">return</span> (<span class="keyword">new</span> Buffer(entry[<span class="number">0</span>] + entry[<span class="number">1</span>], <span class="string">'utf8'</span>)).length + <span class="number">32</span>;
 }
 
 <span class="function"><span class="keyword">function</span> <span class="title">tableSize</span><span class="params">(table)</span> {</span>
@@ -711,8 +724,33 @@ TransformStream class. It processes the input headers one by one:</p>
                 <a class="pilcrow" href="#section-24">&#182;</a>
               </div>
               <ul>
-<li>if there&#39;s full match, it will be an indexed representation (or more than one) depending
-on its presence in the reference, the emitted and the keep set</li>
+<li><p>if there&#39;s full match, it will be an indexed representation (or more than one) depending
+on its presence in the reference, the emitted and the keep set:</p>
+<ul>
+<li><p>If the entry is outside the reference set, then a single indexed representation puts the
+entry into it and emits the header.</p>
+</li>
+<li><p>If it&#39;s already in the keep set, then 4 indexed representations are needed:</p>
+<ol>
+<li>removes it from the reference set</li>
+<li>puts it back in the reference set and emits the header once</li>
+<li>removes it again</li>
+<li>puts it back and emits it again for the second time</li>
+</ol>
+<p>It won&#39;t be emitted at the end of the decoding process since it&#39;s now in the emitted set.</p>
+</li>
+<li><p>If it&#39;s in the emitted set, then 2 indexed representations are needed:</p>
+<ol>
+<li>removes it from the reference set</li>
+<li>puts it back in the reference set and emits the header once</li>
+</ol>
+</li>
+<li><p>If it&#39;s in the reference set, but outside the keep set and the emitted set, then this
+header is common with the previous header set, and is still untouched. We mark it to keep
+in the reference set (that means don&#39;t remove at the end of the encoding process).</p>
+</li>
+</ul>
+</li>
 </ul>
 
             </div>
@@ -1291,7 +1329,7 @@ marks the last frame and the END_STREAM flag which is always false before the en
         };
       }
       <span class="keyword">if</span> (chunkFrame.type !== <span class="string">'PUSH_PROMISE'</span>) {
-        chunkFrame.flags.END_STREAM = last &amp;&amp; frame.END_STREAM;
+        chunkFrame.flags.END_STREAM = last &amp;&amp; frame.flags.END_STREAM;
       }
       chunkFrame.data = chunks[i];
 

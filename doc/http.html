@@ -228,7 +228,7 @@ but will function normally when falling back to using HTTP/1.1.</p>
 <li><strong>Event: &#39;timeout&#39;</strong>: HTTP/2 sockets won&#39;t timeout because of application level keepalive
 (PING frames)</li>
 <li><strong>Event: &#39;connect&#39;</strong>: not in the spec, yet (see <a href="https://github.com/http2/http2-spec/issues/230">http-spec#230</a>)</li>
-<li><strong>server.setTimeout(msecs, callback)</strong></li>
+<li><strong>server.setTimeout(msecs, [callback])</strong></li>
 <li><strong>server.timeout</strong></li>
 </ul>
 </li>
@@ -295,6 +295,7 @@ one connection per host.</li>
 exports.STATUS_CODES = http.STATUS_CODES;
 exports.IncomingMessage = IncomingMessage;
 exports.OutgoingMessage = OutgoingMessage;
+exports.Endpoint = Endpoint;
 
 <span class="keyword">var</span> deprecatedHeaders = [
   <span class="string">'connection'</span>,
@@ -571,7 +572,17 @@ IncomingMessage.prototype._onTrailers = <span class="function"><span class="keyw
   <span class="keyword">this</span>.trailers = trailers;
 };
 
-IncomingMessage.prototype.setTimeout = noop;</pre></div></div>
+IncomingMessage.prototype.setTimeout = noop;
+
+IncomingMessage.prototype._checkSpecialHeader = <span class="function"><span class="keyword">function</span> <span class="title">_checkSpecialHeader</span><span class="params">(key, value)</span> {</span>
+  <span class="keyword">if</span> ((<span class="keyword">typeof</span> value !== <span class="string">'string'</span>) || (value.length === <span class="number">0</span>)) {
+    <span class="keyword">this</span>._log.error({ key: key, value: value }, <span class="string">'Invalid special header field'</span>);
+    <span class="keyword">this</span>.stream.emit(<span class="string">'error'</span>, <span class="string">'PROTOCOL_ERROR'</span>);
+  }
+
+  <span class="keyword">return</span> value;
+}
+;</pre></div></div>
             
         </li>
         
@@ -621,7 +632,7 @@ IncomingMessage.prototype.setTimeout = noop;</pre></div></div>
   <span class="keyword">this</span>._trailers = <span class="literal">undefined</span>;
   <span class="keyword">this</span>.headersSent = <span class="literal">false</span>;
 
-  <span class="keyword">this</span>.on(<span class="string">'finish'</span>, <span class="keyword">this</span>._finish.bind(<span class="keyword">this</span>));
+  <span class="keyword">this</span>.on(<span class="string">'finish'</span>, <span class="keyword">this</span>._finish);
 }
 OutgoingMessage.prototype = Object.create(Writable.prototype, { constructor: { value: OutgoingMessage } });
 
@@ -676,7 +687,9 @@ OutgoingMessage.prototype.addTrailers = <span class="function"><span class="keyw
   <span class="keyword">this</span>._trailers = trailers;
 };
 
-OutgoingMessage.prototype.setTimeout = noop;</pre></div></div>
+OutgoingMessage.prototype.setTimeout = noop;
+
+OutgoingMessage.prototype._checkSpecialHeader = IncomingMessage.prototype._checkSpecialHeader;</pre></div></div>
             
         </li>
         
@@ -927,7 +940,7 @@ listening on the event or not. In these cases, we can not simply forward the eve
             
             <div class="content"><div class='highlight'><pre>Server.prototype.on = <span class="function"><span class="keyword">function</span> <span class="title">on</span><span class="params">(event, listener)</span> {</span>
   <span class="keyword">if</span> ((event === <span class="string">'upgrade'</span>) || (event === <span class="string">'timeout'</span>)) {
-    <span class="keyword">this</span>._server.on(event, listener.bind(<span class="keyword">this</span>));
+    <span class="keyword">this</span>._server.on(event, listener &amp;&amp; listener.bind(<span class="keyword">this</span>));
   } <span class="keyword">else</span> {
     EventEmitter.prototype.on.call(<span class="keyword">this</span>, event, listener);
   }
@@ -1039,21 +1052,10 @@ an invalid value as a stream error of type PROTOCOL_ERROR.</li>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>  <span class="keyword">var</span> mapping = {
-    <span class="string">':method'</span>: <span class="string">'method'</span>,
-    <span class="string">':scheme'</span>: <span class="string">'scheme'</span>,
-    <span class="string">':host'</span>: <span class="string">'host'</span>,
-    <span class="string">':path'</span>: <span class="string">'url'</span>
-  };
-  <span class="keyword">for</span> (<span class="keyword">var</span> name <span class="keyword">in</span> mapping) {
-    <span class="keyword">var</span> value = headers[name];
-    <span class="keyword">if</span> ((<span class="keyword">typeof</span> value !== <span class="string">'string'</span>) || (value.length === <span class="number">0</span>)) {
-      <span class="keyword">this</span>._log.error({ key: name, value: value }, <span class="string">'Invalid or missing special header field'</span>);
-      <span class="keyword">this</span>.stream.emit(<span class="string">'error'</span>, <span class="string">'PROTOCOL_ERROR'</span>);
-      <span class="keyword">return</span>;
-    }
-    <span class="keyword">this</span>[mapping[name]] = value;
-  }</pre></div></div>
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">this</span>.method = <span class="keyword">this</span>._checkSpecialHeader(<span class="string">':method'</span>, headers[<span class="string">':method'</span>]);
+  <span class="keyword">this</span>.scheme = <span class="keyword">this</span>._checkSpecialHeader(<span class="string">':scheme'</span>, headers[<span class="string">':scheme'</span>]);
+  <span class="keyword">this</span>.host   = <span class="keyword">this</span>._checkSpecialHeader(<span class="string">':host'</span>  , headers[<span class="string">':host'</span>]  );
+  <span class="keyword">this</span>.url    = <span class="keyword">this</span>._checkSpecialHeader(<span class="string">':path'</span>  , headers[<span class="string">':path'</span>]  );</pre></div></div>
             
         </li>
         
@@ -1231,7 +1233,7 @@ OutgoingResponse.prototype.push = <span class="function"><span class="keyword">f
             
             <div class="content"><div class='highlight'><pre>OutgoingResponse.prototype.on = <span class="function"><span class="keyword">function</span> <span class="title">on</span><span class="params">(event, listener)</span> {</span>
   <span class="keyword">if</span> (<span class="keyword">this</span>.request &amp;&amp; (event === <span class="string">'timeout'</span>)) {
-    <span class="keyword">this</span>.request.on(event, listener.bind(<span class="keyword">this</span>));
+    <span class="keyword">this</span>.request.on(event, listener &amp;&amp; listener.bind(<span class="keyword">this</span>));
   } <span class="keyword">else</span> {
     OutgoingMessage.prototype.on.call(<span class="keyword">this</span>, event, listener);
   }
@@ -1605,7 +1607,7 @@ OutgoingRequest.prototype.setPriority = <span class="function"><span class="keyw
             
             <div class="content"><div class='highlight'><pre>OutgoingRequest.prototype.on = <span class="function"><span class="keyword">function</span> <span class="title">on</span><span class="params">(event, listener)</span> {</span>
   <span class="keyword">if</span> (<span class="keyword">this</span>.request &amp;&amp; (event === <span class="string">'upgrade'</span>)) {
-    <span class="keyword">this</span>.request.on(event, listener.bind(<span class="keyword">this</span>));
+    <span class="keyword">this</span>.request.on(event, listener &amp;&amp; listener.bind(<span class="keyword">this</span>));
   } <span class="keyword">else</span> {
     OutgoingMessage.prototype.on.call(<span class="keyword">this</span>, event, listener);
   }
@@ -1764,13 +1766,7 @@ status line.</li>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>  <span class="keyword">var</span> statusCode = headers[<span class="string">':status'</span>];
-  <span class="keyword">if</span> ((<span class="keyword">typeof</span> statusCode !== <span class="string">'string'</span>) || (statusCode.length === <span class="number">0</span>)) {
-    <span class="keyword">this</span>._log.error({ key: <span class="string">':status'</span>, value: statusCode }, <span class="string">'Invalid header field'</span>);
-    <span class="keyword">this</span>.stream.emit(<span class="string">'error'</span>, <span class="string">'PROTOCOL_ERROR'</span>);
-    <span class="keyword">return</span>;
-  }
-  <span class="keyword">this</span>.statusCode = statusCode;</pre></div></div>
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">this</span>.statusCode = <span class="keyword">this</span>._checkSpecialHeader(<span class="string">':status'</span>, headers[<span class="string">':status'</span>]);</pre></div></div>
             
         </li>
         

@@ -81,7 +81,7 @@
               
             </div>
             
-            <div class="content"><div class='highlight'><pre><span class="keyword">var</span> assert = process.env.HTTP2_ASSERT ? require(<span class="string">'assert'</span>) : <span class="function"><span class="keyword">function</span> <span class="title">noop</span><span class="params">()</span> {</span>};</pre></div></div>
+            <div class="content"><div class='highlight'><pre><span class="keyword">var</span> assert = require(<span class="string">'assert'</span>);</pre></div></div>
             
         </li>
         
@@ -164,10 +164,6 @@ exports.Flow = Flow;</pre></div></div>
 <li><p><strong>new Flow([flowControlId])</strong>: creating a new flow that will listen for WINDOW_UPDATES frames
 with the given <code>flowControlId</code> (or every update frame if not given)</p>
 </li>
-<li><p><strong>Event: &#39;receiving&#39; (frame)</strong>: there&#39;s an incoming frame</p>
-</li>
-<li><p><strong>Event: &#39;sending&#39; (frame)</strong>: a frame was added to the output queue</p>
-</li>
 <li><p><strong>_send()</strong>: called when more frames should be pushed. The child class is expected to override
 this (instead of the <code>_read</code> method of the Duplex class).</p>
 </li>
@@ -179,13 +175,10 @@ expected to override this (instead of the <code>_write</code> method of the Dupl
 full, and <code>null</code> if did not push the frame into the output queue (instead, it pushed it into
 the flow control queue).</p>
 </li>
-<li><p><strong>_push(frame, remainderCallback): bool</strong>: like push, but never puts the frame into the
-flow control queue.</p>
-<p>Instead, it pushes directly into the output queue if possible (according to the flow control
-window) and calls <code>remainderCallback</code> with the remaining non-pushable part of the frame. It is
-capable of dividing DATA frames into multiple chunks.</p>
-<p>Use this instead of <code>push</code> if you always want to have empty flow control queue (but never mix
-the two).</p>
+<li><p><strong>read(limit): frame</strong>: like the regular <code>read</code>, but the &#39;flow control size&#39; (0 for non-DATA
+frames, length of the payload for DATA frames) of the returned frame will be under <code>limit</code>.
+Small exception: pass -1 as <code>limit</code> if the max. flow control size is 0. <code>read(0)</code> means the
+same thing as <a href="http://nodejs.org/api/stream.html#stream_stream_read_0">in the original API</a>.</p>
 </li>
 <li><p><strong>getLastQueuedFrame(): frame</strong>: returns the last frame in output buffers</p>
 </li>
@@ -231,7 +224,6 @@ control window size of 65535 bytes.</p>
   <span class="keyword">this</span>._window = <span class="keyword">this</span>._initialWindow = INITIAL_WINDOW_SIZE;
   <span class="keyword">this</span>._flowControlId = flowControlId;
   <span class="keyword">this</span>._queue = [];
-
   <span class="keyword">this</span>._ended = <span class="literal">false</span>;
   <span class="keyword">this</span>._received = <span class="number">0</span>;
   <span class="keyword">this</span>._remoteFlowControlDisabled = <span class="literal">false</span>;
@@ -284,8 +276,6 @@ incoming frame is a WINDOW_UPDATE.</p>
             </div>
             
             <div class="content"><div class='highlight'><pre>Flow.prototype._write = <span class="function"><span class="keyword">function</span> <span class="title">_write</span><span class="params">(frame, encoding, callback)</span> {</span>
-  <span class="keyword">this</span>.emit(<span class="string">'receiving'</span>, frame);
-
   <span class="keyword">if</span> (frame.flags.END_STREAM) {
     <span class="keyword">this</span>._ended = <span class="literal">true</span>;
   }
@@ -329,6 +319,7 @@ a WINDOW_UPDATE that restores the flow control window of the remote end.</p>
   <span class="keyword">if</span> (!<span class="keyword">this</span>._ended &amp;&amp; !<span class="keyword">this</span>._remoteFlowControlDisabled &amp;&amp; (<span class="keyword">this</span>._received &gt; <span class="number">0</span>)) {
     <span class="keyword">this</span>.push({
       type: <span class="string">'WINDOW_UPDATE'</span>,
+      flags: {},
       stream: <span class="keyword">this</span>._flowControlId,
       window_size: <span class="keyword">this</span>._received
     });
@@ -450,20 +441,19 @@ the extent it is possible with respect to the window size and output queue feedb
             </div>
             
             <div class="content"><div class='highlight'><pre>  <span class="keyword">else</span> <span class="keyword">if</span> (<span class="keyword">this</span>._window &gt; <span class="number">0</span>) {
-    <span class="keyword">var</span> frame;
-    <span class="keyword">var</span> moreNeeded = <span class="literal">true</span>;
-    <span class="keyword">var</span> unshiftRemainder = <span class="keyword">this</span>._queue.unshift.bind(<span class="keyword">this</span>._queue);
-    <span class="keyword">while</span> (moreNeeded &amp;&amp; (frame = <span class="keyword">this</span>._queue.shift())) {
-      moreNeeded = <span class="keyword">this</span>._push(frame, unshiftRemainder);
-    }
+    <span class="keyword">this</span>._readableState.sync = <span class="literal">true</span>; <span class="comment">// to avoid reentrant calls</span>
+    <span class="keyword">do</span> {
+      <span class="keyword">var</span> moreNeeded = <span class="keyword">this</span>._push(<span class="keyword">this</span>._queue[<span class="number">0</span>]);
+      <span class="keyword">if</span> (moreNeeded !== <span class="literal">null</span>) {
+        <span class="keyword">this</span>._queue.shift();
+      }
+    } <span class="keyword">while</span> (moreNeeded &amp;&amp; (<span class="keyword">this</span>._queue.length &gt; <span class="number">0</span>));
+    <span class="keyword">this</span>._readableState.sync = <span class="literal">false</span>;
 
-    assert((moreNeeded == <span class="literal">false</span>) ||                                     <span class="comment">// output queue is full</span>
-           (<span class="keyword">this</span>._queue.length === <span class="number">0</span>) ||                                <span class="comment">// flow control queue is empty</span>
-           ((<span class="keyword">this</span>._window === <span class="number">0</span>) &amp;&amp; (<span class="keyword">this</span>._queue[<span class="number">0</span>].type === <span class="string">'DATA'</span>))); <span class="comment">// waiting for window update</span>
-  }
-
-  <span class="keyword">this</span>._readableState.reading = <span class="literal">false</span>;
-};</pre></div></div>
+    assert((moreNeeded == <span class="literal">false</span>) ||                              <span class="comment">// * output queue is full</span>
+           (<span class="keyword">this</span>._queue.length === <span class="number">0</span>) ||                         <span class="comment">// * flow control queue is empty</span>
+           (!<span class="keyword">this</span>._window &amp;&amp; (<span class="keyword">this</span>._queue[<span class="number">0</span>].type === <span class="string">'DATA'</span>))); <span class="comment">// * waiting for window update</span>
+  }</pre></div></div>
             
         </li>
         
@@ -474,66 +464,18 @@ the extent it is possible with respect to the window size and output queue feedb
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-19">&#182;</a>
               </div>
-              <p><code>_push(frame)</code> is the low-level version of <code>push</code>. Use this instead of <code>push</code> if you always want
-to have empty flow control queue (but never mix the two). It pushes <code>frame</code> into the output queue
-and decreases the flow control window size. It is capable of splitting DATA frames into smaller
-parts, if the window size is not enough to push the whole frame. It calls <code>remainderCallback</code>
-synchronously before returning with the frame it was not able to push to the output queue. The
-remainder may be the whole frame or the remaining part of a DATA frame. The return value is
-similar to <code>push</code> except that it returns <code>null</code> if it did not push anything to the output queue.</p>
+              <ul>
+<li>otherwise, come back when the flow control window is positive</li>
+</ul>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre><span class="keyword">var</span> MAX_PAYLOAD_SIZE = <span class="number">4096</span>; <span class="comment">// Must not be greater than MAX_HTTP_PAYLOAD_SIZE which is 16383</span>
-
-Flow.prototype._push = <span class="function"><span class="keyword">function</span> <span class="title">_push</span><span class="params">(frame, remainderCallback)</span> {</span>
-  <span class="keyword">do</span> {
-    <span class="keyword">var</span> forwardable = <span class="literal">undefined</span>, remainder = <span class="literal">undefined</span>;
-    <span class="keyword">if</span> ((frame === <span class="literal">null</span>) || (frame.type !== <span class="string">'DATA'</span>) ||
-        ((frame.data.length &lt;= <span class="keyword">this</span>._window) &amp;&amp; (frame.data.length &lt;= MAX_PAYLOAD_SIZE))) {
-      forwardable = frame;
-    }
-
-    <span class="keyword">else</span> <span class="keyword">if</span> (<span class="keyword">this</span>._window &lt;= <span class="number">0</span>) {
-      remainder = frame;
-    }
-
-    <span class="keyword">else</span> {
-      <span class="keyword">var</span> chunkSize = Math.min(<span class="keyword">this</span>._window, MAX_PAYLOAD_SIZE);
-      forwardable = {
-        stream: frame.stream,
-        type: <span class="string">'DATA'</span>,
-        flags: {},
-        data: frame.data.slice(<span class="number">0</span>, chunkSize)
-      };
-
-      <span class="keyword">this</span>._log.trace({ frame: frame, size: frame.data.length, forwardable: chunkSize },
-                      <span class="string">'Splitting out forwardable part of a DATA frame.'</span>);
-      frame.data = frame.data.slice(chunkSize);
-      remainder = frame;
-    }
-
-    <span class="keyword">var</span> moreNeeded = <span class="literal">null</span>;
-    <span class="keyword">if</span> (forwardable !== <span class="literal">undefined</span>) {
-      <span class="keyword">this</span>._log.trace({ frame: forwardable }, <span class="string">'Pushing frame into the output queue'</span>);
-      <span class="keyword">if</span> (forwardable &amp;&amp; (forwardable.type === <span class="string">'DATA'</span>) &amp;&amp; (<span class="keyword">this</span>._window !== <span class="literal">Infinity</span>)) {
-        <span class="keyword">this</span>._log.trace({ window: <span class="keyword">this</span>._window, by: forwardable.data.length },
-                         <span class="string">'Decreasing flow control window size.'</span>);
-        <span class="keyword">this</span>._window -= forwardable.data.length;
-        assert(<span class="keyword">this</span>._window &gt;= <span class="number">0</span>);
-      }
-      moreNeeded = Duplex.prototype.push.call(<span class="keyword">this</span>, forwardable);
-    }
-
-    frame = remainder;
-  } <span class="keyword">while</span> (remainder &amp;&amp; moreNeeded);
-
-  <span class="keyword">if</span> (remainder !== <span class="literal">undefined</span>) {
-    remainderCallback(remainder);
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">else</span> {
+    <span class="keyword">this</span>.once(<span class="string">'window_update'</span>, <span class="keyword">this</span>._read);
   }
+};
 
-  <span class="keyword">return</span> moreNeeded;
-};</pre></div></div>
+<span class="keyword">var</span> MAX_PAYLOAD_SIZE = <span class="number">4096</span>; <span class="comment">// Must not be greater than MAX_HTTP_PAYLOAD_SIZE which is 16383</span></pre></div></div>
             
         </li>
         
@@ -544,26 +486,20 @@ Flow.prototype._push = <span class="function"><span class="keyword">function</sp
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-20">&#182;</a>
               </div>
-              <p>Push <code>frame</code> into the flow control queue, or if it&#39;s empty, then directly into the output queue</p>
+              <p><code>read(limit)</code> is like the <code>read</code> of the Readable class, but it guarantess that the &#39;flow control
+size&#39; (0 for non-DATA frames, length of the payload for DATA frames) of the returned frame will
+be under <code>limit</code>.</p>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>Flow.prototype.push = <span class="function"><span class="keyword">function</span> <span class="title">push</span><span class="params">(frame)</span> {</span>
-  <span class="keyword">if</span> (frame === <span class="literal">null</span>) {
-    <span class="keyword">this</span>._log.debug(<span class="string">'Enqueueing outgoing End Of Stream'</span>);
-  } <span class="keyword">else</span> {
-    frame.flags = frame.flags || {};
-    <span class="keyword">this</span>._log.debug({ frame: frame }, <span class="string">'Enqueueing outgoing frame'</span>);
-    <span class="keyword">this</span>.emit(<span class="string">'sending'</span>, frame);
-  }
-
-  <span class="keyword">if</span> (<span class="keyword">this</span>._queue.length === <span class="number">0</span>) {
-    <span class="keyword">return</span> <span class="keyword">this</span>._push(frame, <span class="keyword">this</span>._queue.push.bind(<span class="keyword">this</span>._queue));
-  } <span class="keyword">else</span> {
-    <span class="keyword">this</span>._queue.push(frame);
-    <span class="keyword">return</span> <span class="literal">null</span>;
-  }
-};</pre></div></div>
+            <div class="content"><div class='highlight'><pre>Flow.prototype.read = <span class="function"><span class="keyword">function</span> <span class="title">read</span><span class="params">(limit)</span> {</span>
+  <span class="keyword">if</span> (limit === <span class="number">0</span>) {
+    <span class="keyword">return</span> Duplex.prototype.read.call(<span class="keyword">this</span>, <span class="number">0</span>);
+  } <span class="keyword">else</span> <span class="keyword">if</span> (limit === -<span class="number">1</span>) {
+    limit = <span class="number">0</span>;
+  } <span class="keyword">else</span> <span class="keyword">if</span> ((limit === <span class="literal">undefined</span>) || (limit &gt; MAX_PAYLOAD_SIZE)) {
+    limit = MAX_PAYLOAD_SIZE;
+  }</pre></div></div>
             
         </li>
         
@@ -573,6 +509,156 @@ Flow.prototype._push = <span class="function"><span class="keyword">function</sp
               
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-21">&#182;</a>
+              </div>
+              <ul>
+<li>Looking at the first frame in the queue without pulling it out if possible. This will save
+a costly unshift if the frame proves to be too large to return.</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">var</span> firstInQueue = <span class="keyword">this</span>._readableState.buffer[<span class="number">0</span>];
+  <span class="keyword">var</span> frame = firstInQueue || Duplex.prototype.read.call(<span class="keyword">this</span>);
+
+  <span class="keyword">if</span> ((frame === <span class="literal">null</span>) || (frame.type !== <span class="string">'DATA'</span>) || (frame.data.length &lt;= limit)) {
+    <span class="keyword">if</span> (firstInQueue) {
+      Duplex.prototype.read.call(<span class="keyword">this</span>);
+    }
+    <span class="keyword">return</span> frame;
+  }
+
+  <span class="keyword">else</span> <span class="keyword">if</span> (limit &lt;= <span class="number">0</span>) {
+    <span class="keyword">if</span> (!firstInQueue) {
+      <span class="keyword">this</span>.unshift(frame);
+    }
+    <span class="keyword">return</span> <span class="literal">null</span>;
+  }
+
+  <span class="keyword">else</span> {
+    <span class="keyword">this</span>._log.trace({ frame: frame, size: frame.data.length, forwardable: limit },
+                    <span class="string">'Splitting out forwardable part of a DATA frame.'</span>);
+    <span class="keyword">var</span> forwardable = {
+      type: <span class="string">'DATA'</span>,
+      flags: {},
+      stream: frame.stream,
+      data: frame.data.slice(<span class="number">0</span>, limit)
+    };
+    frame.data = frame.data.slice(limit);
+
+    <span class="keyword">if</span> (!firstInQueue) {
+      <span class="keyword">this</span>.unshift(frame);
+    }
+    <span class="keyword">return</span> forwardable;
+  }
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-22">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-22">&#182;</a>
+              </div>
+              <p><code>_parentPush</code> pushes the given <code>frame</code> into the output queue</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>Flow.prototype._parentPush = <span class="function"><span class="keyword">function</span> <span class="title">_parentPush</span><span class="params">(frame)</span> {</span>
+  <span class="keyword">this</span>._log.trace({ frame: frame }, <span class="string">'Pushing frame into the output queue'</span>);
+
+  <span class="keyword">if</span> (frame &amp;&amp; (frame.type === <span class="string">'DATA'</span>) &amp;&amp; (<span class="keyword">this</span>._window !== <span class="literal">Infinity</span>)) {
+    <span class="keyword">this</span>._log.trace({ window: <span class="keyword">this</span>._window, by: frame.data.length },
+                    <span class="string">'Decreasing flow control window size.'</span>);
+    <span class="keyword">this</span>._window -= frame.data.length;
+    assert(<span class="keyword">this</span>._window &gt;= <span class="number">0</span>);
+  }
+
+  <span class="keyword">return</span> Duplex.prototype.push.call(<span class="keyword">this</span>, frame);
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-23">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-23">&#182;</a>
+              </div>
+              <p><code>_push(frame)</code> pushes <code>frame</code> into the output queue and decreases the flow control window size.
+It is capable of splitting DATA frames into smaller parts, if the window size is not enough to
+push the whole frame. The return value is similar to <code>push</code> except that it returns <code>null</code> if it
+did not push the whole frame to the output queue (but maybe it did push part of the frame).</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>Flow.prototype._push = <span class="function"><span class="keyword">function</span> <span class="title">_push</span><span class="params">(frame)</span> {</span>
+  <span class="keyword">var</span> data = frame &amp;&amp; (frame.type === <span class="string">'DATA'</span>) &amp;&amp; frame.data;
+
+  <span class="keyword">if</span> (!data || (data.length &lt;= <span class="keyword">this</span>._window)) {
+    <span class="keyword">return</span> <span class="keyword">this</span>._parentPush(frame);
+  }
+
+  <span class="keyword">else</span> <span class="keyword">if</span> (<span class="keyword">this</span>._window &lt;= <span class="number">0</span>) {
+    <span class="keyword">return</span> <span class="literal">null</span>;
+  }
+
+  <span class="keyword">else</span> {
+    <span class="keyword">this</span>._log.trace({ frame: frame, size: frame.data.length, forwardable: <span class="keyword">this</span>._window },
+                    <span class="string">'Splitting out forwardable part of a DATA frame.'</span>);
+    frame.data = data.slice(<span class="keyword">this</span>._window);
+    <span class="keyword">this</span>._parentPush({
+      type: <span class="string">'DATA'</span>,
+      flags: {},
+      stream: frame.stream,
+      data: data.slice(<span class="number">0</span>, <span class="keyword">this</span>._window)
+    });
+    <span class="keyword">return</span> <span class="literal">null</span>;
+  }
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-24">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-24">&#182;</a>
+              </div>
+              <p>Push <code>frame</code> into the flow control queue, or if it&#39;s empty, then directly into the output queue</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>Flow.prototype.push = <span class="function"><span class="keyword">function</span> <span class="title">push</span><span class="params">(frame)</span> {</span>
+  <span class="keyword">if</span> (frame === <span class="literal">null</span>) {
+    <span class="keyword">this</span>._log.debug(<span class="string">'Enqueueing outgoing End Of Stream'</span>);
+  } <span class="keyword">else</span> {
+    <span class="keyword">this</span>._log.debug({ frame: frame }, <span class="string">'Enqueueing outgoing frame'</span>);
+  }
+
+  <span class="keyword">var</span> moreNeeded = <span class="literal">null</span>;
+  <span class="keyword">if</span> (<span class="keyword">this</span>._queue.length === <span class="number">0</span>) {
+    moreNeeded = <span class="keyword">this</span>._push(frame);
+  }
+
+  <span class="keyword">if</span> (moreNeeded === <span class="literal">null</span>) {
+    <span class="keyword">this</span>._queue.push(frame);
+  }
+
+  <span class="keyword">return</span> moreNeeded;
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-25">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-25">&#182;</a>
               </div>
               <p><code>getLastQueuedFrame</code> returns the last frame in output buffers. This is primarily used by the
 <a href="stream.html">Stream</a> class to mark the last frame with END_STREAM flag.</p>
@@ -587,11 +673,11 @@ Flow.prototype._push = <span class="function"><span class="keyword">function</sp
         </li>
         
         
-        <li id="section-22">
+        <li id="section-26">
             <div class="annotation">
               
               <div class="pilwrap for-h2">
-                <a class="pilcrow" href="#section-22">&#182;</a>
+                <a class="pilcrow" href="#section-26">&#182;</a>
               </div>
               <h2>Outgoing frames - managing the window size</h2>
 
@@ -600,11 +686,11 @@ Flow.prototype._push = <span class="function"><span class="keyword">function</sp
         </li>
         
         
-        <li id="section-23">
+        <li id="section-27">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-23">&#182;</a>
+                <a class="pilcrow" href="#section-27">&#182;</a>
               </div>
               <p>Flow control window size is manipulated using the <code>_increaseWindow</code> method.</p>
 <ul>
@@ -630,7 +716,7 @@ Flow.prototype._increaseWindow = <span class="function"><span class="keyword">fu
       <span class="keyword">this</span>._log.error(<span class="string">'Flow control window grew too large.'</span>);
       <span class="keyword">this</span>.emit(<span class="string">'error'</span>, <span class="string">'FLOW_CONTROL_ERROR'</span>);
     } <span class="keyword">else</span> {
-      <span class="keyword">this</span>.read(<span class="number">0</span>);
+      <span class="keyword">this</span>.emit(<span class="string">'window_update'</span>);
     }
   }
 };</pre></div></div>
@@ -638,11 +724,11 @@ Flow.prototype._increaseWindow = <span class="function"><span class="keyword">fu
         </li>
         
         
-        <li id="section-24">
+        <li id="section-28">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-24">&#182;</a>
+                <a class="pilcrow" href="#section-28">&#182;</a>
               </div>
               <p>The <code>_updateWindow</code> method gets called every time there&#39;s an incoming WINDOW_UPDATE frame. It
 modifies the flow control window:</p>
@@ -663,11 +749,11 @@ specified in the frame.</li>
         </li>
         
         
-        <li id="section-25">
+        <li id="section-29">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-25">&#182;</a>
+                <a class="pilcrow" href="#section-29">&#182;</a>
               </div>
               <p>A SETTINGS frame can alter the initial flow control window size for all current streams. When the
 value of SETTINGS_INITIAL_WINDOW_SIZE changes, a receiver MUST adjust the size of all stream by
@@ -684,11 +770,11 @@ between the new value and the old value.</p>
         </li>
         
         
-        <li id="section-26">
+        <li id="section-30">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-26">&#182;</a>
+                <a class="pilcrow" href="#section-30">&#182;</a>
               </div>
               <p>Flow control for outgoing frames can be disabled by the peer with various methods.</p>
 
