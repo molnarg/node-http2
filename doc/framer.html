@@ -83,7 +83,7 @@ the Serializer and the Deserializer</p>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre><span class="keyword">var</span> assert = process.env.HTTP2_ASSERT ? require(<span class="string">'assert'</span>) : <span class="function"><span class="keyword">function</span> <span class="title">noop</span><span class="params">()</span> {</span>};
+            <div class="content"><div class='highlight'><pre><span class="keyword">var</span> assert = require(<span class="string">'assert'</span>);
 
 <span class="keyword">var</span> Transform = require(<span class="string">'stream'</span>).Transform;
 
@@ -291,11 +291,12 @@ deserializer waits for the specified length payload.</p>
             </div>
             
             <div class="content"><div class='highlight'><pre>    <span class="keyword">if</span> ((<span class="keyword">this</span>._cursor === <span class="keyword">this</span>._buffer.length) &amp;&amp; <span class="keyword">this</span>._waitingForHeader) {
-      Deserializer.commonHeader(<span class="keyword">this</span>._buffer, <span class="keyword">this</span>._frame);
-      <span class="keyword">if</span> (<span class="keyword">this</span>._frame.length &lt;= <span class="keyword">this</span>._sizeLimit) {
-        <span class="keyword">this</span>._next(<span class="keyword">this</span>._frame.length);
+      <span class="keyword">var</span> payloadSize = Deserializer.commonHeader(<span class="keyword">this</span>._buffer, <span class="keyword">this</span>._frame);
+      <span class="keyword">if</span> (payloadSize &lt;= <span class="keyword">this</span>._sizeLimit) {
+        <span class="keyword">this</span>._next(payloadSize);
       } <span class="keyword">else</span> {
         <span class="keyword">this</span>.emit(<span class="string">'error'</span>, <span class="string">'FRAME_TOO_LARGE'</span>);
+        <span class="keyword">return</span>;
       }
     }</pre></div></div>
             
@@ -319,7 +320,7 @@ will also run.</p>
       <span class="keyword">if</span> (<span class="keyword">this</span>._frame.type) {
         <span class="keyword">var</span> error = Deserializer[<span class="keyword">this</span>._frame.type](<span class="keyword">this</span>._buffer, <span class="keyword">this</span>._frame);
         <span class="keyword">if</span> (error) {
-          <span class="keyword">this</span>._log.error(<span class="string">'Incoming frame parsing error'</span>);
+          <span class="keyword">this</span>._log.error(<span class="string">'Incoming frame parsing error: '</span> + error);
           <span class="keyword">this</span>.emit(<span class="string">'error'</span>, <span class="string">'PROTOCOL_ERROR'</span>);
         } <span class="keyword">else</span> {
           <span class="keyword">this</span>._log.trace({ frame: <span class="keyword">this</span>._frame }, <span class="string">'Incoming frame'</span>);
@@ -405,7 +406,7 @@ associated with the connection as a whole as opposed to an individual stream.</p
 
 <span class="keyword">var</span> frameFlags = {};
 
-<span class="keyword">var</span> genericAttributes = [<span class="string">'length'</span>, <span class="string">'type'</span>, <span class="string">'flags'</span>, <span class="string">'stream'</span>];
+<span class="keyword">var</span> genericAttributes = [<span class="string">'type'</span>, <span class="string">'flags'</span>, <span class="string">'stream'</span>];
 
 <span class="keyword">var</span> typeSpecificAttributes = {};
 
@@ -416,7 +417,7 @@ Serializer.commonHeader = <span class="function"><span class="keyword">function<
   <span class="keyword">for</span> (<span class="keyword">var</span> i = <span class="number">0</span>; i &lt; buffers.length; i++) {
     size += buffers[i].length;
   }
-  assert(size &lt;= MAX_PAYLOAD_SIZE, <span class="string">'Frame too large!'</span>);
+  assert(size &lt;= MAX_PAYLOAD_SIZE, size);
   headerBuffer.writeUInt16BE(size, <span class="number">0</span>);
 
   <span class="keyword">var</span> typeId = frameTypes.indexOf(frame.type);  <span class="comment">// If we are here then the type is valid for sure</span>
@@ -432,14 +433,14 @@ Serializer.commonHeader = <span class="function"><span class="keyword">function<
   }
   <span class="attribute">headerBuffer.writeUInt8</span>(<span class="attribute">flagByte</span>, <span class="attribute">3</span>);
 
-  <span class="attribute">assert</span>(<span class="attribute">frame.stream</span> &lt; <span class="attribute">0x7fffffff</span>, '<span class="attribute">Too</span> <span class="attribute">large</span> <span class="attribute">stream</span> <span class="attribute">ID:</span> ' + <span class="attribute">frame.stream</span>);
+  <span class="attribute">assert</span>((<span class="attribute">0</span> &lt;= <span class="attribute">frame.stream</span>) &amp;&amp; (<span class="attribute">frame.stream</span> &lt; <span class="attribute">0x7fffffff</span>), <span class="attribute">frame.stream</span>);
   <span class="attribute">headerBuffer.writeUInt32BE</span>(<span class="attribute">frame.stream</span> || <span class="attribute">0</span>, <span class="attribute">4</span>);
 
   <span class="attribute">buffers.unshift</span>(<span class="attribute">headerBuffer</span>);
 };
 
 <span class="attribute">Deserializer.commonHeader</span> = <span class="attribute">function</span> <span class="attribute">readCommonHeader</span>(<span class="attribute">buffer</span>, <span class="attribute">frame</span>) {
-  <span class="attribute">frame.length</span> = <span class="attribute">buffer.readUInt16BE</span>(<span class="attribute">0</span>);
+  <span class="attribute">var</span> <span class="attribute">length</span> = <span class="attribute">buffer.readUInt16BE</span>(<span class="attribute">0</span>);
 
   <span class="attribute">frame.type</span> = <span class="attribute">frameTypes</span>[<span class="attribute">buffer.readUInt8</span>(<span class="attribute">2</span>)];
 
@@ -451,6 +452,8 @@ Serializer.commonHeader = <span class="function"><span class="keyword">function<
   }
 
   <span class="attribute">frame.stream</span> = <span class="attribute">buffer.readUInt32BE</span>(<span class="attribute">4</span>) &amp; <span class="attribute">0x7fffffff</span>;
+
+  <span class="attribute">return</span> <span class="attribute">length</span>;
 };
 
 </span></pre></div></div>
@@ -593,7 +596,7 @@ typeSpecificAttributes.HEADERS = [<span class="string">'priority'</span>, <span 
             <div class="content"><div class='highlight'><pre>Serializer.HEADERS = <span class="function"><span class="keyword">function</span> <span class="title">writeHeadersPriority</span><span class="params">(frame, buffers)</span> {</span>
   <span class="keyword">if</span> (frame.flags.PRIORITY) {
     <span class="keyword">var</span> buffer = <span class="keyword">new</span> Buffer(<span class="number">4</span>);
-    assert((<span class="number">0</span> &lt;= frame.priority) &amp;&amp; (frame.priority &lt;= <span class="number">0xffffffff</span>));
+    assert((<span class="number">0</span> &lt;= frame.priority) &amp;&amp; (frame.priority &lt;= <span class="number">0xffffffff</span>), frame.priority);
     buffer.writeUInt32BE(frame.priority, <span class="number">0</span>);
     buffers.push(buffer);
   }
@@ -725,7 +728,7 @@ code (see Error Codes). The error code indicates why the stream is being termina
             <div class="content"><div class='highlight'><pre>Serializer.RST_STREAM = <span class="function"><span class="keyword">function</span> <span class="title">writeRstStream</span><span class="params">(frame, buffers)</span> {</span>
   <span class="keyword">var</span> buffer = <span class="keyword">new</span> Buffer(<span class="number">4</span>);
   <span class="keyword">var</span> code = errorCodes.indexOf(frame.error);
-  assert((<span class="number">0</span> &lt;= code) &amp;&amp; (code &lt;= <span class="number">0xffffffff</span>));
+  assert((<span class="number">0</span> &lt;= code) &amp;&amp; (code &lt;= <span class="number">0xffffffff</span>), code);
   buffer.writeUInt32BE(code, <span class="number">0</span>);
   buffers.push(buffer);
 };
@@ -967,8 +970,11 @@ additional context for the stream.</p>
             
             <div class="content"><div class='highlight'><pre>Serializer.PUSH_PROMISE = <span class="function"><span class="keyword">function</span> <span class="title">writePushPromise</span><span class="params">(frame, buffers)</span> {</span>
   <span class="keyword">var</span> buffer = <span class="keyword">new</span> Buffer(<span class="number">4</span>);
-  assert((<span class="number">0</span> &lt;= frame.promised_stream) &amp;&amp; (frame.promised_stream &lt;= <span class="number">0x7fffffff</span>));
-  buffer.writeUInt32BE(frame.promised_stream, <span class="number">0</span>);
+
+  <span class="keyword">var</span> promised_stream = frame.promised_stream;
+  assert((<span class="number">0</span> &lt;= promised_stream) &amp;&amp; (promised_stream &lt;= <span class="number">0x7fffffff</span>), promised_stream);
+  buffer.writeUInt32BE(promised_stream, <span class="number">0</span>);
+
   buffers.push(buffer);
   buffers.push(frame.data);
 };
@@ -1030,7 +1036,6 @@ typeSpecificAttributes.PING = [<span class="string">'data'</span>];</pre></div><
             </div>
             
             <div class="content"><div class='highlight'><pre>Serializer.PING = <span class="function"><span class="keyword">function</span> <span class="title">writePing</span><span class="params">(frame, buffers)</span> {</span>
-  assert((<span class="string">'data'</span> <span class="keyword">in</span> frame) &amp;&amp; (frame.data.length === <span class="number">8</span>), <span class="string">'PING frames must carry an 8 byte payload'</span>);
   buffers.push(frame.data);
 };
 
@@ -1101,11 +1106,12 @@ closing the connection.</p>
             <div class="content"><div class='highlight'><pre>Serializer.GOAWAY = <span class="function"><span class="keyword">function</span> <span class="title">writeGoaway</span><span class="params">(frame, buffers)</span> {</span>
   <span class="keyword">var</span> buffer = <span class="keyword">new</span> Buffer(<span class="number">8</span>);
 
-  assert((<span class="number">0</span> &lt;= frame.last_stream) &amp;&amp; (frame.last_stream &lt;= <span class="number">0x7fffffff</span>));
-  buffer.writeUInt32BE(frame.last_stream, <span class="number">0</span>);
+  <span class="keyword">var</span> last_stream = frame.last_stream;
+  assert((<span class="number">0</span> &lt;= last_stream) &amp;&amp; (last_stream &lt;= <span class="number">0x7fffffff</span>), last_stream);
+  buffer.writeUInt32BE(last_stream, <span class="number">0</span>);
 
   <span class="keyword">var</span> code = errorCodes.indexOf(frame.error);
-  assert((<span class="number">0</span> &lt;= code) &amp;&amp; (code &lt;= <span class="number">0xffffffff</span>));
+  assert((<span class="number">0</span> &lt;= code) &amp;&amp; (code &lt;= <span class="number">0xffffffff</span>), code);
   buffer.writeUInt32BE(code, <span class="number">4</span>);
 
   buffers.push(buffer);
@@ -1167,8 +1173,11 @@ reserved.</p>
             
             <div class="content"><div class='highlight'><pre>Serializer.WINDOW_UPDATE = <span class="function"><span class="keyword">function</span> <span class="title">writeWindowUpdate</span><span class="params">(frame, buffers)</span> {</span>
   <span class="keyword">var</span> buffer = <span class="keyword">new</span> Buffer(<span class="number">4</span>);
-  assert((<span class="number">0</span> &lt;= frame.window_size) &amp;&amp; (frame.window_size &lt;= <span class="number">0x7fffffff</span>));
-  buffer.writeUInt32BE(frame.window_size, <span class="number">0</span>);
+
+  <span class="keyword">var</span> window_size = frame.window_size;
+  assert((<span class="number">0</span> &lt;= window_size) &amp;&amp; (window_size &lt;= <span class="number">0x7fffffff</span>), window_size);
+  buffer.writeUInt32BE(window_size, <span class="number">0</span>);
+
   buffers.push(buffer);
 };
 

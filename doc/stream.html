@@ -81,7 +81,7 @@
               
             </div>
             
-            <div class="content"><div class='highlight'><pre><span class="keyword">var</span> assert = process.env.HTTP2_ASSERT ? require(<span class="string">'assert'</span>) : <span class="function"><span class="keyword">function</span> <span class="title">noop</span><span class="params">()</span> {</span>};</pre></div></div>
+            <div class="content"><div class='highlight'><pre><span class="keyword">var</span> assert = require(<span class="string">'assert'</span>);</pre></div></div>
             
         </li>
         
@@ -300,36 +300,39 @@ Stream.prototype = Object.create(Duplex.prototype, { constructor: { value: Strea
   <span class="keyword">this</span>._resetSent = <span class="literal">false</span>;
   <span class="keyword">this</span>._priority = DEFAULT_PRIORITY;
   <span class="keyword">this</span>._letPeerPrioritize = <span class="literal">true</span>;
-  <span class="keyword">this</span>.on(<span class="string">'PUSH_PROMISE'</span>, <span class="keyword">function</span>(frame) {
-    <span class="keyword">this</span>.emit(<span class="string">'promise'</span>, frame.promised_stream, frame.headers);
-  });
-  <span class="keyword">this</span>.on(<span class="string">'HEADERS'</span>, <span class="keyword">function</span>(frame) {
-    <span class="keyword">if</span> (frame.priority !== <span class="literal">undefined</span>) {
-      <span class="keyword">this</span>.priority(frame.priority, <span class="literal">true</span>);
-    }
-    <span class="keyword">this</span>.emit(<span class="string">'headers'</span>, frame.headers);
-  });
-  <span class="keyword">this</span>.on(<span class="string">'PRIORITY'</span>, <span class="keyword">function</span>(frame) {
-    <span class="keyword">this</span>.priority(frame.priority, <span class="literal">true</span>);
-  });
 };
 
 Stream.prototype.promise = <span class="function"><span class="keyword">function</span> <span class="title">promise</span><span class="params">(headers)</span> {</span>
   <span class="keyword">var</span> stream = <span class="keyword">new</span> Stream(<span class="keyword">this</span>._log);
   stream._priority = Math.min(<span class="keyword">this</span>._priority + <span class="number">1</span>, MAX_PRIORITY);
-  <span class="keyword">this</span>.upstream.push({
+  <span class="keyword">this</span>._pushUpstream({
     type: <span class="string">'PUSH_PROMISE'</span>,
+    flags: {},
+    stream: <span class="keyword">this</span>.id,
     promised_stream: stream,
     headers: headers
   });
   <span class="keyword">return</span> stream;
 };
 
+Stream.prototype._onPromise = <span class="function"><span class="keyword">function</span> <span class="title">_onPromise</span><span class="params">(frame)</span> {</span>
+  <span class="keyword">this</span>.emit(<span class="string">'promise'</span>, frame.promised_stream, frame.headers);
+};
+
 Stream.prototype.headers = <span class="function"><span class="keyword">function</span> <span class="title">headers</span><span class="params">(headers)</span> {</span>
-  <span class="keyword">this</span>.upstream.push({
+  <span class="keyword">this</span>._pushUpstream({
     type: <span class="string">'HEADERS'</span>,
+    flags: {},
+    stream: <span class="keyword">this</span>.id,
     headers: headers
   });
+};
+
+Stream.prototype._onHeaders = <span class="function"><span class="keyword">function</span> <span class="title">_onHeaders</span><span class="params">(frame)</span> {</span>
+  <span class="keyword">if</span> (frame.priority !== <span class="literal">undefined</span>) {
+    <span class="keyword">this</span>.priority(frame.priority, <span class="literal">true</span>);
+  }
+  <span class="keyword">this</span>.emit(<span class="string">'headers'</span>, frame.headers);
 };
 
 Stream.prototype.priority = <span class="function"><span class="keyword">function</span> <span class="title">priority</span><span class="params">(priority, peer)</span> {</span>
@@ -341,8 +344,10 @@ Stream.prototype.priority = <span class="function"><span class="keyword">functio
       <span class="keyword">if</span> (lastFrame &amp;&amp; ((lastFrame.type === <span class="string">'HEADERS'</span>) || (lastFrame.type === <span class="string">'PRIORITY'</span>))) {
         lastFrame.priority = priority;
       } <span class="keyword">else</span> {
-        <span class="keyword">this</span>.upstream.push({
+        <span class="keyword">this</span>._pushUpstream({
           type: <span class="string">'PRIORITY'</span>,
+          flags: {},
+          stream: <span class="keyword">this</span>.id,
           priority: priority
         });
       }
@@ -352,6 +357,10 @@ Stream.prototype.priority = <span class="function"><span class="keyword">functio
     <span class="keyword">this</span>.emit(<span class="string">'priority'</span>, priority);
     <span class="keyword">this</span>._priority = priority;
   }
+};
+
+Stream.prototype._onPriority = <span class="function"><span class="keyword">function</span> <span class="title">_onPriority</span><span class="params">(frame)</span> {</span>
+  <span class="keyword">this</span>.priority(frame.priority, <span class="literal">true</span>);
 };</pre></div></div>
             
         </li>
@@ -371,8 +380,10 @@ any stream.</p>
             <div class="content"><div class='highlight'><pre>Stream.prototype.reset = <span class="function"><span class="keyword">function</span> <span class="title">reset</span><span class="params">(error)</span> {</span>
   <span class="keyword">if</span> (!<span class="keyword">this</span>._resetSent) {
     <span class="keyword">this</span>._resetSent = <span class="literal">true</span>;
-    <span class="keyword">this</span>.upstream.push({
+    <span class="keyword">this</span>._pushUpstream({
       type: <span class="string">'RST_STREAM'</span>,
+      flags: {},
+      stream: <span class="keyword">this</span>.id,
       error: error
     });
   }
@@ -433,15 +444,20 @@ B: input or output buffer</code></pre>
             <div class="content"><div class='highlight'><pre><span class="keyword">var</span> Flow = require(<span class="string">'./flow'</span>).Flow;
 
 Stream.prototype._initializeDataFlow = <span class="function"><span class="keyword">function</span> <span class="title">_initializeDataFlow</span><span class="params">()</span> {</span>
+  <span class="keyword">this</span>.id = <span class="literal">undefined</span>;
+
   <span class="keyword">this</span>.upstream = <span class="keyword">new</span> Flow();
   <span class="keyword">this</span>.upstream._log = <span class="keyword">this</span>._log;
   <span class="keyword">this</span>.upstream._send = <span class="keyword">this</span>._send.bind(<span class="keyword">this</span>);
   <span class="keyword">this</span>.upstream._receive = <span class="keyword">this</span>._receive.bind(<span class="keyword">this</span>);
-  <span class="keyword">this</span>.upstream.on(<span class="string">'sending'</span>, <span class="keyword">this</span>.emit.bind(<span class="keyword">this</span>, <span class="string">'sending'</span>));
-  <span class="keyword">this</span>.upstream.on(<span class="string">'receiving'</span>, <span class="keyword">this</span>.emit.bind(<span class="keyword">this</span>, <span class="string">'receiving'</span>));
   <span class="keyword">this</span>.upstream.on(<span class="string">'error'</span>, <span class="keyword">this</span>.emit.bind(<span class="keyword">this</span>, <span class="string">'error'</span>));
 
   <span class="keyword">this</span>.on(<span class="string">'finish'</span>, <span class="keyword">this</span>._finishing);
+};
+
+Stream.prototype._pushUpstream = <span class="function"><span class="keyword">function</span> <span class="title">_pushUpstream</span><span class="params">(frame)</span> {</span>
+  <span class="keyword">this</span>.upstream.push(frame);
+  <span class="keyword">this</span>._transition(<span class="literal">true</span>, frame);
 };</pre></div></div>
             
         </li>
@@ -459,6 +475,8 @@ Stream.prototype._initializeDataFlow = <span class="function"><span class="keywo
             
             <div class="content"><div class='highlight'><pre>Stream.prototype._receive = <span class="function"><span class="keyword">function</span> <span class="title">_receive</span><span class="params">(frame, ready)</span> {</span>
   <span class="keyword">this</span>._log.debug({ frame: frame }, <span class="string">'Receiving frame'</span>);
+
+  <span class="keyword">this</span>._transition(<span class="literal">false</span>, frame);
 
   <span class="keyword">var</span> callReady = <span class="literal">true</span>;</pre></div></div>
             
@@ -496,13 +514,17 @@ Call ready when the other side is ready to receive more.</li>
                 <a class="pilcrow" href="#section-19">&#182;</a>
               </div>
               <ul>
-<li>Otherwise it&#39;s a control frame. Emit an event to notify interested parties.</li>
+<li>Otherwise it&#39;s a control frame. Call the appropriate handler method.</li>
 </ul>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>  <span class="keyword">else</span> {
-    <span class="keyword">this</span>.emit(frame.type, frame);
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">else</span> <span class="keyword">if</span> (frame.type === <span class="string">'HEADERS'</span>) {
+    <span class="keyword">this</span>._onHeaders(frame);
+  } <span class="keyword">else</span> <span class="keyword">if</span> (frame.type === <span class="string">'PUSH_PROMISE'</span>) {
+    <span class="keyword">this</span>._onPromise(frame);
+  } <span class="keyword">else</span> <span class="keyword">if</span> (frame.type === <span class="string">'PRIORITY'</span>) {
+    <span class="keyword">this</span>._onPriority(frame);
   }</pre></div></div>
             
         </li>
@@ -513,6 +535,26 @@ Call ready when the other side is ready to receive more.</li>
               
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-20">&#182;</a>
+              </div>
+              <ul>
+<li>If it&#39;s an invalid stream level frame, emit error</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">else</span> <span class="keyword">if</span> (frame.type !== <span class="string">'WINDOW_UPDATE'</span>) {
+    <span class="keyword">this</span>._log.error({ frame: frame }, <span class="string">'Invalid stream level frame'</span>);
+    <span class="keyword">this</span>.emit(<span class="string">'error'</span>, <span class="string">'PROTOCOL_ERROR'</span>);
+  }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-21">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-21">&#182;</a>
               </div>
               <ul>
 <li>Any frame may signal the end of the stream with the END_STREAM flag</li>
@@ -532,11 +574,11 @@ Call ready when the other side is ready to receive more.</li>
         </li>
         
         
-        <li id="section-21">
+        <li id="section-22">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-21">&#182;</a>
+                <a class="pilcrow" href="#section-22">&#182;</a>
               </div>
               <p>The <code>_read</code> method is called when the user side is ready to receive more data. If there&#39;s a
 pending write on the upstream, then call its pending ready callback to receive more frames.</p>
@@ -554,11 +596,11 @@ pending write on the upstream, then call its pending ready callback to receive m
         </li>
         
         
-        <li id="section-22">
+        <li id="section-23">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-22">&#182;</a>
+                <a class="pilcrow" href="#section-23">&#182;</a>
               </div>
               <p>The <code>write</code> method gets called when there&#39;s a write request from the user.</p>
 
@@ -569,11 +611,11 @@ pending write on the upstream, then call its pending ready callback to receive m
         </li>
         
         
-        <li id="section-23">
+        <li id="section-24">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-23">&#182;</a>
+                <a class="pilcrow" href="#section-24">&#182;</a>
               </div>
               <ul>
 <li>Chunking is done by the upstream Flow.</li>
@@ -581,19 +623,21 @@ pending write on the upstream, then call its pending ready callback to receive m
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>  <span class="keyword">var</span> moreNeeded = <span class="keyword">this</span>.upstream.push({
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">var</span> moreNeeded = <span class="keyword">this</span>._pushUpstream({
     type: <span class="string">'DATA'</span>,
+    flags: {},
+    stream: <span class="keyword">this</span>.id,
     data: buffer
   });</pre></div></div>
             
         </li>
         
         
-        <li id="section-24">
+        <li id="section-25">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-24">&#182;</a>
+                <a class="pilcrow" href="#section-25">&#182;</a>
               </div>
               <ul>
 <li>Call ready when upstream is ready to receive more frames.</li>
@@ -611,11 +655,11 @@ pending write on the upstream, then call its pending ready callback to receive m
         </li>
         
         
-        <li id="section-25">
+        <li id="section-26">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-25">&#182;</a>
+                <a class="pilcrow" href="#section-26">&#182;</a>
               </div>
               <p>The <code>_send</code> (= <code>upstream._send</code>) method is called when upstream is ready to receive more frames.
 If there&#39;s a pending write on the user side, then call its pending ready callback to receive more
@@ -634,11 +678,11 @@ writes.</p>
         </li>
         
         
-        <li id="section-26">
+        <li id="section-27">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-26">&#182;</a>
+                <a class="pilcrow" href="#section-27">&#182;</a>
               </div>
               <p>When the stream is finishing (the user calls <code>end()</code> on it), then we have to set the <code>END_STREAM</code>
 flag on the last frame. If there&#39;s no frame in the queue, or if it doesn&#39;t support this flag,
@@ -647,31 +691,32 @@ existing frame is a nice optimization.</p>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>Stream.prototype._finishing = <span class="function"><span class="keyword">function</span> <span class="title">_finishing</span><span class="params">()</span> {</span>
+            <div class="content"><div class='highlight'><pre><span class="keyword">var</span> emptyBuffer = <span class="keyword">new</span> Buffer(<span class="number">0</span>);
+Stream.prototype._finishing = <span class="function"><span class="keyword">function</span> <span class="title">_finishing</span><span class="params">()</span> {</span>
   <span class="keyword">var</span> endFrame = {
     type: <span class="string">'DATA'</span>,
     flags: { END_STREAM: <span class="literal">true</span> },
-    data: <span class="keyword">new</span> Buffer(<span class="number">0</span>)
+    stream: <span class="keyword">this</span>.id,
+    data: emptyBuffer
   };
   <span class="keyword">var</span> lastFrame = <span class="keyword">this</span>.upstream.getLastQueuedFrame();
   <span class="keyword">if</span> (lastFrame &amp;&amp; ((lastFrame.type === <span class="string">'DATA'</span>) || (lastFrame.type === <span class="string">'HEADERS'</span>))) {
     <span class="keyword">this</span>._log.debug({ frame: lastFrame }, <span class="string">'Marking last frame with END_STREAM flag.'</span>);
-    lastFrame.flags = lastFrame.flags || {};
     lastFrame.flags.END_STREAM = <span class="literal">true</span>;
     <span class="keyword">this</span>._transition(<span class="literal">true</span>, endFrame);
   } <span class="keyword">else</span> {
-    <span class="keyword">this</span>.upstream.push(endFrame);
+    <span class="keyword">this</span>._pushUpstream(endFrame);
   }
 };</pre></div></div>
             
         </li>
         
         
-        <li id="section-27">
+        <li id="section-28">
             <div class="annotation">
               
               <div class="pilwrap for-h2">
-                <a class="pilcrow" href="#section-27">&#182;</a>
+                <a class="pilcrow" href="#section-28">&#182;</a>
               </div>
               <h2><a href="http://tools.ietf.org/id/draft-unicorn-httpbis-http2-01.html#StreamStates">Stream States</a></h2>
 
@@ -680,11 +725,11 @@ existing frame is a nice optimization.</p>
         </li>
         
         
-        <li id="section-28">
+        <li id="section-29">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-28">&#182;</a>
+                <a class="pilcrow" href="#section-29">&#182;</a>
               </div>
               <pre><code>                      +--------+
                 PP    |        |    PP
@@ -720,18 +765,16 @@ existing frame is a nice optimization.</p>
   <span class="keyword">this</span>._initiated = <span class="literal">undefined</span>;
   <span class="keyword">this</span>._closedByUs = <span class="literal">undefined</span>;
   <span class="keyword">this</span>._closedWithRst = <span class="literal">undefined</span>;
-  <span class="keyword">this</span>.on(<span class="string">'sending'</span>, <span class="keyword">this</span>._transition.bind(<span class="keyword">this</span>, <span class="literal">true</span>));
-  <span class="keyword">this</span>.on(<span class="string">'receiving'</span>, <span class="keyword">this</span>._transition.bind(<span class="keyword">this</span>, <span class="literal">false</span>));
 };</pre></div></div>
             
         </li>
         
         
-        <li id="section-29">
+        <li id="section-30">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-29">&#182;</a>
+                <a class="pilcrow" href="#section-30">&#182;</a>
               </div>
               <p>Only <code>_setState</code> should change <code>this.state</code> directly. It also logs the state change and notifies
 interested parties using the &#39;state&#39; event.</p>
@@ -748,11 +791,11 @@ interested parties using the &#39;state&#39; event.</p>
         </li>
         
         
-        <li id="section-30">
+        <li id="section-31">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-30">&#182;</a>
+                <a class="pilcrow" href="#section-31">&#182;</a>
               </div>
               <p>A state is &#39;active&#39; if the stream in that state counts towards the concurrency limit. Streams
 that are in the &quot;open&quot; state, or either of the &quot;half closed&quot; states count toward this limit.</p>
@@ -766,11 +809,11 @@ that are in the &quot;open&quot; state, or either of the &quot;half closed&quot;
         </li>
         
         
-        <li id="section-31">
+        <li id="section-32">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-31">&#182;</a>
+                <a class="pilcrow" href="#section-32">&#182;</a>
               </div>
               <p><code>_transition</code> is called every time there&#39;s an incoming or outgoing frame. It manages state
 transitions, and detects stream errors. A stream error is always caused by a frame that is not
@@ -800,11 +843,11 @@ allowed in the current state.</p>
         </li>
         
         
-        <li id="section-32">
+        <li id="section-33">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-32">&#182;</a>
+                <a class="pilcrow" href="#section-33">&#182;</a>
               </div>
               <p>All streams start in the <strong>idle</strong> state. In this state, no frames have been exchanged.</p>
 <ul>
@@ -831,11 +874,11 @@ allowed in the current state.</p>
         </li>
         
         
-        <li id="section-33">
+        <li id="section-34">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-33">&#182;</a>
+                <a class="pilcrow" href="#section-34">&#182;</a>
               </div>
               <p>A stream in the <strong>reserved (local)</strong> state is one that has been promised by sending a
 PUSH_PROMISE frame.</p>
@@ -865,11 +908,11 @@ releases the stream reservation.</li>
         </li>
         
         
-        <li id="section-34">
+        <li id="section-35">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-34">&#182;</a>
+                <a class="pilcrow" href="#section-35">&#182;</a>
               </div>
               <p>A stream in the <strong>reserved (remote)</strong> state has been reserved by a remote peer.</p>
 <ul>
@@ -897,11 +940,11 @@ releases the stream reservation.</li>
         </li>
         
         
-        <li id="section-35">
+        <li id="section-36">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-35">&#182;</a>
+                <a class="pilcrow" href="#section-36">&#182;</a>
               </div>
               <p>The <strong>open</strong> state is where both peers can send frames. In this state, sending peers observe
 advertised stream level flow control limits.</p>
@@ -929,11 +972,11 @@ immediately to &quot;closed&quot;.</li>
         </li>
         
         
-        <li id="section-36">
+        <li id="section-37">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-36">&#182;</a>
+                <a class="pilcrow" href="#section-37">&#182;</a>
               </div>
               <p>A stream that is <strong>half closed (local)</strong> cannot be used for sending frames.</p>
 <ul>
@@ -958,11 +1001,11 @@ flag is received, or when either peer sends a RST_STREAM frame.</li>
         </li>
         
         
-        <li id="section-37">
+        <li id="section-38">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-37">&#182;</a>
+                <a class="pilcrow" href="#section-38">&#182;</a>
               </div>
               <p>A stream that is <strong>half closed (remote)</strong> is no longer being used by the peer to send frames.
 In this state, an endpoint is no longer obligated to maintain a receiver flow control window
@@ -991,11 +1034,11 @@ END_STREAM flag, or when either peer sends a RST_STREAM frame.</li>
         </li>
         
         
-        <li id="section-38">
+        <li id="section-39">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-38">&#182;</a>
+                <a class="pilcrow" href="#section-39">&#182;</a>
               </div>
               <p>The <strong>closed</strong> state is the terminal state.</p>
 <ul>
@@ -1035,11 +1078,11 @@ can be used to close any of those streams.</li>
         </li>
         
         
-        <li id="section-39">
+        <li id="section-40">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-39">&#182;</a>
+                <a class="pilcrow" href="#section-40">&#182;</a>
               </div>
               <p>Noting that the connection was closed by the other endpoint. It may be important in edge cases.
 For example, when the peer tries to cancel a promised stream, but we already sent every data
@@ -1055,11 +1098,11 @@ on it, then the stream is in CLOSED state, yet we want to ignore the incoming RS
         </li>
         
         
-        <li id="section-40">
+        <li id="section-41">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-40">&#182;</a>
+                <a class="pilcrow" href="#section-41">&#182;</a>
               </div>
               <p>Sending/receiving a PUSH_PROMISE</p>
 <ul>
@@ -1081,11 +1124,11 @@ The state of the stream becomes &quot;reserved (remote)&quot;.</li>
         </li>
         
         
-        <li id="section-41">
+        <li id="section-42">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-41">&#182;</a>
+                <a class="pilcrow" href="#section-42">&#182;</a>
               </div>
               <p>Signaling how sending/receiving this frame changes the active stream count (-1, 0 or +1)</p>
 
@@ -1105,11 +1148,11 @@ The state of the stream becomes &quot;reserved (remote)&quot;.</li>
         </li>
         
         
-        <li id="section-42">
+        <li id="section-43">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-42">&#182;</a>
+                <a class="pilcrow" href="#section-43">&#182;</a>
               </div>
               <p>Common error handling.</p>
 
@@ -1127,11 +1170,11 @@ The state of the stream becomes &quot;reserved (remote)&quot;.</li>
         </li>
         
         
-        <li id="section-43">
+        <li id="section-44">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-43">&#182;</a>
+                <a class="pilcrow" href="#section-44">&#182;</a>
               </div>
               <ul>
 <li>When sending something invalid, throwing an exception, since it is probably a bug.</li>
@@ -1147,11 +1190,11 @@ The state of the stream becomes &quot;reserved (remote)&quot;.</li>
         </li>
         
         
-        <li id="section-44">
+        <li id="section-45">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-44">&#182;</a>
+                <a class="pilcrow" href="#section-45">&#182;</a>
               </div>
               <ul>
 <li>When receiving something invalid, sending an RST_STREAM using the <code>reset</code> method.
@@ -1171,11 +1214,11 @@ This will automatically cause a transition to the CLOSED state.</li>
         </li>
         
         
-        <li id="section-45">
+        <li id="section-46">
             <div class="annotation">
               
               <div class="pilwrap for-h2">
-                <a class="pilcrow" href="#section-45">&#182;</a>
+                <a class="pilcrow" href="#section-46">&#182;</a>
               </div>
               <h2>Bunyan serializers</h2>
 
@@ -1184,11 +1227,11 @@ This will automatically cause a transition to the CLOSED state.</li>
         </li>
         
         
-        <li id="section-46">
+        <li id="section-47">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-46">&#182;</a>
+                <a class="pilcrow" href="#section-47">&#182;</a>
               </div>
               
             </div>
@@ -1197,11 +1240,11 @@ This will automatically cause a transition to the CLOSED state.</li>
 
 <span class="keyword">var</span> nextId = <span class="number">0</span>;
 exports.serializers.s = <span class="keyword">function</span>(stream) {
-  <span class="keyword">if</span> (!(<span class="string">'id'</span> <span class="keyword">in</span> stream)) {
-    stream.id = nextId;
+  <span class="keyword">if</span> (!(<span class="string">'_id'</span> <span class="keyword">in</span> stream)) {
+    stream._id = nextId;
     nextId += <span class="number">1</span>;
   }
-  <span class="keyword">return</span> stream.id;
+  <span class="keyword">return</span> stream._id;
 };</pre></div></div>
             
         </li>

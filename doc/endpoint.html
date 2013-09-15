@@ -81,7 +81,7 @@
               
             </div>
             
-            <div class="content"><div class='highlight'><pre><span class="keyword">var</span> assert = process.env.HTTP2_ASSERT ? require(<span class="string">'assert'</span>) : <span class="function"><span class="keyword">function</span> <span class="title">noop</span><span class="params">()</span> {</span>};
+            <div class="content"><div class='highlight'><pre><span class="keyword">var</span> assert = require(<span class="string">'assert'</span>);
 
 <span class="keyword">var</span> Serializer   = require(<span class="string">'./framer'</span>).Serializer;
 <span class="keyword">var</span> Deserializer = require(<span class="string">'./framer'</span>).Deserializer;
@@ -438,15 +438,19 @@ Endpoint.prototype._initializeDataFlow = <span class="function"><span class="key
 
   <span class="keyword">this</span>._connection.pipe(<span class="keyword">this</span>._compressor).pipe(<span class="keyword">this</span>._serializer);
   <span class="keyword">this</span>._deserializer.pipe(<span class="keyword">this</span>._decompressor).pipe(<span class="keyword">this</span>._connection);
-
-  <span class="keyword">this</span>._serializer.on(<span class="string">'readable'</span>, <span class="keyword">this</span>._read.bind(<span class="keyword">this</span>));
 };
 
+<span class="keyword">var</span> noread = {};
 Endpoint.prototype._read = <span class="function"><span class="keyword">function</span> <span class="title">_read</span><span class="params">()</span> {</span>
-  <span class="keyword">var</span> moreNeeded = <span class="literal">true</span>, chunk;
+  <span class="keyword">this</span>._readableState.sync = <span class="literal">true</span>;
+  <span class="keyword">var</span> moreNeeded = noread, chunk;
   <span class="keyword">while</span> (moreNeeded &amp;&amp; (chunk = <span class="keyword">this</span>._serializer.read())) {
     moreNeeded = <span class="keyword">this</span>.push(chunk);
   }
+  <span class="keyword">if</span> (moreNeeded === noread) {
+    <span class="keyword">this</span>._serializer.once(<span class="string">'readable'</span>, <span class="keyword">this</span>._read.bind(<span class="keyword">this</span>));
+  }
+  <span class="keyword">this</span>._readableState.sync = <span class="literal">false</span>;
 };
 
 Endpoint.prototype._write = <span class="function"><span class="keyword">function</span> <span class="title">_write</span><span class="params">(chunk, encoding, done)</span> {</span>
@@ -517,11 +521,14 @@ Endpoint.prototype.createStream = <span class="function"><span class="keyword">f
   <span class="keyword">this</span>._compressor.on(<span class="string">'error'</span>, <span class="keyword">this</span>._error.bind(<span class="keyword">this</span>, <span class="string">'compressor'</span>));
   <span class="keyword">this</span>._decompressor.on(<span class="string">'error'</span>, <span class="keyword">this</span>._error.bind(<span class="keyword">this</span>, <span class="string">'decompressor'</span>));
   <span class="keyword">this</span>._connection.on(<span class="string">'error'</span>, <span class="keyword">this</span>._error.bind(<span class="keyword">this</span>, <span class="string">'connection'</span>));
+
+  <span class="keyword">this</span>._connection.on(<span class="string">'peerError'</span>, <span class="keyword">this</span>.emit.bind(<span class="keyword">this</span>, <span class="string">'peerError'</span>));
 };
 
 Endpoint.prototype._error = <span class="function"><span class="keyword">function</span> <span class="title">_error</span><span class="params">(component, error)</span> {</span>
-  <span class="keyword">this</span>._log.fatal({ component: component, message: error }, <span class="string">'Fatal error, closing connection'</span>);
+  <span class="keyword">this</span>._log.fatal({ source: component, message: error }, <span class="string">'Fatal error, closing connection'</span>);
   <span class="keyword">this</span>.close(error);
+  setImmediate(<span class="keyword">this</span>.emit.bind(<span class="keyword">this</span>, <span class="string">'error'</span>, error));
 };
 
 Endpoint.prototype.close = <span class="function"><span class="keyword">function</span> <span class="title">close</span><span class="params">(error)</span> {</span>
