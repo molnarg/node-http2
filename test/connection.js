@@ -65,7 +65,7 @@ describe('connection.js', function() {
     describe('invalid operation', function() {
       describe('disabling and the re-enabling flow control', function() {
         it('should result in an error event with type "FLOW_CONTROL_ERROR"', function(done) {
-          var connection = new Connection(1, settings, util.log);
+          var connection = new Connection(util.log, 1, settings);
 
           connection.on('error', function(error) {
             expect(error).to.equal('FLOW_CONTROL_ERROR');
@@ -78,7 +78,7 @@ describe('connection.js', function() {
       });
       describe('manipulating flow control window after flow control was turned off', function() {
         it('should result in an error event with type "FLOW_CONTROL_ERROR"', function(done) {
-          var connection = new Connection(1, settings, util.log);
+          var connection = new Connection(util.log, 1, settings);
 
           connection.on('error', function(error) {
             expect(error).to.equal('FLOW_CONTROL_ERROR');
@@ -91,7 +91,7 @@ describe('connection.js', function() {
       });
       describe('disabling flow control twice', function() {
         it('should be ignored', function() {
-          var connection = new Connection(1, settings, util.log);
+          var connection = new Connection(util.log, 1, settings);
 
           connection._setLocalFlowControl(true);
           connection._setLocalFlowControl(true);
@@ -99,14 +99,14 @@ describe('connection.js', function() {
       });
       describe('enabling flow control when already enabled', function() {
         it('should be ignored', function() {
-          var connection = new Connection(1, settings, util.log);
+          var connection = new Connection(util.log, 1, settings);
 
           connection._setLocalFlowControl(false);
         });
       });
       describe('unsolicited ping answer', function() {
         it('should be ignored', function() {
-          var connection = new Connection(1, settings, util.log);
+          var connection = new Connection(util.log, 1, settings);
 
           connection._receivePing({
             stream: 0,
@@ -121,12 +121,15 @@ describe('connection.js', function() {
     });
   });
   describe('test scenario', function() {
+    var c, s;
+    beforeEach(function() {
+      c = new Connection(util.log.child({ role: 'client' }), 1, settings);
+      s = new Connection(util.log.child({ role: 'client' }), 2, settings);
+      c.pipe(s).pipe(c);
+    });
+
     describe('connection setup', function() {
       it('should work as expected', function(done) {
-        var c = new Connection(1, settings, util.log.child({ role: 'client' }));
-        var s = new Connection(2, settings, util.log.child({ role: 'server' }));
-        c.pipe(s).pipe(c);
-
         setTimeout(function() {
           // If there are no exception until this, then we're done
           done();
@@ -135,11 +138,6 @@ describe('connection.js', function() {
     });
     describe('sending/receiving a request', function() {
       it('should work as expected', function(done) {
-        var c = new Connection(1, settings, util.log.child({ role: 'client' }));
-        var s = new Connection(2, settings, util.log.child({ role: 'server' }));
-
-        c.pipe(s).pipe(c);
-
         // Request and response data
         var request_headers = {
           ':method': 'GET',
@@ -179,11 +177,6 @@ describe('connection.js', function() {
     });
     describe('server push', function() {
       it('should work as expected', function(done) {
-        var c = new Connection(1, settings, util.log.child({ role: 'client' }));
-        var s = new Connection(2, settings, util.log.child({ role: 'server' }));
-
-        c.pipe(s).pipe(c);
-
         var request_headers = { ':method': 'get', ':path': '/' };
         var response_headers = { ':status': '200' };
         var push_request_headers = { ':method': 'get', ':path': '/x' };
@@ -232,10 +225,6 @@ describe('connection.js', function() {
     });
     describe('ping from client', function() {
       it('should work as expected', function(done) {
-        var c = new Connection(1, settings, util.log.child({ role: 'client' }));
-        var s = new Connection(2, settings, util.log.child({ role: 'server' }));
-        c.pipe(s).pipe(c);
-
         c.ping(function() {
           done();
         });
@@ -243,10 +232,6 @@ describe('connection.js', function() {
     });
     describe('ping from server', function() {
       it('should work as expected', function(done) {
-        var c = new Connection(1, settings, util.log.child({ role: 'client' }));
-        var s = new Connection(2, settings, util.log.child({ role: 'server' }));
-        c.pipe(s).pipe(c);
-
         s.ping(function() {
           done();
         });
@@ -254,11 +239,6 @@ describe('connection.js', function() {
     });
     describe('creating two streams and then using them in reverse order', function() {
       it('should not result in non-monotonous local ID ordering', function() {
-        var c = new Connection(1, settings, util.log.child({ role: 'client' }));
-        var s = new Connection(2, settings, util.log.child({ role: 'server' }));
-
-        c.pipe(s).pipe(c);
-
         var s1 = c.createStream();
         var s2 = c.createStream();
         s2.headers({ ':method': 'get', ':path': '/' });
@@ -267,11 +247,6 @@ describe('connection.js', function() {
     });
     describe('creating two promises and then using them in reverse order', function() {
       it('should not result in non-monotonous local ID ordering', function(done) {
-        var c = new Connection(1, settings, util.log.child({ role: 'client' }));
-        var s = new Connection(2, settings, util.log.child({ role: 'server' }));
-
-        c.pipe(s).pipe(c);
-
         s.on('stream', function(response) {
           response.headers({ ':status': '200' });
 
@@ -294,10 +269,6 @@ describe('connection.js', function() {
     });
     describe('closing the connection on one end', function() {
       it('should result in closed streams on both ends', function(done) {
-        var c = new Connection(1, settings, util.log.child({ role: 'client' }));
-        var s = new Connection(2, settings, util.log.child({ role: 'server' }));
-        c.pipe(s).pipe(c);
-
         done = util.callNTimes(2, done);
         c.on('end', done);
         s.on('end', done);

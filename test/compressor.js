@@ -188,7 +188,7 @@ describe('compressor.js', function() {
   describe('Decompressor', function() {
     describe('method decompress(buffer)', function() {
       it('should return the parsed header set in { name1: value1, name2: [value2, value3], ... } format', function() {
-        var decompressor = new Decompressor('REQUEST', util.log);
+        var decompressor = new Decompressor(util.log, 'REQUEST');
         var header_set = test_header_sets[0];
         expect(decompressor.decompress(header_set.buffer)).to.deep.equal(header_set.headers);
         header_set = test_header_sets[1];
@@ -199,7 +199,7 @@ describe('compressor.js', function() {
     });
     describe('transform stream', function() {
       it('should emit an error event if a series of header frames is interleaved with other frames', function() {
-        var decompressor = new Decompressor('REQUEST', util.log);
+        var decompressor = new Decompressor(util.log, 'REQUEST');
         var error_occured = false;
         decompressor.on('error', function() {
           error_occured = true;
@@ -224,8 +224,8 @@ describe('compressor.js', function() {
   describe('invariant', function() {
     describe('decompressor.decompress(compressor.compress(headerset)) === headerset', function() {
       it('should be true for any header set if the states are synchronized', function() {
-        var compressor = new Compressor('REQUEST', util.log);
-        var decompressor = new Decompressor('REQUEST', util.log);
+        var compressor = new Compressor(util.log, 'REQUEST');
+        var decompressor = new Decompressor(util.log, 'REQUEST');
         for (var i = 0; i < 10; i++) {
           var headers = test_header_sets[i%4].headers;
           var compressed = compressor.compress(headers);
@@ -237,8 +237,8 @@ describe('compressor.js', function() {
     });
     describe('source.pipe(compressor).pipe(decompressor).pipe(destination)', function() {
       it('should behave like source.pipe(destination) for a stream of frames', function(done) {
-        var compressor = new Compressor('RESPONSE', util.log);
-        var decompressor = new Decompressor('RESPONSE', util.log);
+        var compressor = new Compressor(util.log, 'RESPONSE');
+        var decompressor = new Decompressor(util.log, 'RESPONSE');
         compressor.pipe(decompressor);
         for (var i = 0; i < 10; i++) {
           compressor.write({
