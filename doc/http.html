@@ -576,7 +576,7 @@ IncomingMessage.prototype.setTimeout = noop;
 
 IncomingMessage.prototype._checkSpecialHeader = <span class="function"><span class="keyword">function</span> <span class="title">_checkSpecialHeader</span><span class="params">(key, value)</span> {</span>
   <span class="keyword">if</span> ((<span class="keyword">typeof</span> value !== <span class="string">'string'</span>) || (value.length === <span class="number">0</span>)) {
-    <span class="keyword">this</span>._log.error({ key: key, value: value }, <span class="string">'Invalid special header field'</span>);
+    <span class="keyword">this</span>._log.error({ key: key, value: value }, <span class="string">'Invalid or missing special header field'</span>);
     <span class="keyword">this</span>.stream.emit(<span class="string">'error'</span>, <span class="string">'PROTOCOL_ERROR'</span>);
   }
 
@@ -841,7 +841,7 @@ Server.prototype = Object.create(EventEmitter.prototype, { constructor: { value:
             </div>
             
             <div class="content"><div class='highlight'><pre>Server.prototype._start = <span class="function"><span class="keyword">function</span> <span class="title">_start</span><span class="params">(socket)</span> {</span>
-  <span class="keyword">var</span> endpoint = <span class="keyword">new</span> Endpoint(<span class="string">'SERVER'</span>, <span class="keyword">this</span>._settings, <span class="keyword">this</span>._log);
+  <span class="keyword">var</span> endpoint = <span class="keyword">new</span> Endpoint(<span class="keyword">this</span>._log, <span class="string">'SERVER'</span>, <span class="keyword">this</span>._settings);
 
   <span class="keyword">this</span>._log.info({ e: endpoint,
                    client: socket.remoteAddress + <span class="string">':'</span> + socket.remotePort,
@@ -1401,7 +1401,7 @@ Agent.prototype.request = <span class="function"><span class="keyword">function<
             </div>
             
             <div class="content"><div class='highlight'><pre>  <span class="keyword">else</span> <span class="keyword">if</span> (options.plain) {
-    endpoint = <span class="keyword">new</span> Endpoint(<span class="string">'CLIENT'</span>, <span class="keyword">this</span>._settings, <span class="keyword">this</span>._log);
+    endpoint = <span class="keyword">new</span> Endpoint(<span class="keyword">this</span>._log, <span class="string">'CLIENT'</span>, <span class="keyword">this</span>._settings);
     endpoint.socket = net.connect({
       host: options.host,
       port: options.port,
@@ -1447,7 +1447,7 @@ Agent.prototype.request = <span class="function"><span class="keyword">function<
       <span class="keyword">if</span> (httpsRequest.socket.npnProtocol === implementedVersion) {
         httpsRequest.socket.emit(<span class="string">'agentRemove'</span>);
         unbundleSocket(httpsRequest.socket);
-        endpoint = <span class="keyword">new</span> Endpoint(<span class="string">'CLIENT'</span>, self._settings, self._log);
+        endpoint = <span class="keyword">new</span> Endpoint(self._log, <span class="string">'CLIENT'</span>, self._settings);
         endpoint.socket = httpsRequest.socket;
         endpoint.pipe(endpoint.socket).pipe(endpoint);
       }
