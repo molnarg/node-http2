@@ -1,6 +1,13 @@
 Version history
 ===============
 
+### 1.0.0 (2013-09-23) ###
+
+* Exporting Endpoint class
+* Support for 'filters' in Endpoint
+* The last time-based release
+* [Tarball](https://github.com/molnarg/node-http2/archive/node-http2-1.0.0.tar.gz)
+
 ### 0.4.1 (2013-09-15) ###
 
 * Major performance improvements
