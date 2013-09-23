@@ -138,7 +138,7 @@ exports.Connection = Connection;</pre></div></div>
                 <a class="pilcrow" href="#section-5">&#182;</a>
               </div>
               <ul>
-<li><p><strong>new Connection(firstStreamId, settings, [log])</strong>: create a new Connection</p>
+<li><p><strong>new Connection(log, firstStreamId, settings)</strong>: create a new Connection</p>
 </li>
 <li><p><strong>Event: &#39;error&#39; (type)</strong>: signals a connection level error made by the other end</p>
 </li>
@@ -174,7 +174,7 @@ of <code>settings</code></p>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre><span class="function"><span class="keyword">function</span> <span class="title">Connection</span><span class="params">(firstStreamId, settings, log)</span> {</span></pre></div></div>
+            <div class="content"><div class='highlight'><pre><span class="function"><span class="keyword">function</span> <span class="title">Connection</span><span class="params">(log, firstStreamId, settings)</span> {</span></pre></div></div>
             
         </li>
         
@@ -801,6 +801,25 @@ by child classes. It reads frames from streams and pushes them to the output buf
                 <a class="pilcrow" href="#section-37">&#182;</a>
               </div>
               <ul>
+<li>Do not do anything if the connectionis already closed</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">if</span> (<span class="keyword">this</span>._closed) {
+    <span class="keyword">return</span>;
+  }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-38">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-38">&#182;</a>
+              </div>
+              <ul>
 <li>Collapsing multiple calls in a turn into a single deferred call</li>
 </ul>
 
@@ -821,11 +840,11 @@ by child classes. It reads frames from streams and pushes them to the output buf
         </li>
         
         
-        <li id="section-38">
+        <li id="section-39">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-38">&#182;</a>
+                <a class="pilcrow" href="#section-39">&#182;</a>
               </div>
               <ul>
 <li>Looping through priority <code>bucket</code>s in priority order.</li>
@@ -841,11 +860,11 @@ by child classes. It reads frames from streams and pushes them to the output buf
         </li>
         
         
-        <li id="section-39">
+        <li id="section-40">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-39">&#182;</a>
+                <a class="pilcrow" href="#section-40">&#182;</a>
               </div>
               <ul>
 <li>Forwarding frames from buckets with round-robin scheduling.<ol>
@@ -906,11 +925,11 @@ this stream</li>
         </li>
         
         
-        <li id="section-40">
+        <li id="section-41">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-40">&#182;</a>
+                <a class="pilcrow" href="#section-41">&#182;</a>
               </div>
               <ul>
 <li>if we couldn&#39;t forward any frame, then sleep until window update, or some other wakeup event</li>
@@ -928,11 +947,11 @@ this stream</li>
         </li>
         
         
-        <li id="section-41">
+        <li id="section-42">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-41">&#182;</a>
+                <a class="pilcrow" href="#section-42">&#182;</a>
               </div>
               <p>The <code>_receive</code> method is another virtual method of the <a href="flow.html">Flow class</a> that has to be
 implemented by child classes. It forwards the given frame to the appropriate stream:</p>
@@ -945,11 +964,11 @@ implemented by child classes. It forwards the given frame to the appropriate str
         </li>
         
         
-        <li id="section-42">
+        <li id="section-43">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-42">&#182;</a>
+                <a class="pilcrow" href="#section-43">&#182;</a>
               </div>
               <ul>
 <li>first frame needs to be checked by the <code>_onFirstFrameReceived</code> method</li>
@@ -965,11 +984,11 @@ implemented by child classes. It forwards the given frame to the appropriate str
         </li>
         
         
-        <li id="section-43">
+        <li id="section-44">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-43">&#182;</a>
+                <a class="pilcrow" href="#section-44">&#182;</a>
               </div>
               <ul>
 <li>gets the appropriate stream from the stream registry</li>
@@ -982,11 +1001,11 @@ implemented by child classes. It forwards the given frame to the appropriate str
         </li>
         
         
-        <li id="section-44">
+        <li id="section-45">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-44">&#182;</a>
+                <a class="pilcrow" href="#section-45">&#182;</a>
               </div>
               <ul>
 <li>or creates one if it&#39;s not in <code>this.streams</code></li>
@@ -1001,11 +1020,11 @@ implemented by child classes. It forwards the given frame to the appropriate str
         </li>
         
         
-        <li id="section-45">
+        <li id="section-46">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-45">&#182;</a>
+                <a class="pilcrow" href="#section-46">&#182;</a>
               </div>
               <ul>
 <li>in case of PUSH_PROMISE, replaces the promised stream id with a new incoming stream</li>
@@ -1022,11 +1041,11 @@ implemented by child classes. It forwards the given frame to the appropriate str
         </li>
         
         
-        <li id="section-46">
+        <li id="section-47">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-46">&#182;</a>
+                <a class="pilcrow" href="#section-47">&#182;</a>
               </div>
               <ul>
 <li>and writes it to the <code>stream</code>&#39;s <code>upstream</code></li>
@@ -1042,11 +1061,11 @@ implemented by child classes. It forwards the given frame to the appropriate str
         </li>
         
         
-        <li id="section-47">
+        <li id="section-48">
             <div class="annotation">
               
               <div class="pilwrap for-h2">
-                <a class="pilcrow" href="#section-47">&#182;</a>
+                <a class="pilcrow" href="#section-48">&#182;</a>
               </div>
               <h2>Settings management</h2>
 
@@ -1055,11 +1074,11 @@ implemented by child classes. It forwards the given frame to the appropriate str
         </li>
         
         
-        <li id="section-48">
+        <li id="section-49">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-48">&#182;</a>
+                <a class="pilcrow" href="#section-49">&#182;</a>
               </div>
               
             </div>
@@ -1071,11 +1090,11 @@ implemented by child classes. It forwards the given frame to the appropriate str
         </li>
         
         
-        <li id="section-49">
+        <li id="section-50">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-49">&#182;</a>
+                <a class="pilcrow" href="#section-50">&#182;</a>
               </div>
               <p>Settings management initialization:</p>
 
@@ -1086,11 +1105,11 @@ implemented by child classes. It forwards the given frame to the appropriate str
         </li>
         
         
-        <li id="section-50">
+        <li id="section-51">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-50">&#182;</a>
+                <a class="pilcrow" href="#section-51">&#182;</a>
               </div>
               <ul>
 <li>Sending the initial settings.</li>
@@ -1104,11 +1123,11 @@ implemented by child classes. It forwards the given frame to the appropriate str
         </li>
         
         
-        <li id="section-51">
+        <li id="section-52">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-51">&#182;</a>
+                <a class="pilcrow" href="#section-52">&#182;</a>
               </div>
               <ul>
 <li>Forwarding SETTINGS frames to the <code>_receiveSettings</code> method</li>
@@ -1122,11 +1141,11 @@ implemented by child classes. It forwards the given frame to the appropriate str
         </li>
         
         
-        <li id="section-52">
+        <li id="section-53">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-52">&#182;</a>
+                <a class="pilcrow" href="#section-53">&#182;</a>
               </div>
               <ul>
 <li>Checking that the first frame the other endpoint sends is SETTINGS</li>
@@ -1146,11 +1165,11 @@ implemented by child classes. It forwards the given frame to the appropriate str
         </li>
         
         
-        <li id="section-53">
+        <li id="section-54">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-53">&#182;</a>
+                <a class="pilcrow" href="#section-54">&#182;</a>
               </div>
               <p>Handling of incoming SETTINGS frames.</p>
 
@@ -1165,11 +1184,11 @@ implemented by child classes. It forwards the given frame to the appropriate str
         </li>
         
         
-        <li id="section-54">
+        <li id="section-55">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-54">&#182;</a>
+                <a class="pilcrow" href="#section-55">&#182;</a>
               </div>
               <p>Changing one or more settings value and sending out a SETTINGS frame</p>
 
@@ -1190,11 +1209,11 @@ implemented by child classes. It forwards the given frame to the appropriate str
         </li>
         
         
-        <li id="section-55">
+        <li id="section-56">
             <div class="annotation">
               
               <div class="pilwrap for-h2">
-                <a class="pilcrow" href="#section-55">&#182;</a>
+                <a class="pilcrow" href="#section-56">&#182;</a>
               </div>
               <h2>Lifecycle management</h2>
 
@@ -1203,11 +1222,11 @@ implemented by child classes. It forwards the given frame to the appropriate str
         </li>
         
         
-        <li id="section-56">
+        <li id="section-57">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-56">&#182;</a>
+                <a class="pilcrow" href="#section-57">&#182;</a>
               </div>
               <p>The main responsibilities of lifecycle management code:</p>
 <ul>
@@ -1231,11 +1250,11 @@ implemented by child classes. It forwards the given frame to the appropriate str
         </li>
         
         
-        <li id="section-57">
+        <li id="section-58">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-57">&#182;</a>
+                <a class="pilcrow" href="#section-58">&#182;</a>
               </div>
               <p>Generating a string of length 16 with random hexadecimal digits</p>
 
@@ -1254,11 +1273,11 @@ implemented by child classes. It forwards the given frame to the appropriate str
         </li>
         
         
-        <li id="section-58">
+        <li id="section-59">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-58">&#182;</a>
+                <a class="pilcrow" href="#section-59">&#182;</a>
               </div>
               <p>Sending a ping and calling <code>callback</code> when the answer arrives</p>
 
@@ -1283,11 +1302,11 @@ implemented by child classes. It forwards the given frame to the appropriate str
         </li>
         
         
-        <li id="section-59">
+        <li id="section-60">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-59">&#182;</a>
+                <a class="pilcrow" href="#section-60">&#182;</a>
               </div>
               <p>Answering pings</p>
 
@@ -1323,11 +1342,11 @@ implemented by child classes. It forwards the given frame to the appropriate str
         </li>
         
         
-        <li id="section-60">
+        <li id="section-61">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-60">&#182;</a>
+                <a class="pilcrow" href="#section-61">&#182;</a>
               </div>
               <p>Terminating the connection</p>
 
@@ -1363,29 +1382,15 @@ Connection.prototype._receiveGoaway = <span class="function"><span class="keywor
         </li>
         
         
-        <li id="section-61">
+        <li id="section-62">
             <div class="annotation">
               
               <div class="pilwrap for-h2">
-                <a class="pilcrow" href="#section-61">&#182;</a>
+                <a class="pilcrow" href="#section-62">&#182;</a>
               </div>
               <h2>Flow control</h2>
 
             </div>
-            
-        </li>
-        
-        
-        <li id="section-62">
-            <div class="annotation">
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-62">&#182;</a>
-              </div>
-              
-            </div>
-            
-            <div class="content"><div class='highlight'><pre>Connection.prototype._initializeFlowControl = <span class="function"><span class="keyword">function</span> <span class="title">_initializeFlowControl</span><span class="params">()</span> {</span></pre></div></div>
             
         </li>
         
@@ -1395,6 +1400,20 @@ Connection.prototype._receiveGoaway = <span class="function"><span class="keywor
               
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-63">&#182;</a>
+              </div>
+              
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>Connection.prototype._initializeFlowControl = <span class="function"><span class="keyword">function</span> <span class="title">_initializeFlowControl</span><span class="params">()</span> {</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-64">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-64">&#182;</a>
               </div>
               <p>Handling of initial window size of individual streams.</p>
 
@@ -1417,11 +1436,11 @@ Connection.prototype._receiveGoaway = <span class="function"><span class="keywor
         </li>
         
         
-        <li id="section-64">
+        <li id="section-65">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-64">&#182;</a>
+                <a class="pilcrow" href="#section-65">&#182;</a>
               </div>
               <p>The initial connection flow control window is 65535 bytes.</p>
 
@@ -1432,11 +1451,11 @@ Connection.prototype._receiveGoaway = <span class="function"><span class="keywor
         </li>
         
         
-        <li id="section-65">
+        <li id="section-66">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-65">&#182;</a>
+                <a class="pilcrow" href="#section-66">&#182;</a>
               </div>
               <p>A SETTINGS frame can alter the initial flow control window size for all current streams. When the
 value of SETTINGS_INITIAL_WINDOW_SIZE changes, a receiver MUST adjust the window size of all
@@ -1461,11 +1480,11 @@ the difference between the new value and the old value.</p>
         </li>
         
         
-        <li id="section-66">
+        <li id="section-67">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-66">&#182;</a>
+                <a class="pilcrow" href="#section-67">&#182;</a>
               </div>
               <p><code>_setStreamFlowControl()</code> may be used to disable/enable flow control. In practice, it is just
 for turning off flow control since it can not be turned on.</p>

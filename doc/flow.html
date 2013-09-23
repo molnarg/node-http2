@@ -276,7 +276,7 @@ incoming frame is a WINDOW_UPDATE.</p>
             </div>
             
             <div class="content"><div class='highlight'><pre>Flow.prototype._write = <span class="function"><span class="keyword">function</span> <span class="title">_write</span><span class="params">(frame, encoding, callback)</span> {</span>
-  <span class="keyword">if</span> (frame.flags.END_STREAM) {
+  <span class="keyword">if</span> (frame.flags.END_STREAM || (frame.type === <span class="string">'RST_STREAM'</span>)) {
     <span class="keyword">this</span>._ended = <span class="literal">true</span>;
   }
 

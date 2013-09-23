@@ -1222,7 +1222,7 @@ these two representations:</p>
             </div>
             
             <div class="content"><div class='highlight'><pre>util.inherits(Compressor, TransformStream);
-<span class="function"><span class="keyword">function</span> <span class="title">Compressor</span><span class="params">(type, log)</span> {</span>
+<span class="function"><span class="keyword">function</span> <span class="title">Compressor</span><span class="params">(log, type)</span> {</span>
   TransformStream.call(<span class="keyword">this</span>, { objectMode: <span class="literal">true</span> });
 
   <span class="keyword">this</span>._log = log.child({ component: <span class="string">'compressor'</span> });
@@ -1390,7 +1390,7 @@ and <code>this._stream</code> respectively.</p>
             </div>
             
             <div class="content"><div class='highlight'><pre>util.inherits(Decompressor, TransformStream);
-<span class="function"><span class="keyword">function</span> <span class="title">Decompressor</span><span class="params">(type, log)</span> {</span>
+<span class="function"><span class="keyword">function</span> <span class="title">Decompressor</span><span class="params">(log, type)</span> {</span>
   TransformStream.call(<span class="keyword">this</span>, { objectMode: <span class="literal">true</span> });
 
   <span class="keyword">this</span>._log = log.child({ component: <span class="string">'compressor'</span> });
