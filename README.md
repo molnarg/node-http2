@@ -73,15 +73,14 @@ For a server push example, see the source code of the example
 Status
 ------
 
-I post weekly status updates [on my blog](http://gabor.molnar.es/blog/categories/google-summer-of-code/).
-Short version: main missing items are:
-
-* ALPN support for negotiating HTTP/2 over TLS (it's done with NPN for now)
-  (issue [#5](https://github.com/molnarg/node-http2/issues/5))
-* Upgrade mechanism to start HTTP/2 over unencrypted channel
+* ALPN is not yet supported in node.js (see
+  [this issue](https://github.com/joyent/node/issues/5945)). For ALPN support, you will have to use
+  [Shigeki Ohtsu's node.js fork](https://github.com/shigeki/node/tree/alpn_support) until this code
+  gets merged upstream.
+* Upgrade mechanism to start HTTP/2 over unencrypted channel is not implemented yet
   (issue [#4](https://github.com/molnarg/node-http2/issues/4))
 * Other minor features found in
-  [this list](https://github.com/molnarg/node-http2/issues?labels=feature)
+  [this list](https://github.com/molnarg/node-http2/issues?labels=feature) are not implemented yet
 
 Development
 -----------
