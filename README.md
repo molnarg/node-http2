@@ -2,8 +2,7 @@ node-http2
 ==========
 
 An HTTP/2 ([draft-ietf-httpbis-http2-06](http://tools.ietf.org/html/draft-ietf-httpbis-http2-06))
-client and server implementation for node.js, developed as a [Google Summer of Code
-project](https://google-melange.appspot.com/gsoc/project/google/gsoc2013/molnarg/5001).
+client and server implementation for node.js.
 
 Installation
 ------------
@@ -115,12 +114,12 @@ point to understand the code.
 ### Test coverage ###
 
 To generate a code coverage report, run `npm test --coverage` (which runs very slowly, be patient).
-Code coverage summary as of version 1.0.0:
+Code coverage summary as of version 1.0.1:
 ```
-Statements   : 93.22% ( 1553/1666 )
-Branches     : 85.11% ( 600/705 )
-Functions    : 94.79% ( 200/211 )
-Lines        : 93.19% ( 1547/1660 )
+Statements   : 93.26% ( 1563/1676 )
+Branches     : 84.85% ( 605/713 )
+Functions    : 94.81% ( 201/212 )
+Lines        : 93.23% ( 1557/1670 )
 ```
 
 There's a hosted version of the detailed (line-by-line) coverage report
@@ -156,8 +155,9 @@ Code contributions are always welcome! People who contributed to node-http2 so f
 * Mike Belshe
 
 Special thanks to Google for financing the development of this module as part of their [Summer of
-Code program](https://developers.google.com/open-source/soc/), and Nick Hurley of Mozilla, my GSoC
-mentor, who helps with regular code review and technical advices.
+Code program](https://developers.google.com/open-source/soc/) (project: [HTTP/2 prototype server
+implementation](https://google-melange.appspot.com/gsoc/project/google/gsoc2013/molnarg/5001)), and
+Nick Hurley of Mozilla, my GSoC mentor, who helped with regular code review and technical advices.
 
 License
 -------
