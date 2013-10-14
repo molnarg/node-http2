@@ -1,6 +1,6 @@
 {
   "name": "http2",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "An HTTP/2 client and server implementation",
   "main": "lib/index.js",
   "engines" : {
@@ -32,6 +32,10 @@
     "server"
   ],
   "author": "Gábor Molnár <gabor@molnar.es> (http://gabor.molnar.es)",
+  "contributors": [
+    "Nick Hurley",
+    "Mike Belshe"
+  ],
   "license": "MIT",
   "readmeFilename": "README.md"
 }
