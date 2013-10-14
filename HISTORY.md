@@ -1,6 +1,12 @@
 Version history
 ===============
 
+### 1.0.1 (2013-10-14) ###
+
+* Support for ALPN if node supports it (currently needs a custom build)
+* Fix for a few small issues
+* [Tarball](https://github.com/molnarg/node-http2/archive/node-http2-1.0.1.tar.gz)
+
 ### 1.0.0 (2013-09-23) ###
 
 * Exporting Endpoint class
