@@ -183,16 +183,16 @@
     <h1>Code coverage report for <span class="entity">lib/http.js</span></h1>
     <h2>
         
-        Statements: <span class="metric">92.1% <small>(373 / 405)</small></span> &nbsp;&nbsp;&nbsp;&nbsp;
+        Statements: <span class="metric">92.29% <small>(383 / 415)</small></span> &nbsp;&nbsp;&nbsp;&nbsp;
         
         
-        Branches: <span class="metric">77.27% <small>(119 / 154)</small></span> &nbsp;&nbsp;&nbsp;&nbsp;
+        Branches: <span class="metric">76.54% <small>(124 / 162)</small></span> &nbsp;&nbsp;&nbsp;&nbsp;
         
         
-        Functions: <span class="metric">92.06% <small>(58 / 63)</small></span> &nbsp;&nbsp;&nbsp;&nbsp;
+        Functions: <span class="metric">92.19% <small>(59 / 64)</small></span> &nbsp;&nbsp;&nbsp;&nbsp;
         
         
-        Lines: <span class="metric">92.1% <small>(373 / 405)</small></span> &nbsp;&nbsp;&nbsp;&nbsp;
+        Lines: <span class="metric">92.29% <small>(383 / 415)</small></span> &nbsp;&nbsp;&nbsp;&nbsp;
         
     </h2>
     <div class="path"><a href="../index.html">All files</a> &#187; <a href="index.html">lib/</a> &#187; http.js</div>
@@ -1165,7 +1165,27 @@
 964
 965
 966
-967</td><td class="line-coverage"><span class="cline-any cline-neutral">&nbsp;</span>
+967
+968
+969
+970
+971
+972
+973
+974
+975
+976
+977
+978
+979
+980
+981
+982
+983
+984</td><td class="line-coverage"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1320,6 +1340,14 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-yes">1</span>
 <span class="cline-any cline-yes">1</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1365,8 +1393,10 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">25</span>
 <span class="cline-any cline-yes">25</span>
+<span class="cline-any cline-yes">25</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">25</span>
 <span class="cline-any cline-yes">25</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1</span>
@@ -1398,10 +1428,13 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">24</span>
+<span class="cline-any cline-yes">24</span>
+<span class="cline-any cline-yes">2</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1</span>
-<span class="cline-any cline-yes">2</span>
+<span class="cline-any cline-yes">24</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1</span>
@@ -1814,8 +1847,8 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">4</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4</span>
+<span class="cline-any cline-yes">4</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">4</span>
 <span class="cline-any cline-yes">4</span>
@@ -2090,6 +2123,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">12</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -2142,6 +2176,9 @@
 //
 // Additional and modified API elements
 // ------------------------------------
+//
+// - **Class: http2.Endpoint**: an API for using the raw HTTP/2 framing layer. For documentation
+//   see the [lib/endpoint.js](endpoint.html) file.
 //
 // - **Class: http2.Server**
 //   - **Event: 'connection' (socket, [endpoint])**: there's a second argument if the negotiation of
@@ -2288,6 +2325,14 @@ var deprecatedHeaders = [
 // [1]: http://tools.ietf.org/html/draft-ietf-httpbis-http2-04
 var implementedVersion = 'HTTP-draft-06/2.0';
 &nbsp;
+// When doing NPN/ALPN negotiation, HTTP/1.1 is used as fallback
+var supportedProtocols = [implementedVersion, 'http/1.1', 'http/1.0'];
+&nbsp;
+// Using ALPN or NPN depending on node.js support (preferring ALPN)
+var negotiationMethod = process.features.tls_alpn ? <span class="branch-0 cbranch-no" title="branch not covered" >'ALPN' </span>: 'NPN';
+var protocolList = process.features.tls_alpn ? <span class="branch-0 cbranch-no" title="branch not covered" >'ALPNProtocols' </span>: 'NPNProtocols';
+var negotiatedProtocol = process.features.tls_alpn ? <span class="branch-0 cbranch-no" title="branch not covered" >'alpnProtocol' </span>: 'npnProtocol';
+&nbsp;
 // Logging
 // -------
 &nbsp;
@@ -2331,9 +2376,11 @@ function IncomingMessage(stream) {
   // * `this.headers` will store the regular headers (and none of the special colon headers)
   this.headers = {};
   this.trailers = undefined;
+  this._lastHeadersSeen = undefined;
 &nbsp;
   // * Other metadata is filled in when the headers arrive.
   stream.once('headers', this._onHeaders.bind(this));
+  stream.once('end', this._onEnd.bind(this));
 }
 IncomingMessage.prototype = Object.create(PassThrough.prototype, { constructor: { value: IncomingMessage } });
 &nbsp;
@@ -2362,12 +2409,15 @@ IncomingMessage.prototype._onHeaders = function _onHeaders(headers) {
     }
   }
 &nbsp;
-  // * The next header block, if any, will represent the trailers
-  this.stream.once('headers', this._onTrailers.bind(this));
+  // * The last header block, if it's not the first, will represent the trailers
+  var self = this;
+  this.stream.on('headers', function(headers) {
+    self._lastHeadersSeen = headers;
+  });
 };
 &nbsp;
-IncomingMessage.prototype._onTrailers = function _onTrailers(trailers) {
-  this.trailers = trailers;
+IncomingMessage.prototype._onEnd = function _onEnd() {
+  this.trailers = this._lastHeadersSeen;
 };
 &nbsp;
 IncomingMessage.prototype.setTimeout = noop;
@@ -2473,16 +2523,16 @@ function Server(options) {
   var start = this._start.bind(this);
   var fallback = this._fallback.bind(this);
 &nbsp;
-  // HTTP2 over TLS (using NPN instean of ALPN)
+  // HTTP2 over TLS (using NPN or ALPN)
   if ((options.key &amp;&amp; options.cert) || options.pfx) {
-    this._log.info('Creating HTTP/2 server over TLS/NPN');
+    this._log.info('Creating HTTP/2 server over TLS/' + negotiationMethod);
     this._mode = 'tls';
-    options.NPNProtocols = [implementedVersion, 'http/1.1', 'http/1.0'];
+    options[protocolList] = supportedProtocols;
     this._server = https.createServer(options);
     this._originalSocketListeners = this._server.listeners('secureConnection');
     this._server.removeAllListeners('secureConnection');
     this._server.on('secureConnection', function(socket) {
-      <span class="missing-if-branch" title="else path not taken"" >E</span>if (socket.npnProtocol === implementedVersion &amp;&amp; socket.servername) {
+      <span class="missing-if-branch" title="else path not taken"" >E</span>if (socket[negotiatedProtocol] === implementedVersion &amp;&amp; socket.servername) {
         start(socket);
       } else {
 <span class="cstat-no" title="statement not covered" >        fallback(socket);</span>
@@ -2534,7 +2584,7 @@ Server.prototype._start = function _start(socket) {
 &nbsp;
 Server.prototype._fallback = <span class="fstat-no" title="function not covered" >function _fallback(socket) {</span>
 <span class="cstat-no" title="statement not covered" >  this._log.info({ client: socket.remoteAddress + ':' + socket.remotePort,</span>
-                   protocol: socket.npnProtocol,
+                   protocol: socket[negotiatedProtocol],
                    SNI: socket.servername
                  }, 'Falling back to simple HTTPS');
 &nbsp;
@@ -2775,13 +2825,13 @@ function Agent(options) {
   this._log = (options.log || defaultLogger).child({ component: 'http' });
   this.endpoints = {};
 &nbsp;
-  // * Using an own HTTPS agent, because the global agent does not look at `NPNProtocols` when
+  // * Using an own HTTPS agent, because the global agent does not look at `NPN/ALPNProtocols` when
   //   generating the key identifying the connection, so we may get useless non-negotiated TLS
   //   channels even if we ask for a negotiated one. This agent will contain only negotiated
   //   channels.
-  this._httpsAgent = new https.Agent({
-    NPNProtocols: [implementedVersion, 'http/1.1', 'http/1.0']
-  });
+  var agentOptions = {};
+  agentOptions[protocolList] = supportedProtocols;
+  this._httpsAgent = new https.Agent(agentOptions);
 &nbsp;
   this.sockets = this._httpsAgent.sockets;
   this.requests = this._httpsAgent.requests;
@@ -2799,7 +2849,7 @@ Agent.prototype.request = function request(options, callback) {
   options.port = options.port || 443;
   options.path = options.path || '/';
 &nbsp;
-  if (options.protocol === 'http:') {
+  if (!options.plain &amp;&amp; options.protocol === 'http:') {
     this._log.error('Trying to negotiate client request with Upgrade from HTTP/1.1');
     throw new Error('HTTP1.1 -&gt; HTTP2 upgrade is not yet supported.');
   }
@@ -2834,16 +2884,16 @@ Agent.prototype.request = function request(options, callback) {
     request._start(endpoint.createStream(), options);
   }
 &nbsp;
-  // * HTTP/2 over TLS negotiated using NPN (or later ALPN)
+  // * HTTP/2 over TLS negotiated using NPN or ALPN
   else {
     var started = false;
-    options.NPNProtocols = [implementedVersion, 'http/1.1', 'http/1.0'];
+    options[protocolList] = supportedProtocols;
     options.servername = options.host; // Server Name Indication
     options.agent = this._httpsAgent;
     var httpsRequest = https.request(options);
 &nbsp;
     httpsRequest.on('socket', function(socket) {
-      <span class="missing-if-branch" title="if path not taken"" >I</span>if (socket.npnProtocol !== undefined) {
+      <span class="missing-if-branch" title="if path not taken"" >I</span>if (socket[negotiatedProtocol] !== undefined) {
 <span class="cstat-no" title="statement not covered" >        negotiated();</span>
       } else {
         socket.on('secureConnect', negotiated);
@@ -2853,7 +2903,7 @@ Agent.prototype.request = function request(options, callback) {
     var self = this;
     function negotiated() {
       var endpoint;
-      <span class="missing-if-branch" title="else path not taken"" >E</span>if (httpsRequest.socket.npnProtocol === implementedVersion) {
+      <span class="missing-if-branch" title="else path not taken"" >E</span>if (httpsRequest.socket[negotiatedProtocol] === implementedVersion) {
         httpsRequest.socket.emit('agentRemove');
         unbundleSocket(httpsRequest.socket);
         endpoint = new Endpoint(self._log, 'CLIENT', self._settings);
@@ -3054,9 +3104,10 @@ IncomingResponse.prototype._onHeaders = function _onHeaders(headers) {
   //   header field MUST be included in all responses.
   // * A client MUST treat the absence of the ":status" header field, the presence of multiple
   //   values, or an invalid value as a stream error of type PROTOCOL_ERROR.
+  //   Note: currently, we do not enforce it strictly: we accept any format, and parse it as int
   // * HTTP/2.0 does not define a way to carry the reason phrase that is included in an HTTP/1.1
   //   status line.
-  this.statusCode = this._checkSpecialHeader(':status', headers[':status']);
+  this.statusCode = parseInt(this._checkSpecialHeader(':status', headers[':status']));
 &nbsp;
   // * Handling regular headers.
   IncomingMessage.prototype._onHeaders.call(this, headers);
@@ -3102,7 +3153,7 @@ IncomingPromise.prototype._onPromise = OutgoingRequest.prototype._onPromise;
 
 </div>
 <div class="footer">
-    <div class="meta">Generated by <a href="http://istanbul-js.org/" target="_blank">istanbul</a> at Mon Sep 23 2013 21:40:24 GMT+0200 (CEST)</div>
+    <div class="meta">Generated by <a href="http://istanbul-js.org/" target="_blank">istanbul</a> at Mon Oct 14 2013 17:25:21 GMT+0200 (CEST)</div>
 </div>
 
 <script src="../prettify.js"></script>
