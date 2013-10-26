@@ -8,8 +8,8 @@ var options = process.env.HTTP2_PLAIN ? {
   key: fs.readFileSync(path.join(__dirname, '/localhost.key')),
   cert: fs.readFileSync(path.join(__dirname, '/localhost.crt'))
 };
+options.upgrade = Boolean(process.env.HTTP2_UPGRADE);
 
-// Passing bunyan logger (optional)
 options.log = require('../test/util').createLogger('server');
 
 // We cache one file to be able to do simple performance tests without waiting for the disk
@@ -45,5 +45,4 @@ var server = http2.createServer(options, function(request, response) {
     response.end();
   }
 });
-
 server.listen(process.env.HTTP2_PORT || 8080);

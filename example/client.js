@@ -2,6 +2,7 @@ var fs = require('fs');
 var path = require('path');
 var http2 = require('..');
 
+
 http2.globalAgent = new http2.Agent({
   log: require('../test/util').createLogger('client')
 });
@@ -9,9 +10,18 @@ http2.globalAgent = new http2.Agent({
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 
 // Sending the request
-// It would be `var request = http2.get(process.argv.pop());` if we wouldn't care about plain mode
+//
 var options = require('url').parse(process.argv.pop());
+
 options.plain = Boolean(process.env.HTTP2_PLAIN);
+options.upgrade = Boolean(process.env.HTTP2_UPGRADE);
+
+options.settings= {
+  SETTINGS_MAX_CONCURRENT_STREAMS: 3,
+  SETTINGS_INITIAL_WINDOW_SIZE: 9999,
+  SETTINGS_FLOW_CONTROL_OPTIONS: 0
+};
+
 var request = http2.request(options);
 request.end();
 
