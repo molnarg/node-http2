@@ -4,7 +4,7 @@
   "description": "An HTTP/2 client and server implementation",
   "main": "lib/index.js",
   "engines" : {
-    "node" : ">=0.10.0"
+    "node" : ">=0.10.19"
   },
   "devDependencies": {
     "istanbul": "*",
