@@ -7,32 +7,23 @@ exports.noop = noop;
 
 if (process.env.HTTP2_LOG) {
   var logOutput = process.stderr;
-
-  // invalidate the pipe option for Windows OS
-  if (!process.env.ComSpec && process.stderr.isTTY) {
+  if (process.stderr.isTTY) {
     var bin = path.resolve(path.dirname(require.resolve('bunyan')), '..', 'bin', 'bunyan');
-    
-     if ( bin && fs.existsSync(bin)) {
+    if(bin && fs.existsSync(bin)) {
       logOutput = spawn(bin, ['-o', 'short'], {
-	stdio: [null, process.stderr, process.stderr]
+        stdio: [null, process.stderr, process.stderr]
       }).stdin;
     }
   }
   exports.createLogger = function(name) {
-
-    var logger = require('bunyan').createLogger({
+    return require('bunyan').createLogger({
       name: name,
       stream: logOutput,
       level: process.env.HTTP2_LOG,
-      // Use an internal function to replace the pipe to bunyan filter
-      shortlog: (process.env.ComSpec ? true : false),
       serializers: require('../lib/http').serializers
     });
-    return logger;
   };
-  
   exports.log = exports.createLogger('test');
-
 } else {
   exports.createLogger = function() {
     return exports.log;
