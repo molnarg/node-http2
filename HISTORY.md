@@ -1,6 +1,16 @@
 Version history
 ===============
 
+### 0.6.0 (2013-11-09) ###
+
+* Splitting out node-http2-protocol from node-http2
+* The only exported class is `Endpoint`
+* Versioning will be based on the implemented protocol version with a '0.' prefix
+* [Tarball](https://github.com/molnarg/node-http2-protocol/archive/node-http2-protocol-0.6.0.tar.gz)
+
+Version history as part of the [node-http](https://github.com/molnarg/node-http2) module
+----------------------------------------------------------------------------------------
+
 ### 1.0.1 (2013-10-14) ###
 
 * Support for ALPN if node supports it (currently needs a custom build)
