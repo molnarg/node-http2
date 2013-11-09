@@ -44,11 +44,6 @@
               </a>
             
               
-              <a class="source" href="http.html">
-                http.js
-              </a>
-            
-              
               <a class="source" href="index.html">
                 index.js
               </a>
@@ -89,10 +84,10 @@
         <li id="section-2">
             <div class="annotation">
               
-              <div class="pilwrap for-h1">
+              <div class="pilwrap ">
                 <a class="pilcrow" href="#section-2">&#182;</a>
               </div>
-              <h1>The Flow class</h1>
+              <h1 id="the-flow-class">The Flow class</h1>
 
             </div>
             
@@ -120,10 +115,10 @@ exports.Flow = Flow;</pre></div></div>
         <li id="section-4">
             <div class="annotation">
               
-              <div class="pilwrap for-h2">
+              <div class="pilwrap ">
                 <a class="pilcrow" href="#section-4">&#182;</a>
               </div>
-              <h2>Public API</h2>
+              <h2 id="public-api">Public API</h2>
 
             </div>
             
@@ -147,7 +142,7 @@ exports.Flow = Flow;</pre></div></div>
 <li><p><strong>disableLocalFlowControl()</strong>: disables flow control for outgoing frames</p>
 </li>
 </ul>
-<h2>API for child classes</h2>
+<h2 id="api-for-child-classes">API for child classes</h2>
 
             </div>
             
@@ -185,7 +180,7 @@ same thing as <a href="http://nodejs.org/api/stream.html#stream_stream_read_0">i
 <li><p><strong>_log</strong>: the Flow class uses the <code>_log</code> object of the parent</p>
 </li>
 </ul>
-<h2>Constructor</h2>
+<h2 id="constructor">Constructor</h2>
 
             </div>
             
@@ -236,10 +231,10 @@ Flow.prototype = Object.create(Duplex.prototype, { constructor: { value: Flow } 
         <li id="section-9">
             <div class="annotation">
               
-              <div class="pilwrap for-h2">
+              <div class="pilwrap ">
                 <a class="pilcrow" href="#section-9">&#182;</a>
               </div>
-              <h2>Incoming frames</h2>
+              <h2 id="incoming-frames">Incoming frames</h2>
 
             </div>
             
@@ -281,7 +276,7 @@ incoming frame is a WINDOW_UPDATE.</p>
   }
 
   <span class="keyword">if</span> ((frame.type === <span class="string">'DATA'</span>) &amp;&amp; (frame.data.length &gt; <span class="number">0</span>) &amp;&amp; !<span class="keyword">this</span>._remoteFlowControlDisabled) {
-    <span class="keyword">this</span>._receive(frame, <span class="keyword">function</span>() {
+    <span class="keyword">this</span>._receive(frame, <span class="function"><span class="keyword">function</span><span class="params">()</span> {</span>
       <span class="keyword">this</span>._received += frame.data.length;
       <span class="keyword">if</span> (!<span class="keyword">this</span>._restoreWindowTimer) {
         <span class="keyword">this</span>._restoreWindowTimer = setImmediate(<span class="keyword">this</span>._restoreWindow.bind(<span class="keyword">this</span>));
@@ -351,10 +346,10 @@ a WINDOW_UPDATE that restores the flow control window of the remote end.</p>
         <li id="section-14">
             <div class="annotation">
               
-              <div class="pilwrap for-h2">
+              <div class="pilwrap ">
                 <a class="pilcrow" href="#section-14">&#182;</a>
               </div>
-              <h2>Outgoing frames - sending procedure</h2>
+              <h2 id="outgoing-frames-sending-procedure">Outgoing frames - sending procedure</h2>
 
             </div>
             
@@ -676,10 +671,10 @@ did not push the whole frame to the output queue (but maybe it did push part of 
         <li id="section-26">
             <div class="annotation">
               
-              <div class="pilwrap for-h2">
+              <div class="pilwrap ">
                 <a class="pilcrow" href="#section-26">&#182;</a>
               </div>
-              <h2>Outgoing frames - managing the window size</h2>
+              <h2 id="outgoing-frames-managing-the-window-size">Outgoing frames - managing the window size</h2>
 
             </div>
             

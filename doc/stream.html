@@ -44,11 +44,6 @@
               </a>
             
               
-              <a class="source" href="http.html">
-                http.js
-              </a>
-            
-              
               <a class="source" href="index.html">
                 index.js
               </a>
@@ -89,10 +84,10 @@
         <li id="section-2">
             <div class="annotation">
               
-              <div class="pilwrap for-h1">
+              <div class="pilwrap ">
                 <a class="pilcrow" href="#section-2">&#182;</a>
               </div>
-              <h1>The Stream class</h1>
+              <h1 id="the-stream-class">The Stream class</h1>
 
             </div>
             
@@ -123,10 +118,10 @@ exports.Stream = Stream;</pre></div></div>
         <li id="section-4">
             <div class="annotation">
               
-              <div class="pilwrap for-h2">
+              <div class="pilwrap ">
                 <a class="pilcrow" href="#section-4">&#182;</a>
               </div>
-              <h2>Public API</h2>
+              <h2 id="public-api">Public API</h2>
 
             </div>
             
@@ -165,7 +160,7 @@ that are to be sent/arrived to/from the peer and are related to this stream.</p>
 </li>
 </ul>
 <p>Headers are always in the <a href="http://nodejs.org/api/http.html#http_message_headers">regular node.js header format</a>.</p>
-<h2>Constructor</h2>
+<h2 id="constructor">Constructor</h2>
 
             </div>
             
@@ -262,10 +257,10 @@ Stream.prototype = Object.create(Duplex.prototype, { constructor: { value: Strea
         <li id="section-11">
             <div class="annotation">
               
-              <div class="pilwrap for-h2">
+              <div class="pilwrap ">
                 <a class="pilcrow" href="#section-11">&#182;</a>
               </div>
-              <h2>Managing the stream</h2>
+              <h2 id="managing-the-stream">Managing the stream</h2>
 
             </div>
             
@@ -397,10 +392,10 @@ any stream.</p>
         <li id="section-15">
             <div class="annotation">
               
-              <div class="pilwrap for-h2">
+              <div class="pilwrap ">
                 <a class="pilcrow" href="#section-15">&#182;</a>
               </div>
-              <h2>Data flow</h2>
+              <h2 id="data-flow">Data flow</h2>
 
             </div>
             
@@ -413,7 +408,7 @@ any stream.</p>
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-16">&#182;</a>
               </div>
-              <p>The incoming and the generated outgoing frames are received/transmitted on the <code>this.upsteam</code>
+              <p>The incoming and the generated outgoing frames are received/transmitted on the <code>this.upstream</code>
 <a href="flow.html">Flow</a>. The <a href="connection.html">Connection</a> object instantiating the stream will read
 and write frames to/from it. The stream itself is a regular <a href="http://nodejs.org/api/stream.html#stream_class_stream_duplex">Duplex stream</a>, and is used by
 the user to write or read the body of the request.</p>
@@ -771,10 +766,10 @@ Stream.prototype._finishing = <span class="function"><span class="keyword">funct
         <li id="section-31">
             <div class="annotation">
               
-              <div class="pilwrap for-h2">
+              <div class="pilwrap ">
                 <a class="pilcrow" href="#section-31">&#182;</a>
               </div>
-              <h2><a href="http://tools.ietf.org/id/draft-unicorn-httpbis-http2-01.html#StreamStates">Stream States</a></h2>
+              <h2 id="-stream-states-http-tools-ietf-org-id-draft-unicorn-httpbis-http2-01-html-streamstates-"><a href="http://tools.ietf.org/id/draft-unicorn-httpbis-http2-01.html#StreamStates">Stream States</a></h2>
 
             </div>
             
@@ -1274,10 +1269,10 @@ This will automatically cause a transition to the CLOSED state.</li>
         <li id="section-49">
             <div class="annotation">
               
-              <div class="pilwrap for-h2">
+              <div class="pilwrap ">
                 <a class="pilcrow" href="#section-49">&#182;</a>
               </div>
-              <h2>Bunyan serializers</h2>
+              <h2 id="bunyan-serializers">Bunyan serializers</h2>
 
             </div>
             
@@ -1296,7 +1291,7 @@ This will automatically cause a transition to the CLOSED state.</li>
             <div class="content"><div class='highlight'><pre>exports.serializers = {};
 
 <span class="keyword">var</span> nextId = <span class="number">0</span>;
-exports.serializers.s = <span class="keyword">function</span>(stream) {
+exports.serializers.s = <span class="function"><span class="keyword">function</span><span class="params">(stream)</span> {</span>
   <span class="keyword">if</span> (!(<span class="string">'_id'</span> <span class="keyword">in</span> stream)) {
     stream._id = nextId;
     nextId += <span class="number">1</span>;

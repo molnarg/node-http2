@@ -44,11 +44,6 @@
               </a>
             
               
-              <a class="source" href="http.html">
-                http.js
-              </a>
-            
-              
               <a class="source" href="index.html">
                 index.js
               </a>
@@ -98,10 +93,10 @@ exports.Deserializer = Deserializer;
         <li id="section-2">
             <div class="annotation">
               
-              <div class="pilwrap for-h2">
+              <div class="pilwrap ">
                 <a class="pilcrow" href="#section-2">&#182;</a>
               </div>
-              <h2>Serializer</h2>
+              <h2 id="serializer">Serializer</h2>
 
             </div>
             
@@ -173,10 +168,10 @@ frame types (like the length of the payload).</p>
         <li id="section-5">
             <div class="annotation">
               
-              <div class="pilwrap for-h2">
+              <div class="pilwrap ">
                 <a class="pilcrow" href="#section-5">&#182;</a>
               </div>
-              <h2>Deserializer</h2>
+              <h2 id="deserializer">Deserializer</h2>
 
             </div>
             
@@ -223,7 +218,7 @@ payload). The <code>_cursor</code> is used to track the progress.</p>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>Deserializer.prototype._next = <span class="keyword">function</span>(size) {
+            <div class="content"><div class='highlight'><pre>Deserializer.prototype._next = <span class="function"><span class="keyword">function</span><span class="params">(size)</span> {</span>
   <span class="keyword">this</span>._cursor = <span class="number">0</span>;
   <span class="keyword">this</span>._buffer = <span class="keyword">new</span> Buffer(size);
   <span class="keyword">this</span>._waitingForHeader = !<span class="keyword">this</span>._waitingForHeader;
@@ -342,10 +337,10 @@ will also run.</p>
         <li id="section-12">
             <div class="annotation">
               
-              <div class="pilwrap for-h2">
+              <div class="pilwrap ">
                 <a class="pilcrow" href="#section-12">&#182;</a>
               </div>
-              <h2><a href="http://http2.github.io/http2-spec/#FrameHeader">Frame Header</a></h2>
+              <h2 id="-frame-header-http-http2-github-io-http2-spec-frameheader-"><a href="http://http2.github.io/http2-spec/#FrameHeader">Frame Header</a></h2>
 
             </div>
             
@@ -428,35 +423,33 @@ Serializer.commonHeader = <span class="function"><span class="keyword">function<
     <span class="keyword">var</span> position = frameFlags[frame.type].indexOf(flag);
     assert(position !== -<span class="number">1</span>, <span class="string">'Unknown flag for frame type '</span> + frame.type + <span class="string">': '</span> + flag);
     <span class="keyword">if</span> (frame.flags[flag]) {
-      flagByte |= (<span class="number">1</span> &lt;<span class="xml"><span class="tag">&lt; <span class="attribute">position</span>);
+      flagByte |= (<span class="number">1</span> &lt;&lt; position);
     }
   }
-  <span class="attribute">headerBuffer.writeUInt8</span>(<span class="attribute">flagByte</span>, <span class="attribute">3</span>);
+  headerBuffer.writeUInt8(flagByte, <span class="number">3</span>);
 
-  <span class="attribute">assert</span>((<span class="attribute">0</span> &lt;= <span class="attribute">frame.stream</span>) &amp;&amp; (<span class="attribute">frame.stream</span> &lt; <span class="attribute">0x7fffffff</span>), <span class="attribute">frame.stream</span>);
-  <span class="attribute">headerBuffer.writeUInt32BE</span>(<span class="attribute">frame.stream</span> || <span class="attribute">0</span>, <span class="attribute">4</span>);
+  assert((<span class="number">0</span> &lt;= frame.stream) &amp;&amp; (frame.stream &lt; <span class="number">0x7fffffff</span>), frame.stream);
+  headerBuffer.writeUInt32BE(frame.stream || <span class="number">0</span>, <span class="number">4</span>);
 
-  <span class="attribute">buffers.unshift</span>(<span class="attribute">headerBuffer</span>);
+  buffers.unshift(headerBuffer);
 };
 
-<span class="attribute">Deserializer.commonHeader</span> = <span class="attribute">function</span> <span class="attribute">readCommonHeader</span>(<span class="attribute">buffer</span>, <span class="attribute">frame</span>) {
-  <span class="attribute">var</span> <span class="attribute">length</span> = <span class="attribute">buffer.readUInt16BE</span>(<span class="attribute">0</span>);
+Deserializer.commonHeader = <span class="function"><span class="keyword">function</span> <span class="title">readCommonHeader</span><span class="params">(buffer, frame)</span> {</span>
+  <span class="keyword">var</span> length = buffer.readUInt16BE(<span class="number">0</span>);
 
-  <span class="attribute">frame.type</span> = <span class="attribute">frameTypes</span>[<span class="attribute">buffer.readUInt8</span>(<span class="attribute">2</span>)];
+  frame.type = frameTypes[buffer.readUInt8(<span class="number">2</span>)];
 
-  <span class="attribute">frame.flags</span> = {};
-  <span class="attribute">var</span> <span class="attribute">flagByte</span> = <span class="attribute">buffer.readUInt8</span>(<span class="attribute">3</span>);
-  <span class="attribute">var</span> <span class="attribute">definedFlags</span> = <span class="attribute">frameFlags</span>[<span class="attribute">frame.type</span>];
-  <span class="attribute">for</span> (<span class="attribute">var</span> <span class="attribute">i</span> = <span class="attribute">0</span>; <span class="attribute">i</span> &lt; <span class="attribute">definedFlags.length</span>; <span class="attribute">i</span>++) {
-    <span class="attribute">frame.flags</span>[<span class="attribute">definedFlags</span>[<span class="attribute">i</span>]] = <span class="attribute">Boolean</span>(<span class="attribute">flagByte</span> &amp; (<span class="attribute">1</span> &lt;&lt; <span class="attribute">i</span>));
+  frame.flags = {};
+  <span class="keyword">var</span> flagByte = buffer.readUInt8(<span class="number">3</span>);
+  <span class="keyword">var</span> definedFlags = frameFlags[frame.type];
+  <span class="keyword">for</span> (<span class="keyword">var</span> i = <span class="number">0</span>; i &lt; definedFlags.length; i++) {
+    frame.flags[definedFlags[i]] = Boolean(flagByte &amp; (<span class="number">1</span> &lt;&lt; i));
   }
 
-  <span class="attribute">frame.stream</span> = <span class="attribute">buffer.readUInt32BE</span>(<span class="attribute">4</span>) &amp; <span class="attribute">0x7fffffff</span>;
+  frame.stream = buffer.readUInt32BE(<span class="number">4</span>) &amp; <span class="number">0x7fffffff</span>;
 
-  <span class="attribute">return</span> <span class="attribute">length</span>;
-};
-
-</span></pre></div></div>
+  <span class="keyword">return</span> length;
+};</pre></div></div>
             
         </li>
         
@@ -464,10 +457,10 @@ Serializer.commonHeader = <span class="function"><span class="keyword">function<
         <li id="section-14">
             <div class="annotation">
               
-              <div class="pilwrap for-h1">
+              <div class="pilwrap ">
                 <a class="pilcrow" href="#section-14">&#182;</a>
               </div>
-              <h1>Frame types</h1>
+              <h1 id="frame-types">Frame types</h1>
 
             </div>
             
@@ -487,7 +480,7 @@ Serializer.commonHeader = <span class="function"><span class="keyword">function<
 <li><code>typeSpecificAttributes</code>: a register of frame specific frame object attributes (used by
 logging code and also serves as documentation for frame objects)</li>
 </ul>
-<h2><a href="http://http2.github.io/http2-spec/#DataFrames">DATA Frames</a></h2>
+<h2 id="-data-frames-http-http2-github-io-http2-spec-dataframes-"><a href="http://http2.github.io/http2-spec/#DataFrames">DATA Frames</a></h2>
 
             </div>
             
@@ -533,10 +526,10 @@ Deserializer.DATA = <span class="function"><span class="keyword">function</span>
         <li id="section-17">
             <div class="annotation">
               
-              <div class="pilwrap for-h2">
+              <div class="pilwrap ">
                 <a class="pilcrow" href="#section-17">&#182;</a>
               </div>
-              <h2><a href="http://http2.github.io/http2-spec/#HEADERS">HEADERS</a></h2>
+              <h2 id="-headers-http-http2-github-io-http2-spec-headers-"><a href="http://http2.github.io/http2-spec/#HEADERS">HEADERS</a></h2>
 
             </div>
             
@@ -618,10 +611,10 @@ Deserializer.HEADERS = <span class="function"><span class="keyword">function</sp
         <li id="section-20">
             <div class="annotation">
               
-              <div class="pilwrap for-h2">
+              <div class="pilwrap ">
                 <a class="pilcrow" href="#section-20">&#182;</a>
               </div>
-              <h2><a href="http://http2.github.io/http2-spec/#PRIORITY">PRIORITY</a></h2>
+              <h2 id="-priority-http-http2-github-io-http2-spec-priority-"><a href="http://http2.github.io/http2-spec/#PRIORITY">PRIORITY</a></h2>
 
             </div>
             
@@ -679,10 +672,10 @@ Deserializer.PRIORITY = <span class="function"><span class="keyword">function</s
         <li id="section-23">
             <div class="annotation">
               
-              <div class="pilwrap for-h2">
+              <div class="pilwrap ">
                 <a class="pilcrow" href="#section-23">&#182;</a>
               </div>
-              <h2><a href="http://http2.github.io/http2-spec/#RST_STREAM">RST_STREAM</a></h2>
+              <h2 id="-rst_stream-http-http2-github-io-http2-spec-rst_stream-"><a href="http://http2.github.io/http2-spec/#RST_STREAM">RST_STREAM</a></h2>
 
             </div>
             
@@ -743,10 +736,10 @@ Deserializer.RST_STREAM = <span class="function"><span class="keyword">function<
         <li id="section-26">
             <div class="annotation">
               
-              <div class="pilwrap for-h2">
+              <div class="pilwrap ">
                 <a class="pilcrow" href="#section-26">&#182;</a>
               </div>
-              <h2><a href="http://http2.github.io/http2-spec/#SETTINGS">SETTINGS</a></h2>
+              <h2 id="-settings-http-http2-github-io-http2-spec-settings-"><a href="http://http2.github.io/http2-spec/#SETTINGS">SETTINGS</a></h2>
 
             </div>
             
@@ -800,7 +793,7 @@ connection capacity.</p>
             
             <div class="content"><div class='highlight'><pre>Serializer.SETTINGS = <span class="function"><span class="keyword">function</span> <span class="title">writeSettings</span><span class="params">(frame, buffers)</span> {</span>
   <span class="keyword">var</span> settings = [], settingsLeft = Object.keys(frame.settings);
-  definedSettings.forEach(<span class="keyword">function</span>(setting, id) {
+  definedSettings.forEach(<span class="function"><span class="keyword">function</span><span class="params">(setting, id)</span> {</span>
     <span class="keyword">if</span> (setting.name <span class="keyword">in</span> frame.settings) {
       settingsLeft.splice(settingsLeft.indexOf(setting.name), <span class="number">1</span>);
       <span class="keyword">var</span> value = frame.settings[setting.name];
@@ -913,10 +906,10 @@ bits are reserved.</li>
         <li id="section-33">
             <div class="annotation">
               
-              <div class="pilwrap for-h2">
+              <div class="pilwrap ">
                 <a class="pilcrow" href="#section-33">&#182;</a>
               </div>
-              <h2><a href="http://http2.github.io/http2-spec/#PUSH_PROMISE">PUSH_PROMISE</a></h2>
+              <h2 id="-push_promise-http-http2-github-io-http2-spec-push_promise-"><a href="http://http2.github.io/http2-spec/#PUSH_PROMISE">PUSH_PROMISE</a></h2>
 
             </div>
             
@@ -990,10 +983,10 @@ Deserializer.PUSH_PROMISE = <span class="function"><span class="keyword">functio
         <li id="section-36">
             <div class="annotation">
               
-              <div class="pilwrap for-h2">
+              <div class="pilwrap ">
                 <a class="pilcrow" href="#section-36">&#182;</a>
               </div>
-              <h2><a href="http://http2.github.io/http2-spec/#PING">PING</a></h2>
+              <h2 id="-ping-http-http2-github-io-http2-spec-ping-"><a href="http://http2.github.io/http2-spec/#PING">PING</a></h2>
 
             </div>
             
@@ -1052,10 +1045,10 @@ Deserializer.PING = <span class="function"><span class="keyword">function</span>
         <li id="section-39">
             <div class="annotation">
               
-              <div class="pilwrap for-h2">
+              <div class="pilwrap ">
                 <a class="pilcrow" href="#section-39">&#182;</a>
               </div>
-              <h2><a href="http://http2.github.io/http2-spec/#GOAWAY">GOAWAY</a></h2>
+              <h2 id="-goaway-http-http2-github-io-http2-spec-goaway-"><a href="http://http2.github.io/http2-spec/#GOAWAY">GOAWAY</a></h2>
 
             </div>
             
@@ -1128,10 +1121,10 @@ Deserializer.GOAWAY = <span class="function"><span class="keyword">function</spa
         <li id="section-42">
             <div class="annotation">
               
-              <div class="pilwrap for-h2">
+              <div class="pilwrap ">
                 <a class="pilcrow" href="#section-42">&#182;</a>
               </div>
-              <h2><a href="http://http2.github.io/http2-spec/#WINDOW_UPDATE">WINDOW_UPDATE</a></h2>
+              <h2 id="-window_update-http-http2-github-io-http2-spec-window_update-"><a href="http://http2.github.io/http2-spec/#WINDOW_UPDATE">WINDOW_UPDATE</a></h2>
 
             </div>
             
@@ -1191,10 +1184,10 @@ Deserializer.WINDOW_UPDATE = <span class="function"><span class="keyword">functi
         <li id="section-45">
             <div class="annotation">
               
-              <div class="pilwrap for-h2">
+              <div class="pilwrap ">
                 <a class="pilcrow" href="#section-45">&#182;</a>
               </div>
-              <h2><a href="http://http2.github.io/http2-spec/#CONTINUATION">CONTINUATION</a></h2>
+              <h2 id="-continuation-http-http2-github-io-http2-spec-continuation-"><a href="http://http2.github.io/http2-spec/#CONTINUATION">CONTINUATION</a></h2>
 
             </div>
             
@@ -1242,10 +1235,10 @@ Deserializer.CONTINUATION = <span class="function"><span class="keyword">functio
         <li id="section-47">
             <div class="annotation">
               
-              <div class="pilwrap for-h2">
+              <div class="pilwrap ">
                 <a class="pilcrow" href="#section-47">&#182;</a>
               </div>
-              <h2><a href="http://http2.github.io/http2-spec/#ErrorCodes">Error Codes</a></h2>
+              <h2 id="-error-codes-http-http2-github-io-http2-spec-errorcodes-"><a href="http://http2.github.io/http2-spec/#ErrorCodes">Error Codes</a></h2>
 
             </div>
             
@@ -1280,10 +1273,10 @@ Deserializer.CONTINUATION = <span class="function"><span class="keyword">functio
         <li id="section-49">
             <div class="annotation">
               
-              <div class="pilwrap for-h2">
+              <div class="pilwrap ">
                 <a class="pilcrow" href="#section-49">&#182;</a>
               </div>
-              <h2>Logging</h2>
+              <h2 id="logging">Logging</h2>
 
             </div>
             
@@ -1320,7 +1313,7 @@ flags that are not present.</li>
             </div>
             
             <div class="content"><div class='highlight'><pre><span class="keyword">var</span> frameCounter = <span class="number">0</span>;
-exports.serializers.frame = <span class="keyword">function</span>(frame) {
+exports.serializers.frame = <span class="function"><span class="keyword">function</span><span class="params">(frame)</span> {</span>
   <span class="keyword">if</span> (!frame) {
     <span class="keyword">return</span> <span class="literal">null</span>;
   }
@@ -1333,7 +1326,7 @@ exports.serializers.frame = <span class="keyword">function</span>(frame) {
   frameCounter += <span class="number">1</span>;
 
   <span class="keyword">var</span> logEntry = { id: frame.id };
-  genericAttributes.concat(typeSpecificAttributes[frame.type]).forEach(<span class="keyword">function</span>(name) {
+  genericAttributes.concat(typeSpecificAttributes[frame.type]).forEach(<span class="function"><span class="keyword">function</span><span class="params">(name)</span> {</span>
     logEntry[name] = frame[name];
   });
 
@@ -1353,7 +1346,7 @@ exports.serializers.frame = <span class="keyword">function</span>(frame) {
     logEntry.promised_stream = <span class="string">'stream-'</span> + frame.promised_stream.id;
   }
 
-  logEntry.flags = Object.keys(frame.flags || {}).filter(<span class="keyword">function</span>(name) {
+  logEntry.flags = Object.keys(frame.flags || {}).filter(<span class="function"><span class="keyword">function</span><span class="params">(name)</span> {</span>
     <span class="keyword">return</span> frame.flags[name] === <span class="literal">true</span>;
   });
 
@@ -1375,7 +1368,7 @@ exports.serializers.frame = <span class="keyword">function</span>(frame) {
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>exports.serializers.data = <span class="keyword">function</span>(data) {
+            <div class="content"><div class='highlight'><pre>exports.serializers.data = <span class="function"><span class="keyword">function</span><span class="params">(data)</span> {</span>
   <span class="keyword">return</span> data.toString(<span class="string">'hex'</span>);
 };</pre></div></div>
             

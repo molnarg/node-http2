@@ -44,11 +44,6 @@
               </a>
             
               
-              <a class="source" href="http.html">
-                http.js
-              </a>
-            
-              
               <a class="source" href="index.html">
                 index.js
               </a>
@@ -89,10 +84,10 @@
         <li id="section-2">
             <div class="annotation">
               
-              <div class="pilwrap for-h1">
+              <div class="pilwrap ">
                 <a class="pilcrow" href="#section-2">&#182;</a>
               </div>
-              <h1>The Connection class</h1>
+              <h1 id="the-connection-class">The Connection class</h1>
 
             </div>
             
@@ -121,10 +116,10 @@ exports.Connection = Connection;</pre></div></div>
         <li id="section-4">
             <div class="annotation">
               
-              <div class="pilwrap for-h2">
+              <div class="pilwrap ">
                 <a class="pilcrow" href="#section-4">&#182;</a>
               </div>
-              <h2>Public API</h2>
+              <h2 id="public-api">Public API</h2>
 
             </div>
             
@@ -157,7 +152,7 @@ of <code>settings</code></p>
 <li><p><strong>close([error])</strong>: close the stream with an error code</p>
 </li>
 </ul>
-<h2>Constructor</h2>
+<h2 id="constructor">Constructor</h2>
 
             </div>
             
@@ -303,10 +298,10 @@ Connection.prototype = Object.create(Flow.prototype, { constructor: { value: Con
         <li id="section-14">
             <div class="annotation">
               
-              <div class="pilwrap for-h2">
+              <div class="pilwrap ">
                 <a class="pilcrow" href="#section-14">&#182;</a>
               </div>
-              <h2>Overview</h2>
+              <h2 id="overview">Overview</h2>
 
             </div>
             
@@ -346,7 +341,7 @@ Connection.prototype = Object.create(Flow.prototype, { constructor: { value: Con
                             |     ^
                      read() |     | write()
                             v     |</code></pre>
-<h2>Stream management</h2>
+<h2 id="stream-management">Stream management</h2>
 
             </div>
             
@@ -750,10 +745,10 @@ a previously nonexistent stream.</p>
         <li id="section-34">
             <div class="annotation">
               
-              <div class="pilwrap for-h2">
+              <div class="pilwrap ">
                 <a class="pilcrow" href="#section-34">&#182;</a>
               </div>
-              <h2>Multiplexing</h2>
+              <h2 id="multiplexing">Multiplexing</h2>
 
             </div>
             
@@ -801,7 +796,7 @@ by child classes. It reads frames from streams and pushes them to the output buf
                 <a class="pilcrow" href="#section-37">&#182;</a>
               </div>
               <ul>
-<li>Do not do anything if the connectionis already closed</li>
+<li>Do not do anything if the connection is already closed</li>
 </ul>
 
             </div>
@@ -1064,10 +1059,10 @@ implemented by child classes. It forwards the given frame to the appropriate str
         <li id="section-48">
             <div class="annotation">
               
-              <div class="pilwrap for-h2">
+              <div class="pilwrap ">
                 <a class="pilcrow" href="#section-48">&#182;</a>
               </div>
-              <h2>Settings management</h2>
+              <h2 id="settings-management">Settings management</h2>
 
             </div>
             
@@ -1117,7 +1112,8 @@ implemented by child classes. It forwards the given frame to the appropriate str
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>  <span class="keyword">this</span>._log.debug(<span class="string">'Sending the first SETTINGS frame as part of the connection header.'</span>);
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">this</span>._log.debug({ settings: settings },
+                  <span class="string">'Sending the first SETTINGS frame as part of the connection header.'</span>);
   <span class="keyword">this</span>.set(settings || defaultSettings);</pre></div></div>
             
         </li>
@@ -1155,7 +1151,8 @@ implemented by child classes. It forwards the given frame to the appropriate str
             
             <div class="content"><div class='highlight'><pre>Connection.prototype._onFirstFrameReceived = <span class="function"><span class="keyword">function</span> <span class="title">_onFirstFrameReceived</span><span class="params">(frame)</span> {</span>
   <span class="keyword">if</span> ((frame.stream === <span class="number">0</span>) &amp;&amp; (frame.type === <span class="string">'SETTINGS'</span>)) {
-    <span class="keyword">this</span>._log.debug(<span class="string">'Receiving the first SETTINGS frame as part of the connection header.'</span>);
+    <span class="keyword">this</span>._log.debug({ settings: frame.settings },
+                    <span class="string">'Receiving the first SETTINGS frame as part of the connection header.'</span>);
   } <span class="keyword">else</span> {
     <span class="keyword">this</span>._log.fatal({ frame: frame }, <span class="string">'Invalid connection header: first frame is not SETTINGS.'</span>);
     <span class="keyword">this</span>.emit(<span class="string">'error'</span>);
@@ -1212,10 +1209,10 @@ implemented by child classes. It forwards the given frame to the appropriate str
         <li id="section-56">
             <div class="annotation">
               
-              <div class="pilwrap for-h2">
+              <div class="pilwrap ">
                 <a class="pilcrow" href="#section-56">&#182;</a>
               </div>
-              <h2>Lifecycle management</h2>
+              <h2 id="lifecycle-management">Lifecycle management</h2>
 
             </div>
             
@@ -1385,10 +1382,10 @@ Connection.prototype._receiveGoaway = <span class="function"><span class="keywor
         <li id="section-62">
             <div class="annotation">
               
-              <div class="pilwrap for-h2">
+              <div class="pilwrap ">
                 <a class="pilcrow" href="#section-62">&#182;</a>
               </div>
-              <h2>Flow control</h2>
+              <h2 id="flow-control">Flow control</h2>
 
             </div>
             
@@ -1420,7 +1417,7 @@ Connection.prototype._receiveGoaway = <span class="function"><span class="keywor
             </div>
             
             <div class="content"><div class='highlight'><pre>  <span class="keyword">this</span>._initialStreamWindowSize = INITIAL_STREAM_WINDOW_SIZE;
-  <span class="keyword">this</span>.on(<span class="string">'new_stream'</span>, <span class="keyword">function</span>(stream) {
+  <span class="keyword">this</span>.on(<span class="string">'new_stream'</span>, <span class="function"><span class="keyword">function</span><span class="params">(stream)</span> {</span>
     stream.upstream.setInitialWindow(<span class="keyword">this</span>._initialStreamWindowSize);
     <span class="keyword">if</span> (<span class="keyword">this</span>._remoteFlowControlDisabled) {
       stream.upstream.disableRemoteFlowControl();
@@ -1471,7 +1468,7 @@ the difference between the new value and the old value.</p>
   } <span class="keyword">else</span> {
     <span class="keyword">this</span>._log.debug({ size: size }, <span class="string">'Changing stream initial window size.'</span>);
     <span class="keyword">this</span>._initialStreamWindowSize = size;
-    <span class="keyword">this</span>._streamIds.forEach(<span class="keyword">function</span>(stream) {
+    <span class="keyword">this</span>._streamIds.forEach(<span class="function"><span class="keyword">function</span><span class="params">(stream)</span> {</span>
       stream.upstream.setInitialWindow(size);
     });
   }
@@ -1504,7 +1501,7 @@ for turning off flow control since it can not be turned on.</p>
 Connection.prototype._setRemoteFlowControl = <span class="function"><span class="keyword">function</span> <span class="title">_setRemoteFlowControl</span><span class="params">(disable)</span> {</span>
   <span class="keyword">if</span> (disable) {
     <span class="keyword">this</span>.disableRemoteFlowControl();
-    <span class="keyword">this</span>._streamIds.forEach(<span class="keyword">function</span>(stream) {
+    <span class="keyword">this</span>._streamIds.forEach(<span class="function"><span class="keyword">function</span><span class="params">(stream)</span> {</span>
       stream.upstream.disableRemoteFlowControl();
     });
   } <span class="keyword">else</span> <span class="keyword">if</span> (<span class="keyword">this</span>._remoteFlowControlDisabled) {
