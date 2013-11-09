@@ -1,10 +1,10 @@
 {
-  "name": "http2",
-  "version": "1.0.1",
-  "description": "An HTTP/2 client and server implementation",
-  "main": "lib/index.js",
+  "name": "http2-protocol",
+  "version": "0.6.0",
+  "description": "A JavaScript implementation of the HTTP/2 framing layer",
+  "main": "lib/endpoint.js",
   "engines" : {
-    "node" : ">=0.10.19"
+    "node" : "0.10.x"
   },
   "devDependencies": {
     "istanbul": "*",
@@ -19,11 +19,11 @@
   },
   "repository": {
     "type": "git",
-    "url": "git://github.com/molnarg/node-http2.git"
+    "url": "https://github.com/molnarg/node-http2-protocol.git"
   },
-  "homepage": "https://github.com/molnarg/node-http2",
+  "homepage": "https://github.com/molnarg/node-http2-protocol",
   "bugs": {
-    "url": "https://github.com/molnarg/node-http2/issues"
+    "url": "https://github.com/molnarg/node-http2-protocol/issues"
   },
   "keywords": [
     "http",
