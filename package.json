@@ -2,7 +2,7 @@
   "name": "http2-protocol",
   "version": "0.6.0",
   "description": "A JavaScript implementation of the HTTP/2 framing layer",
-  "main": "lib/endpoint.js",
+  "main": "lib/index.js",
   "engines" : {
     "node" : "0.10.x"
   },
