@@ -1,85 +1,21 @@
-node-http2
-==========
+node-http2-protocol
+===================
 
 An HTTP/2 ([draft-ietf-httpbis-http2-06](http://tools.ietf.org/html/draft-ietf-httpbis-http2-06))
-client and server implementation for node.js.
+framing layer implementaion for node.js.
 
 Installation
 ------------
 
 ```
-npm install http2
+npm install http2-protocol
 ```
-
-API
----
-
-The API is very similar to the [standard node.js HTTPS API](http://nodejs.org/api/https.html). The
-goal is the perfect API compatibility, with additional HTTP2 related extensions (like server push).
-
-Detailed API documentation is primarily maintained in the `lib/http.js` file and is [available in
-the wiki](https://github.com/molnarg/node-http2/wiki/Public-API) as well.
 
 Examples
 --------
 
-### Using as a server ###
-
-```javascript
-var options = {
-  key: fs.readFileSync('./example/localhost.key'),
-  cert: fs.readFileSync('./example/localhost.crt')
-};
-
-require('http2').createServer(options, function(request, response) {
-  response.end('Hello world!');
-}).listen(8080);
-```
-
-### Using as a client ###
-
-```javascript
-process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
-
-require('http2').get('https://localhost:8080/', function(response) {
-  response.pipe(process.stdout);
-});
-```
-
-### Simple static file server ###
-
-An simple static file server serving up content from its own directory is available in the `example`
-directory. Running the server:
-
-```bash
-$ node ./example/server.js
-```
-
-### Simple command line client ###
-
-An example client is also available. Downloading the server's own source code from the server:
-
-```bash
-$ node ./example/client.js 'https://localhost:8080/server.js' >/tmp/server.js
-```
-
-### Server push ###
-
-For a server push example, see the source code of the example
-[server](https://github.com/molnarg/node-http2/blob/master/example/server.js) and
-[client](https://github.com/molnarg/node-http2/blob/master/example/client.js).
-
-Status
-------
-
-* ALPN is not yet supported in node.js (see
-  [this issue](https://github.com/joyent/node/issues/5945)). For ALPN support, you will have to use
-  [Shigeki Ohtsu's node.js fork](https://github.com/shigeki/node/tree/alpn_support) until this code
-  gets merged upstream.
-* Upgrade mechanism to start HTTP/2 over unencrypted channel is not implemented yet
-  (issue [#4](https://github.com/molnarg/node-http2/issues/4))
-* Other minor features found in
-  [this list](https://github.com/molnarg/node-http2/issues?labels=feature) are not implemented yet
+API
+---
 
 Development
 -----------
@@ -113,38 +49,19 @@ point to understand the code.
 
 ### Test coverage ###
 
-To generate a code coverage report, run `npm test --coverage` (which runs very slowly, be patient).
-Code coverage summary as of version 1.0.1:
+To generate a code coverage report, run `npm test --coverage` (it may be slow, be patient).
+Code coverage summary as of version 0.6.0:
 ```
-Statements   : 93.26% ( 1563/1676 )
-Branches     : 84.85% ( 605/713 )
-Functions    : 94.81% ( 201/212 )
-Lines        : 93.23% ( 1557/1670 )
+Statements   : 92.39% ( 1165/1261 )
+Branches     : 86.57% ( 477/551 )
+Functions    : 91.22% ( 135/148 )
+Lines        : 92.35% ( 1159/1255 )
 ```
 
 There's a hosted version of the detailed (line-by-line) coverage report
-[here](http://molnarg.github.io/node-http2/coverage/lcov-report/lib/).
+[here](http://molnarg.github.io/node-http2-protocol/coverage/lcov-report/lib/).
 
 ### Logging ###
-
-Logging is turned off by default. You can turn it on by passing a bunyan logger as `log` option when
-creating a server or agent.
-
-When using the example server or client, it's very easy to turn logging on: set the `HTTP2_LOG`
-environment variable to `fatal`, `error`, `warn`, `info`, `debug` or `trace` (the logging level).
-To log every single incoming and outgoing data chunk, use `HTTP2_LOG_DATA=1` besides
-`HTTP2_LOG=trace`. Log output goes to the standard error output. If the standard error is redirected
-into a file, then the log output is in bunyan's JSON format for easier post-mortem analysis.
-
-Running the example server and client with `info` level logging output:
-
-```bash
-$ HTTP2_LOG=info node ./example/server.js
-```
-
-```bash
-$ HTTP2_LOG=info node ./example/client.js 'http://localhost:8080/server.js' >/dev/null
-```
 
 Contributors
 ------------
