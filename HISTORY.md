@@ -4,7 +4,7 @@ Version history
 ### 2.0.0 (2013-11-09) ###
 
 * Splitting out everything that is not related to negotiating HTTP2 or the node-like HTTP API.
-  These live in separate module form now on:
+  These live in separate module from now on:
   [http2-protocol](https://github.com/molnarg/node-http2-protocol).
 * The only backwards incompatible change: the `Endpoint` class is not exported anymore. Use the
   http2-protocol module if you want to use this low level interface.
