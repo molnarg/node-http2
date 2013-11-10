@@ -1,6 +1,13 @@
 Version history
 ===============
 
+### 2.1.0 (2013-11-10) ###
+
+* Upgrade to the latest draft: [draft-ietf-httpbis-http2-07][draft-07]
+* [Tarball](https://github.com/molnarg/node-http2/archive/node-http2-2.1.0.tar.gz)
+
+[draft-07]: http://tools.ietf.org/html/draft-ietf-httpbis-http2-07
+
 ### 2.0.0 (2013-11-09) ###
 
 * Splitting out everything that is not related to negotiating HTTP2 or the node-like HTTP API.
