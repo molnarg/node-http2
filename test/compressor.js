@@ -105,60 +105,95 @@ ddbb76eddbb48d090b5fd237f086c44a23ef0e70c72b2fbb617f'
 
 var test_headers = [{
   header: {
-    name: 3,
-    value: '/my-example/index.html',
-    index: Infinity
+    name: 1,
+    value: 'GET',
+    index: true
   },
-  buffer: new Buffer('44' + '162F6D792D6578616D706C652F696E6465782E68746D6C', 'hex')
+  buffer: new Buffer('02' + '03474554', 'hex')
 }, {
   header: {
-    name: 11,
-    value: 'my-user-agent',
-    index: Infinity
+    name: 6,
+    value: 'http',
+    index: true
   },
-  buffer: new Buffer('4C' + '0D6D792D757365722D6167656E74', 'hex')
+  buffer: new Buffer('07' + '83ce3177', 'hex')
 }, {
   header: {
-    name: 'x-my-header',
-    value: 'first',
-    index: Infinity
+    name: 5,
+    value: '/',
+    index: true
   },
-  buffer: new Buffer('40' + '0B782D6D792D686561646572' + '056669727374', 'hex')
-}, {
-  header: {
-    name: 30,
-    value: 30,
-    index: -1
-  },
-  buffer: new Buffer('9e', 'hex')
-}, {
-  header: {
-    name: 32,
-    value: 32,
-    index: -1
-  },
-  buffer: new Buffer('a0', 'hex')
+  buffer: new Buffer('06' + '012f', 'hex')
 }, {
   header: {
     name: 3,
-    value: '/my-example/resources/script.js',
-    index: 30
+    value: 'www.foo.com',
+    index: true
   },
-  buffer: new Buffer('041e' + '1F2F6D792D6578616D706C652F7265736F75726365732F7363726970742E6A73', 'hex')
+  buffer: new Buffer('04' + '88db6d898b5a44b74f', 'hex')
 }, {
   header: {
-    name: 32,
-    value: 'second',
-    index: Infinity
+    name: 2,
+    value: 'https',
+    index: true
   },
-  buffer: new Buffer('5F02' + '067365636F6E64', 'hex')
+  buffer: new Buffer('03' + '84ce31743f', 'hex')
 }, {
   header: {
-    name: 32,
-    value: 'third',
-    index: -1
+    name: 1,
+    value: 'www.bar.com',
+    index: true
   },
-  buffer: new Buffer('7F02' + '057468697264', 'hex')
+  buffer: new Buffer('02' + '88db6d897a1e44b74f', 'hex')
+}, {
+  header: {
+    name: 28,
+    value: 'no-cache',
+    index: true
+  },
+  buffer: new Buffer('1d' + '8663654a1398ff', 'hex')
+}, {
+  header: {
+    name: 3,
+    value: 3,
+    index: false
+  },
+  buffer: new Buffer('83', 'hex')
+}, {
+  header: {
+    name: 5,
+    value: 5,
+    index: false
+  },
+  buffer: new Buffer('85', 'hex')
+}, {
+  header: {
+    name: 4,
+    value: '/custom-path.css',
+    index: true
+  },
+  buffer: new Buffer('05' + '8b04eb08b7495c88e644c21f', 'hex')
+}, {
+  header: {
+    name: 'custom-key',
+    value: 'custom-value',
+    index: true
+  },
+  buffer: new Buffer('00' + '884eb08b749790fa7f' + '894eb08b74979a17a8ff', 'hex')
+}, {
+  header: {
+    name: 2,
+    value: 2,
+    index: false
+  },
+  buffer: new Buffer('82', 'hex')
+}, {
+  header: {
+    name: 6,
+    value: 6,
+    index: false
+  },
+  buffer: new Buffer('86', 'hex')
 }];
 
 var test_header_sets = [{
@@ -245,11 +280,12 @@ describe('compressor.js', function() {
         }
       });
     });
-    describe('static method .header({ name, value, indexing, substitution })', function() {
+    describe('static method .header({ name, value, index })', function() {
       it('should return an array of buffers that represent the encoded form of the header', function() {
+        var table = HuffmanTable.requestHuffmanTable;
         for (var i = 0; i < test_headers.length; i++) {
           var test = test_headers[i];
-          expect(util.concat(HeaderSetCompressor.header(test.header))).to.deep.equal(test.buffer);
+          expect(util.concat(HeaderSetCompressor.header(test.header, table))).to.deep.equal(test.buffer);
         }
       });
     });
@@ -279,10 +315,11 @@ describe('compressor.js', function() {
     });
     describe('static method .header(buffer)', function() {
       it('should return the parsed header and increase the cursor property of buffer', function() {
+        var table = HuffmanTable.requestHuffmanTable;
         for (var i = 0; i < test_headers.length; i++) {
           var test = test_headers[i];
           test.buffer.cursor = 0;
-          expect(HeaderSetDecompressor.header(test.buffer)).to.deep.equal(test.header);
+          expect(HeaderSetDecompressor.header(test.buffer, table)).to.deep.equal(test.header);
           expect(test.buffer.cursor).to.equal(test.buffer.length);
         }
       });
