@@ -198,19 +198,31 @@ var test_headers = [{
 
 var test_header_sets = [{
   headers: {
-    ':path': '/my-example/index.html',
-    'user-agent': 'my-user-agent',
-    'x-my-header': 'first'
+    ':method': 'GET',
+    ':scheme': 'http',
+    ':path': '/',
+    ':authority': 'www.foo.com'
   },
-  buffer: util.concat(test_headers.slice(0, 3).map(function(test) { return test.buffer; }))
+  buffer: util.concat(test_headers.slice(0, 4).map(function(test) { return test.buffer; }))
 }, {
   headers: {
-    ':path': '/my-example/resources/script.js',
-    'user-agent': 'my-user-agent',
-    'x-my-header': 'second'
+    ':method': 'GET',
+    ':scheme': 'https',
+    ':path': '/',
+    ':authority': 'www.bar.com',
+    'cache-control': 'no-cache'
   },
-  buffer: util.concat(test_headers.slice(3, 7).map(function(test) { return test.buffer; }))
+  buffer: util.concat(test_headers.slice(4, 9).map(function(test) { return test.buffer; }))
 }, {
+  headers: {
+    ':method': 'GET',
+    ':scheme': 'https',
+    ':path': '/custom-path.css',
+    ':authority': 'www.bar.com',
+    'custom-key': 'custom-value'
+  },
+  buffer: util.concat(test_headers.slice(9, 13).map(function(test) { return test.buffer; }))
+}/*, {
   headers: {
     ':path': '/my-example/resources/script.js',
     'user-agent': 'my-user-agent',
@@ -224,7 +236,7 @@ var test_header_sets = [{
     'cookie': ['first', 'second', 'third', 'third'],
     'verylong': (new Buffer(9000)).toString('hex')
   }
-}];
+}*/];
 
 describe('compressor.js', function() {
   describe('HeaderTable', function() {
