@@ -229,9 +229,10 @@ describe('compressor.js', function() {
   describe('HeaderSetCompressor', function() {
     describe('static method .integer(I, N)', function() {
       it('should return an array of buffers that represent the N-prefix coded form of the integer I', function() {
-        for (var i = 0; i < test_strings.length; i++) {
-          var test = test_strings[i];
-          expect(util.concat(HeaderSetCompressor.string(test.string))).to.deep.equal(test.buffer);
+        for (var i = 0; i < test_integers.length; i++) {
+          var test = test_integers[i];
+          test.buffer.cursor = 0;
+          expect(util.concat(HeaderSetCompressor.integer(test.I, test.N))).to.deep.equal(test.buffer);
         }
       });
     });
