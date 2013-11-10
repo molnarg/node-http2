@@ -1,6 +1,13 @@
 Version history
 ===============
 
+### 0.7.0 (2013-11-10) ###
+
+* Upgrade to the latest draft: [draft-ietf-httpbis-http2-07][draft-07]
+* [Tarball](https://github.com/molnarg/node-http2-protocol/archive/node-http2-protocol-0.7.0.tar.gz)
+
+[draft-07]: http://tools.ietf.org/html/draft-ietf-httpbis-http2-07
+
 ### 0.6.0 (2013-11-09) ###
 
 * Splitting out node-http2-protocol from node-http2
