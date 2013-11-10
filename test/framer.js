@@ -130,7 +130,7 @@ var test_frames = [{
 }, {
   frame: {
     type: 'CONTINUATION',
-    flags: { END_STREAM: false, RESERVED: false, END_HEADERS: true },
+    flags: { RESERVED1: false, RESERVED2: false, END_HEADERS: true },
     stream: 10,
 
     data: new Buffer('12345678', 'hex')
