@@ -73,23 +73,27 @@ var test_frames = [{
 }, {
   frame: {
     type: 'SETTINGS',
-    flags: { },
+    flags: { ACK: false },
     stream: 10,
 
     settings: {
+      SETTINGS_HEADER_TABLE_SIZE: 0x12345678,
+      SETTINGS_ENABLE_PUSH: true,
       SETTINGS_MAX_CONCURRENT_STREAMS: 0x01234567,
       SETTINGS_INITIAL_WINDOW_SIZE:    0x89ABCDEF,
       SETTINGS_FLOW_CONTROL_OPTIONS:   true
     }
   },
-  buffer: new Buffer('0018' + '04' + '00' + '0000000A' +   '00' + '000004' + '01234567' +
+  buffer: new Buffer('0028' + '04' + '00' + '0000000A' +   '00' + '000001' + '12345678' +
+                                                           '00' + '000002' + '00000001' +
+                                                           '00' + '000004' + '01234567' +
                                                            '00' + '000007' + '89ABCDEF' +
                                                            '00' + '00000A' + '00000001', 'hex')
 
 }, {
   frame: {
     type: 'PUSH_PROMISE',
-    flags: { END_PUSH_PROMISE: false },
+    flags: { RESERVED1: false, RESERVED2: false, END_PUSH_PROMISE: false },
     stream: 15,
 
     promised_stream: 3,
@@ -100,7 +104,7 @@ var test_frames = [{
 }, {
   frame: {
     type: 'PING',
-    flags: { PONG: false },
+    flags: { ACK: false },
     stream: 15,
 
     data: new Buffer('1234567887654321', 'hex')
