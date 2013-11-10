@@ -222,13 +222,15 @@ var test_header_sets = [{
     'custom-key': 'custom-value'
   },
   buffer: util.concat(test_headers.slice(9, 13).map(function(test) { return test.buffer; }))
-}/*, {
+}, {
   headers: {
-    ':path': '/my-example/resources/script.js',
-    'user-agent': 'my-user-agent',
-    'x-my-header': ['third', 'second']
+    ':method': 'GET',
+    ':scheme': 'https',
+    ':path': '/custom-path.css',
+    ':authority': ['www.foo.com', 'www.bar.com'],
+    'custom-key': 'custom-value'
   },
-  buffer: test_headers[7].buffer
+  buffer: test_headers[3].buffer
 }, {
   headers: {
     ':status': '200',
@@ -236,7 +238,7 @@ var test_header_sets = [{
     'cookie': ['first', 'second', 'third', 'third'],
     'verylong': (new Buffer(9000)).toString('hex')
   }
-}*/];
+}];
 
 describe('compressor.js', function() {
   describe('HeaderTable', function() {
@@ -341,12 +343,10 @@ describe('compressor.js', function() {
     describe('method decompress(buffer)', function() {
       it('should return the parsed header set in { name1: value1, name2: [value2, value3], ... } format', function() {
         var decompressor = new Decompressor(util.log, 'REQUEST');
-        var header_set = test_header_sets[0];
-        expect(decompressor.decompress(header_set.buffer)).to.deep.equal(header_set.headers);
-        header_set = test_header_sets[1];
-        expect(decompressor.decompress(header_set.buffer)).to.deep.equal(header_set.headers);
-        header_set = test_header_sets[2];
-        expect(decompressor.decompress(header_set.buffer)).to.deep.equal(header_set.headers);
+        for (var i = 0; i < 4; i++) {
+          var header_set = test_header_sets[i];
+          expect(decompressor.decompress(header_set.buffer)).to.deep.equal(header_set.headers);
+        }
       });
     });
     describe('transform stream', function() {
@@ -378,8 +378,9 @@ describe('compressor.js', function() {
       it('should be true for any header set if the states are synchronized', function() {
         var compressor = new Compressor(util.log, 'REQUEST');
         var decompressor = new Decompressor(util.log, 'REQUEST');
+        var n = test_header_sets.length;
         for (var i = 0; i < 10; i++) {
-          var headers = test_header_sets[i%4].headers;
+          var headers = test_header_sets[i%n].headers;
           var compressed = compressor.compress(headers);
           var decompressed = decompressor.decompress(compressed);
           expect(decompressed).to.deep.equal(headers);
@@ -391,17 +392,18 @@ describe('compressor.js', function() {
       it('should behave like source.pipe(destination) for a stream of frames', function(done) {
         var compressor = new Compressor(util.log, 'RESPONSE');
         var decompressor = new Decompressor(util.log, 'RESPONSE');
+        var n = test_header_sets.length;
         compressor.pipe(decompressor);
         for (var i = 0; i < 10; i++) {
           compressor.write({
             type: i%2 ? 'HEADERS' : 'PUSH_PROMISE',
             flags: {},
-            headers: test_header_sets[i%4].headers
+            headers: test_header_sets[i%n].headers
           });
         }
         setTimeout(function() {
           for (var j = 0; j < 10; j++) {
-            expect(decompressor.read().headers).to.deep.equal(test_header_sets[j%4].headers);
+            expect(decompressor.read().headers).to.deep.equal(test_header_sets[j%n].headers);
           }
           done();
         }, 10);
