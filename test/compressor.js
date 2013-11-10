@@ -28,8 +28,8 @@ var test_integers = [{
 }];
 
 var test_strings = [{
-  string: 'abcdefghij',
-  buffer: new Buffer('0A6162636465666768696A', 'hex')
+  string: 'www.foo.com',
+  buffer: new Buffer('88db6d898b5a44b74f', 'hex')
 }, {
   string: 'éáűőúöüó€',
   buffer: new Buffer('13C3A9C3A1C5B1C591C3BAC3B6C3BCC3B3E282AC', 'hex')
@@ -238,9 +238,10 @@ describe('compressor.js', function() {
     });
     describe('static method .string(string)', function() {
       it('should return an array of buffers that represent the encoded form of the string', function() {
+        var table = HuffmanTable.requestHuffmanTable;
         for (var i = 0; i < test_strings.length; i++) {
           var test = test_strings[i];
-          expect(util.concat(HeaderSetCompressor.string(test.string))).to.deep.equal(test.buffer);
+          expect(util.concat(HeaderSetCompressor.string(test.string, table))).to.deep.equal(test.buffer);
         }
       });
     });
@@ -267,10 +268,11 @@ describe('compressor.js', function() {
     });
     describe('static method .string(buffer)', function() {
       it('should return the parsed string and increase the cursor property of buffer', function() {
+        var table = HuffmanTable.requestHuffmanTable;
         for (var i = 0; i < test_strings.length; i++) {
           var test = test_strings[i];
           test.buffer.cursor = 0;
-          expect(HeaderSetDecompressor.string(test.buffer)).to.equal(test.string);
+          expect(HeaderSetDecompressor.string(test.buffer, table)).to.equal(test.string);
           expect(test.buffer.cursor).to.equal(test.buffer.length);
         }
       });
