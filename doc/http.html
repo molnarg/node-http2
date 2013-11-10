@@ -292,7 +292,7 @@ exports.OutgoingMessage = OutgoingMessage;
 
             </div>
             
-            <div class="content"><div class='highlight'><pre><span class="keyword">var</span> implementedVersion = <span class="string">'HTTP-draft-06/2.0'</span>;</pre></div></div>
+            <div class="content"><div class='highlight'><pre><span class="keyword">var</span> implementedVersion = <span class="string">'HTTP-draft-07/2.0'</span>;</pre></div></div>
             
         </li>
         
@@ -1032,7 +1032,7 @@ IncomingRequest.prototype = Object.create(IncomingMessage.prototype, { construct
               <ul>
 <li>The &quot;:method&quot; header field includes the HTTP method</li>
 <li>The &quot;:scheme&quot; header field includes the scheme portion of the target URI</li>
-<li>The &quot;:host&quot; header field includes the authority portion of the target URI</li>
+<li>The &quot;:authority&quot; header field includes the authority portion of the target URI</li>
 <li>The &quot;:path&quot; header field includes the path and query parts of the target URI.
 This field MUST NOT be empty; URIs that do not contain a path component MUST include a value
 of &#39;/&#39;, unless the request is an OPTIONS request for &#39;<em>&#39;, in which case the &quot;:path&quot; header
@@ -1044,10 +1044,10 @@ an invalid value as a stream error of type PROTOCOL_ERROR.</li>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>  <span class="keyword">this</span>.method = <span class="keyword">this</span>._checkSpecialHeader(<span class="string">':method'</span>, headers[<span class="string">':method'</span>]);
-  <span class="keyword">this</span>.scheme = <span class="keyword">this</span>._checkSpecialHeader(<span class="string">':scheme'</span>, headers[<span class="string">':scheme'</span>]);
-  <span class="keyword">this</span>.host   = <span class="keyword">this</span>._checkSpecialHeader(<span class="string">':host'</span>  , headers[<span class="string">':host'</span>]  );
-  <span class="keyword">this</span>.url    = <span class="keyword">this</span>._checkSpecialHeader(<span class="string">':path'</span>  , headers[<span class="string">':path'</span>]  );</pre></div></div>
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">this</span>.method = <span class="keyword">this</span>._checkSpecialHeader(<span class="string">':method'</span>   , headers[<span class="string">':method'</span>]);
+  <span class="keyword">this</span>.scheme = <span class="keyword">this</span>._checkSpecialHeader(<span class="string">':scheme'</span>   , headers[<span class="string">':scheme'</span>]);
+  <span class="keyword">this</span>.host   = <span class="keyword">this</span>._checkSpecialHeader(<span class="string">':authority'</span>, headers[<span class="string">':authority'</span>]  );
+  <span class="keyword">this</span>.url    = <span class="keyword">this</span>._checkSpecialHeader(<span class="string">':path'</span>     , headers[<span class="string">':path'</span>]  );</pre></div></div>
             
         </li>
         
@@ -1197,12 +1197,13 @@ OutgoingResponse.prototype.push = <span class="function"><span class="keyword">f
   <span class="keyword">var</span> promise = util._extend({
     <span class="string">':method'</span>: (options.method || <span class="string">'GET'</span>).toUpperCase(),
     <span class="string">':scheme'</span>: (options.protocol &amp;&amp; options.protocol.slice(<span class="number">0</span>, -<span class="number">1</span>)) || <span class="keyword">this</span>._requestHeaders[<span class="string">':scheme'</span>],
-    <span class="string">':host'</span>: options.hostname || options.host || <span class="keyword">this</span>._requestHeaders[<span class="string">':host'</span>],
+    <span class="string">':authority'</span>: options.hostname || options.host || <span class="keyword">this</span>._requestHeaders[<span class="string">':authority'</span>],
     <span class="string">':path'</span>: options.path
   }, options.headers);
 
-  <span class="keyword">this</span>._log.info({ method: promise[<span class="string">':method'</span>], scheme: promise[<span class="string">':scheme'</span>], host: promise[<span class="string">':host'</span>],
-                   path: promise[<span class="string">':path'</span>], headers: options.headers }, <span class="string">'Promising push stream'</span>);
+  <span class="keyword">this</span>._log.info({ method: promise[<span class="string">':method'</span>], scheme: promise[<span class="string">':scheme'</span>],
+                   authority: promise[<span class="string">':authority'</span>], path: promise[<span class="string">':path'</span>],
+                   headers: options.headers }, <span class="string">'Promising push stream'</span>);
 
   <span class="keyword">var</span> pushStream = <span class="keyword">this</span>.stream.promise(promise);
 
@@ -1559,11 +1560,12 @@ OutgoingRequest.prototype._start = <span class="function"><span class="keyword">
 
   headers[<span class="string">':scheme'</span>] = options.protocol.slice(<span class="number">0</span>, -<span class="number">1</span>);
   headers[<span class="string">':method'</span>] = options.method;
-  headers[<span class="string">':host'</span>] = options.host;
+  headers[<span class="string">':authority'</span>] = options.host;
   headers[<span class="string">':path'</span>] = options.path;
 
-  <span class="keyword">this</span>._log.info({ scheme: headers[<span class="string">':scheme'</span>], method: headers[<span class="string">':method'</span>], host: headers[<span class="string">':host'</span>],
-                   path: headers[<span class="string">':path'</span>], headers: (options.headers || {}) }, <span class="string">'Sending request'</span>);
+  <span class="keyword">this</span>._log.info({ scheme: headers[<span class="string">':scheme'</span>], method: headers[<span class="string">':method'</span>],
+                   authority: headers[<span class="string">':authority'</span>], path: headers[<span class="string">':path'</span>],
+                   headers: (options.headers || {}) }, <span class="string">'Sending request'</span>);
   <span class="keyword">this</span>.stream.headers(headers);
   <span class="keyword">this</span>.headersSent = <span class="literal">true</span>;
 
