@@ -73,7 +73,7 @@
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-1">&#182;</a>
               </div>
-              <p>The implementation of the <a href="http://tools.ietf.org/html/draft-ietf-httpbis-header-compression-03">HTTP/2 Header Compression</a> spec is separated from
+              <p>The implementation of the <a href="http://tools.ietf.org/html/draft-ietf-httpbis-header-compression-04">HTTP/2 Header Compression</a> spec is separated from
 the &#39;integration&#39; part which handles HEADERS and PUSH_PROMISE frames. The compression itself is
 implemented in the first part of the file, and consists of three classes: <code>HeaderTable</code>,
 <code>HeaderSetDecompressor</code> and <code>HeaderSetCompressor</code>. The two latter classes are
@@ -88,6 +88,7 @@ provide a layer between the <a href="framer.html">framer</a> and the
             </div>
             
             <div class="content"><div class='highlight'><pre>exports.HeaderTable = HeaderTable;
+exports.HuffmanTable = HuffmanTable;
 exports.HeaderSetCompressor = HeaderSetCompressor;
 exports.HeaderSetDecompressor = HeaderSetDecompressor;
 exports.Compressor = Compressor;
@@ -132,17 +133,21 @@ exports.Decompressor = Decompressor;
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-4">&#182;</a>
               </div>
-              <p>The <a href="http://tools.ietf.org/html/draft-ietf-httpbis-header-compression-03#section-3.1.2">Header Table</a> is a component used to associate headers to index values. It is
-basically an ordered list of <code>[name, value]</code> pairs, so it&#39;s implemented as a subclass of <code>Array</code>.</p>
+              <p>The <a href="http://tools.ietf.org/html/draft-ietf-httpbis-header-compression-04#section-3.1.2">Header Table</a> is a component used to associate headers to index values. It is basically an
+ordered list of <code>[name, value]</code> pairs, so it&#39;s implemented as a subclass of <code>Array</code>.
+In this implementation, the Header Table and the <a href="http://tools.ietf.org/html/draft-ietf-httpbis-header-compression-04#appendix-B">Static Table</a> are handled as a single table.</p>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre><span class="function"><span class="keyword">function</span> <span class="title">HeaderTable</span><span class="params">(log, table, limit)</span> {</span>
-  <span class="keyword">var</span> self = table.map(entryFromPair);
+            <div class="content"><div class='highlight'><pre><span class="function"><span class="keyword">function</span> <span class="title">HeaderTable</span><span class="params">(log, limit)</span> {</span>
+  <span class="keyword">var</span> self = HeaderTable.staticTable.map(entryFromPair);
   self._log = log;
   self._limit = limit || DEFAULT_HEADER_TABLE_LIMIT;
-  self._size = tableSize(self);
+  self._staticLength = self.length;
+  self._size = <span class="number">0</span>;
+  self._enforceLimit = HeaderTable.prototype._enforceLimit;
   self.add = HeaderTable.prototype.add;
+  self.setSizeLimit = HeaderTable.prototype.setSizeLimit;
   <span class="keyword">return</span> self;
 }</pre></div></div>
             
@@ -158,7 +163,7 @@ basically an ordered list of <code>[name, value]</code> pairs, so it&#39;s imple
               <p>There are few more sets that are needed for the compression/decompression process that are all
 subsets of the Header Table, and are implemented as flags on header table entries:</p>
 <ul>
-<li><a href="http://tools.ietf.org/html/draft-ietf-httpbis-header-compression-03#section-3.1.3">Reference Set</a>: contains a group of headers used as a reference for the
+<li><a href="http://tools.ietf.org/html/draft-ietf-httpbis-header-compression-04#section-3.1.3">Reference Set</a>: contains a group of headers used as a reference for the
 differential encoding of a new set of headers. (<code>reference</code> flag)</li>
 <li>Emitted headers: the headers that are already emitted as part of the current decompression
 process (not part of the spec, <code>emitted</code> flag)</li>
@@ -215,14 +220,6 @@ length in bytes, of its value&#39;s length in bytes and of 32 bytes.</li>
 
 <span class="function"><span class="keyword">function</span> <span class="title">size</span><span class="params">(entry)</span> {</span>
   <span class="keyword">return</span> (<span class="keyword">new</span> Buffer(entry[<span class="number">0</span>] + entry[<span class="number">1</span>], <span class="string">'utf8'</span>)).length + <span class="number">32</span>;
-}
-
-<span class="function"><span class="keyword">function</span> <span class="title">tableSize</span><span class="params">(table)</span> {</span>
-  <span class="keyword">var</span> size = <span class="number">0</span>;
-  <span class="keyword">for</span> (<span class="keyword">var</span> i = <span class="number">0</span>; i &lt; table.length; i++) {
-    size += table[i]._size;
-  }
-  <span class="keyword">return</span> size;
 }</pre></div></div>
             
         </li>
@@ -234,34 +231,44 @@ length in bytes, of its value&#39;s length in bytes and of 32 bytes.</li>
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-7">&#182;</a>
               </div>
-              <p>The <code>add(index, entry)</code> can be used to <a href="http://tools.ietf.org/html/draft-ietf-httpbis-header-compression-03#section-3.2.4">manage the header table</a>:</p>
+              <p>The <code>add(index, entry)</code> can be used to <a href="http://tools.ietf.org/html/draft-ietf-httpbis-header-compression-04#section-3.3">manage the header table</a>:</p>
 <ul>
-<li>if <code>index</code> is <code>Infinite</code> it pushes the new <code>entry</code> at the end of the table</li>
-<li>otherwise, it replaces the entry with the given <code>index</code> with the new <code>entry</code></li>
-<li>before doing such a modification, it has to be ensured that the header table size will stay
-lower than or equal to the header table size limit. To achieve this, repeatedly, the first
-entry of the header table is removed, until enough space is available for the modification.</li>
+<li>it pushes the new <code>entry</code> at the beggining of the table</li>
+<li><p>before doing such a modification, it has to be ensured that the header table size will stay
+lower than or equal to the header table size limit. To achieve this, entries are evicted from
+the end of the header table until the size of the header table is less than or equal to
+<code>(this._limit - entry.size)</code>, or until the table is empty.</p>
+<pre><code>       &lt;----------  Index Address Space ----------&gt;
+       &lt;-- Header  Table --&gt;  &lt;-- Static  Table --&gt;
+       +---+-----------+---+  +---+-----------+---+
+       | 0 |    ...    | k |  |k+1|    ...    | n |
+       +---+-----------+---+  +---+-----------+---+
+       ^                   |
+       |                   V
+Insertion Point       Drop Point</code></pre>
+</li>
 </ul>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>HeaderTable.prototype.add = <span class="function"><span class="keyword">function</span><span class="params">(index, entry)</span> {</span>
-  <span class="keyword">var</span> limit = <span class="keyword">this</span>._limit - entry._size;
+            <div class="content"><div class='highlight'><pre>HeaderTable.prototype._enforceLimit = <span class="function"><span class="keyword">function</span> <span class="title">_enforceLimit</span><span class="params">(limit)</span> {</span>
   <span class="keyword">var</span> droppedEntries = [];
-
-  <span class="keyword">while</span> ((<span class="keyword">this</span>._size &gt; limit) &amp;&amp; (<span class="keyword">this</span>.length &gt; <span class="number">0</span>)) {
-    <span class="keyword">var</span> dropped = <span class="keyword">this</span>.shift();
+  <span class="keyword">var</span> dropPoint = <span class="keyword">this</span>.length - <span class="keyword">this</span>._staticLength;
+  <span class="keyword">while</span> ((<span class="keyword">this</span>._size &gt; limit) &amp;&amp; (dropPoint &gt; <span class="number">0</span>)) {
+    dropPoint -= <span class="number">1</span>;
+    <span class="keyword">var</span> dropped = <span class="keyword">this</span>.splice(dropPoint, <span class="number">1</span>)[<span class="number">0</span>];
     <span class="keyword">this</span>._size -= dropped._size;
-    droppedEntries.push(dropped);
+    droppedEntries[droppedEntries] = dropped;
   }
+  <span class="keyword">return</span> droppedEntries;
+};
+
+HeaderTable.prototype.add = <span class="function"><span class="keyword">function</span><span class="params">(entry)</span> {</span>
+  <span class="keyword">var</span> limit = <span class="keyword">this</span>._limit - entry._size;
+  <span class="keyword">var</span> droppedEntries = <span class="keyword">this</span>._enforceLimit(limit);
 
   <span class="keyword">if</span> (<span class="keyword">this</span>._size &lt;= limit) {
-    index -= droppedEntries.length;
-    <span class="keyword">if</span> (index &lt; <span class="number">0</span>) {
-      <span class="keyword">this</span>.unshift(entry);
-    } <span class="keyword">else</span> {
-      <span class="keyword">this</span>.splice(index, <span class="number">1</span>, entry); <span class="comment">// this is like push() if index is Infinity</span>
-    }
+    <span class="keyword">this</span>.unshift(entry);
     <span class="keyword">this</span>._size += entry._size;
   }
 
@@ -277,9 +284,14 @@ entry of the header table is removed, until enough space is available for the mo
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-8">&#182;</a>
               </div>
-              <h2 id="initial-header-tables">Initial header tables</h2>
+              <p>The table size limit can be changed externally. In this case, the same eviction algorithm is used</p>
 
             </div>
+            
+            <div class="content"><div class='highlight'><pre>HeaderTable.prototype.setSizeLimit = <span class="function"><span class="keyword">function</span> <span class="title">setSizeLimit</span><span class="params">(limit)</span> {</span>
+  <span class="keyword">this</span>._limit = limit;
+  <span class="keyword">this</span>._enforceLimit(<span class="keyword">this</span>._limit);
+};</pre></div></div>
             
         </li>
         
@@ -290,42 +302,9 @@ entry of the header table is removed, until enough space is available for the mo
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-9">&#182;</a>
               </div>
-              <h3 id="-initial-request-table-requesttable-"><a href="http://tools.ietf.org/html/draft-ietf-httpbis-header-compression-03#appendix-B.1">Initial request table</a></h3>
+              <h2 id="-the-static-table-http-tools-ietf-org-html-draft-ietf-httpbis-header-compression-04-appendix-b-"><a href="http://tools.ietf.org/html/draft-ietf-httpbis-header-compression-04#appendix-B">The Static Table</a></h2>
 
             </div>
-            
-            <div class="content"><div class='highlight'><pre>HeaderTable.initialRequestTable  = [
-  [ <span class="string">':scheme'</span>                     , <span class="string">'http'</span>  ],
-  [ <span class="string">':scheme'</span>                     , <span class="string">'https'</span> ],
-  [ <span class="string">':host'</span>                       , <span class="string">''</span>      ],
-  [ <span class="string">':path'</span>                       , <span class="string">'/'</span>     ],
-  [ <span class="string">':method'</span>                     , <span class="string">'get'</span>   ],
-  [ <span class="string">'accept'</span>                      , <span class="string">''</span>      ],
-  [ <span class="string">'accept-charset'</span>              , <span class="string">''</span>      ],
-  [ <span class="string">'accept-encoding'</span>             , <span class="string">''</span>      ],
-  [ <span class="string">'accept-language'</span>             , <span class="string">''</span>      ],
-  [ <span class="string">'cookie'</span>                      , <span class="string">''</span>      ],
-  [ <span class="string">'if-modified-since'</span>           , <span class="string">''</span>      ],
-  [ <span class="string">'user-agent'</span>                  , <span class="string">''</span>      ],
-  [ <span class="string">'referer'</span>                     , <span class="string">''</span>      ],
-  [ <span class="string">'authorization'</span>               , <span class="string">''</span>      ],
-  [ <span class="string">'allow'</span>                       , <span class="string">''</span>      ],
-  [ <span class="string">'cache-control'</span>               , <span class="string">''</span>      ],
-  [ <span class="string">'connection'</span>                  , <span class="string">''</span>      ],
-  [ <span class="string">'content-length'</span>              , <span class="string">''</span>      ],
-  [ <span class="string">'content-type'</span>                , <span class="string">''</span>      ],
-  [ <span class="string">'date'</span>                        , <span class="string">''</span>      ],
-  [ <span class="string">'expect'</span>                      , <span class="string">''</span>      ],
-  [ <span class="string">'from'</span>                        , <span class="string">''</span>      ],
-  [ <span class="string">'if-match'</span>                    , <span class="string">''</span>      ],
-  [ <span class="string">'if-none-match'</span>               , <span class="string">''</span>      ],
-  [ <span class="string">'if-range'</span>                    , <span class="string">''</span>      ],
-  [ <span class="string">'if-unmodified-since'</span>         , <span class="string">''</span>      ],
-  [ <span class="string">'max-forwards'</span>                , <span class="string">''</span>      ],
-  [ <span class="string">'proxy-authorization'</span>         , <span class="string">''</span>      ],
-  [ <span class="string">'range'</span>                       , <span class="string">''</span>      ],
-  [ <span class="string">'via'</span>                         , <span class="string">''</span>      ]
-];</pre></div></div>
             
         </li>
         
@@ -336,41 +315,71 @@ entry of the header table is removed, until enough space is available for the mo
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-10">&#182;</a>
               </div>
-              <h3 id="-initial-response-table-responsetable-"><a href="http://tools.ietf.org/html/draft-ietf-httpbis-header-compression-03#appendix-B.2">Initial response table</a></h3>
+              <p>The table is generated with feeding the table from the spec to the following sed command:</p>
+<pre><code>sed -re &quot;s/\s*\| [0-9]+\s*\| ([^ ]*)/  [ &#39;\1&#39;/g&quot; -e &quot;s/\|\s([^ ]*)/, &#39;\1&#39;/g&quot; -e &#39;s/ \|/],/g&#39;</code></pre>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>HeaderTable.initialResponseTable = [
-  [ <span class="string">':status'</span>                     , <span class="string">'200'</span>   ],
-  [ <span class="string">'age'</span>                         , <span class="string">''</span>      ],
-  [ <span class="string">'cache-control'</span>               , <span class="string">''</span>      ],
-  [ <span class="string">'content-length'</span>              , <span class="string">''</span>      ],
-  [ <span class="string">'content-type'</span>                , <span class="string">''</span>      ],
-  [ <span class="string">'date'</span>                        , <span class="string">''</span>      ],
-  [ <span class="string">'etag'</span>                        , <span class="string">''</span>      ],
-  [ <span class="string">'expires'</span>                     , <span class="string">''</span>      ],
-  [ <span class="string">'last-modified'</span>               , <span class="string">''</span>      ],
-  [ <span class="string">'server'</span>                      , <span class="string">''</span>      ],
-  [ <span class="string">'set-cookie'</span>                  , <span class="string">''</span>      ],
-  [ <span class="string">'vary'</span>                        , <span class="string">''</span>      ],
-  [ <span class="string">'via'</span>                         , <span class="string">''</span>      ],
-  [ <span class="string">'access-control-allow-origin'</span> , <span class="string">''</span>      ],
-  [ <span class="string">'accept-ranges'</span>               , <span class="string">''</span>      ],
-  [ <span class="string">'allow'</span>                       , <span class="string">''</span>      ],
-  [ <span class="string">'connection'</span>                  , <span class="string">''</span>      ],
-  [ <span class="string">'content-disposition'</span>         , <span class="string">''</span>      ],
-  [ <span class="string">'content-encoding'</span>            , <span class="string">''</span>      ],
-  [ <span class="string">'content-language'</span>            , <span class="string">''</span>      ],
-  [ <span class="string">'content-location'</span>            , <span class="string">''</span>      ],
-  [ <span class="string">'content-range'</span>               , <span class="string">''</span>      ],
-  [ <span class="string">'link'</span>                        , <span class="string">''</span>      ],
-  [ <span class="string">'location'</span>                    , <span class="string">''</span>      ],
-  [ <span class="string">'proxy-authenticate'</span>          , <span class="string">''</span>      ],
-  [ <span class="string">'refresh'</span>                     , <span class="string">''</span>      ],
-  [ <span class="string">'retry-after'</span>                 , <span class="string">''</span>      ],
-  [ <span class="string">'strict-transport-security'</span>   , <span class="string">''</span>      ],
-  [ <span class="string">'transfer-encoding'</span>           , <span class="string">''</span>      ],
-  [ <span class="string">'www-authenticate'</span>            , <span class="string">''</span>      ]
+            <div class="content"><div class='highlight'><pre>HeaderTable.staticTable  = [
+  [ <span class="string">':authority'</span>                  , <span class="string">''</span>            ],
+  [ <span class="string">':method'</span>                     , <span class="string">'GET'</span>         ],
+  [ <span class="string">':method'</span>                     , <span class="string">'POST'</span>        ],
+  [ <span class="string">':path'</span>                       , <span class="string">'/'</span>           ],
+  [ <span class="string">':path'</span>                       , <span class="string">'/index.html'</span> ],
+  [ <span class="string">':scheme'</span>                     , <span class="string">'http'</span>        ],
+  [ <span class="string">':scheme'</span>                     , <span class="string">'https'</span>       ],
+  [ <span class="string">':status'</span>                     , <span class="string">'200'</span>         ],
+  [ <span class="string">':status'</span>                     , <span class="string">'500'</span>         ],
+  [ <span class="string">':status'</span>                     , <span class="string">'404'</span>         ],
+  [ <span class="string">':status'</span>                     , <span class="string">'403'</span>         ],
+  [ <span class="string">':status'</span>                     , <span class="string">'400'</span>         ],
+  [ <span class="string">':status'</span>                     , <span class="string">'401'</span>         ],
+  [ <span class="string">'accept-charset'</span>              , <span class="string">''</span>            ],
+  [ <span class="string">'accept-encoding'</span>             , <span class="string">''</span>            ],
+  [ <span class="string">'accept-language'</span>             , <span class="string">''</span>            ],
+  [ <span class="string">'accept-ranges'</span>               , <span class="string">''</span>            ],
+  [ <span class="string">'accept'</span>                      , <span class="string">''</span>            ],
+  [ <span class="string">'access-control-allow-origin'</span> , <span class="string">''</span>            ],
+  [ <span class="string">'age'</span>                         , <span class="string">''</span>            ],
+  [ <span class="string">'allow'</span>                       , <span class="string">''</span>            ],
+  [ <span class="string">'authorization'</span>               , <span class="string">''</span>            ],
+  [ <span class="string">'cache-control'</span>               , <span class="string">''</span>            ],
+  [ <span class="string">'content-disposition'</span>         , <span class="string">''</span>            ],
+  [ <span class="string">'content-encoding'</span>            , <span class="string">''</span>            ],
+  [ <span class="string">'content-language'</span>            , <span class="string">''</span>            ],
+  [ <span class="string">'content-length'</span>              , <span class="string">''</span>            ],
+  [ <span class="string">'content-location'</span>            , <span class="string">''</span>            ],
+  [ <span class="string">'content-range'</span>               , <span class="string">''</span>            ],
+  [ <span class="string">'content-type'</span>                , <span class="string">''</span>            ],
+  [ <span class="string">'cookie'</span>                      , <span class="string">''</span>            ],
+  [ <span class="string">'date'</span>                        , <span class="string">''</span>            ],
+  [ <span class="string">'etag'</span>                        , <span class="string">''</span>            ],
+  [ <span class="string">'expect'</span>                      , <span class="string">''</span>            ],
+  [ <span class="string">'expires'</span>                     , <span class="string">''</span>            ],
+  [ <span class="string">'from'</span>                        , <span class="string">''</span>            ],
+  [ <span class="string">'if-match'</span>                    , <span class="string">''</span>            ],
+  [ <span class="string">'if-modified-since'</span>           , <span class="string">''</span>            ],
+  [ <span class="string">'if-none-match'</span>               , <span class="string">''</span>            ],
+  [ <span class="string">'if-range'</span>                    , <span class="string">''</span>            ],
+  [ <span class="string">'if-unmodified-since'</span>         , <span class="string">''</span>            ],
+  [ <span class="string">'last-modified'</span>               , <span class="string">''</span>            ],
+  [ <span class="string">'link'</span>                        , <span class="string">''</span>            ],
+  [ <span class="string">'location'</span>                    , <span class="string">''</span>            ],
+  [ <span class="string">'max-forwards'</span>                , <span class="string">''</span>            ],
+  [ <span class="string">'proxy-authenticate'</span>          , <span class="string">''</span>            ],
+  [ <span class="string">'proxy-authorization'</span>         , <span class="string">''</span>            ],
+  [ <span class="string">'range'</span>                       , <span class="string">''</span>            ],
+  [ <span class="string">'referer'</span>                     , <span class="string">''</span>            ],
+  [ <span class="string">'refresh'</span>                     , <span class="string">''</span>            ],
+  [ <span class="string">'retry-after'</span>                 , <span class="string">''</span>            ],
+  [ <span class="string">'server'</span>                      , <span class="string">''</span>            ],
+  [ <span class="string">'set-cookie'</span>                  , <span class="string">''</span>            ],
+  [ <span class="string">'strict-transport-security'</span>   , <span class="string">''</span>            ],
+  [ <span class="string">'transfer-encoding'</span>           , <span class="string">''</span>            ],
+  [ <span class="string">'user-agent'</span>                  , <span class="string">''</span>            ],
+  [ <span class="string">'vary'</span>                        , <span class="string">''</span>            ],
+  [ <span class="string">'via'</span>                         , <span class="string">''</span>            ],
+  [ <span class="string">'www-authenticate'</span>            , <span class="string">''</span>            ]
 ];</pre></div></div>
             
         </li>
@@ -404,11 +413,12 @@ until the end os the stream, and then processes the whole header block at once.<
             </div>
             
             <div class="content"><div class='highlight'><pre>util.inherits(HeaderSetDecompressor, TransformStream);
-<span class="function"><span class="keyword">function</span> <span class="title">HeaderSetDecompressor</span><span class="params">(log, table)</span> {</span>
+<span class="function"><span class="keyword">function</span> <span class="title">HeaderSetDecompressor</span><span class="params">(log, table, huffmanTable)</span> {</span>
   TransformStream.call(<span class="keyword">this</span>, { objectMode: <span class="literal">true</span> });
 
   <span class="keyword">this</span>._log = log.child({ component: <span class="string">'compressor'</span> });
   <span class="keyword">this</span>._table = table;
+  <span class="keyword">this</span>._huffmanTable = huffmanTable;
   <span class="keyword">this</span>._chunks = [];
 }</pre></div></div>
             
@@ -440,22 +450,20 @@ TransformStream class. It collects the data chunks for later processing.</p>
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-14">&#182;</a>
               </div>
-              <p><code>execute(rep)</code> executes the given <a href="http://tools.ietf.org/html/draft-ietf-httpbis-header-compression-03#section-3.1.5">header representation</a>.</p>
+              <p><code>execute(rep)</code> executes the given <a href="http://tools.ietf.org/html/draft-ietf-httpbis-header-compression-04#section-3.1.4">header representation</a>.</p>
 <p>The <em>JavaScript object representation</em> of a header representation:</p>
 <pre><code>{
   name: String || Integer,  // string literal or index
   value: String || Integer, // string literal or index
-  index: Integer            // -1       : no indexing
-                            // 0 - ...  : substitution indexing
-                            // Infinity : incremental indexing
+  index: Boolean            // with or without indexing
 }</code></pre>
 <p>Examples:</p>
 <pre><code>Indexed:
-{ name: 2  , value: 2  , index: -1       }
+{ name: 2  , value: 2  , index: false }
 Literal:
-{ name: 2  , value: &#39;X&#39;, index: -1       } // without indexing
-{ name: 2  , value: &#39;Y&#39;, index: Infinity } // incremental indexing
-{ name: &#39;A&#39;, value: &#39;Z&#39;, index: 123      } // substitution indexing</code></pre>
+{ name: 2  , value: &#39;X&#39;, index: false } // without indexing
+{ name: 2  , value: &#39;Y&#39;, index: true  } // with indexing
+{ name: &#39;A&#39;, value: &#39;Z&#39;, index: true  } // with indexing, literal name</code></pre>
 
             </div>
             
@@ -463,7 +471,7 @@ Literal:
   <span class="keyword">this</span>._log.trace({ key: rep.name, value: rep.value, index: rep.index },
                   <span class="string">'Executing header representation'</span>);
 
-  <span class="keyword">var</span> index, entry, pair;</pre></div></div>
+  <span class="keyword">var</span> entry, pair;</pre></div></div>
             
         </li>
         
@@ -482,8 +490,18 @@ entails the following actions:<ul>
 </li>
 <li>An <em>indexed representation</em> corresponding to an entry <em>not present</em> in the reference set
 entails the following actions:<ul>
-<li>The header corresponding to the entry is emitted.</li>
-<li>The entry is added to the reference set.</li>
+<li>If referencing an element of the static table:<ul>
+<li>The header field corresponding to the referenced entry is emitted</li>
+<li>The referenced static entry is added to the header table</li>
+<li>A reference to this new header table entry is added to the reference set (except if
+this new entry didn&#39;t fit in the header table)</li>
+</ul>
+</li>
+<li>If referencing an element of the header table:<ul>
+<li>The header field corresponding to the referenced entry is emitted</li>
+<li>The referenced header table entry is added to the reference set</li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -491,16 +509,22 @@ entails the following actions:<ul>
             </div>
             
             <div class="content"><div class='highlight'><pre>  <span class="keyword">if</span> (<span class="keyword">typeof</span> rep.value === <span class="string">'number'</span>) {
-    index = rep.value;
+    <span class="keyword">var</span> index = rep.value;
     entry = <span class="keyword">this</span>._table[index];
 
     <span class="keyword">if</span> (entry.reference) {
       entry.reference = <span class="literal">false</span>;
     } <span class="keyword">else</span> {
-      entry.reference = <span class="literal">true</span>;
-      entry.emitted = <span class="literal">true</span>;
       pair = entry.slice();
       <span class="keyword">this</span>.push(pair);
+
+      <span class="keyword">if</span> (index &gt;= <span class="keyword">this</span>._table.length - <span class="keyword">this</span>._table._staticLength) {
+        entry = entryFromPair(pair);
+        <span class="keyword">this</span>._table.add(entry);
+      }
+
+      entry.reference = <span class="literal">true</span>;
+      entry.emitted = <span class="literal">true</span>;
     }
   }</pre></div></div>
             
@@ -521,7 +545,7 @@ action:<ul>
 </li>
 <li>A <em>literal representation</em> that is <em>added</em> to the header table entails the following further
 actions:<ul>
-<li>The header is added to the header table, at the location defined by the representation.</li>
+<li>The header is added to the header table.</li>
 <li>The new entry is added to the reference set.</li>
 </ul>
 </li>
@@ -536,12 +560,11 @@ actions:<ul>
       pair = [rep.name, rep.value];
     }
 
-    index = rep.index;
-    <span class="keyword">if</span> (index !== -<span class="number">1</span>) {
+    <span class="keyword">if</span> (rep.index) {
       entry = entryFromPair(pair);
       entry.reference = <span class="literal">true</span>;
       entry.emitted = <span class="literal">true</span>;
-      <span class="keyword">this</span>._table.add(index, entry);
+      <span class="keyword">this</span>._table.add(entry);
     }
 
     <span class="keyword">this</span>.push(pair);
@@ -583,7 +606,7 @@ the input stream is over.</p>
             
             <div class="content"><div class='highlight'><pre>  buffer.cursor = <span class="number">0</span>;
   <span class="keyword">while</span> (buffer.cursor &lt; buffer.length) {
-    <span class="keyword">this</span>._execute(HeaderSetDecompressor.header(buffer));
+    <span class="keyword">this</span>._execute(HeaderSetDecompressor.header(buffer, <span class="keyword">this</span>._huffmanTable));
   }</pre></div></div>
             
         </li>
@@ -596,7 +619,7 @@ the input stream is over.</p>
                 <a class="pilcrow" href="#section-19">&#182;</a>
               </div>
               <ul>
-<li><a href="http://tools.ietf.org/html/draft-ietf-httpbis-header-compression-03#section-3.2.2">emits the reference set</a></li>
+<li><a href="http://tools.ietf.org/html/draft-ietf-httpbis-header-compression-04#section-3.2.2">emits the reference set</a></li>
 </ul>
 
             </div>
@@ -644,11 +667,12 @@ compression algorithm can probably be improved in the future.</p>
             </div>
             
             <div class="content"><div class='highlight'><pre>util.inherits(HeaderSetCompressor, TransformStream);
-<span class="function"><span class="keyword">function</span> <span class="title">HeaderSetCompressor</span><span class="params">(log, table)</span> {</span>
+<span class="function"><span class="keyword">function</span> <span class="title">HeaderSetCompressor</span><span class="params">(log, table, huffmanTable)</span> {</span>
   TransformStream.call(<span class="keyword">this</span>, { objectMode: <span class="literal">true</span> });
 
   <span class="keyword">this</span>._log = log.child({ component: <span class="string">'compressor'</span> });
   <span class="keyword">this</span>._table = table;
+  <span class="keyword">this</span>._huffmanTable = huffmanTable;
   <span class="keyword">this</span>.push = TransformStream.prototype.push.bind(<span class="keyword">this</span>);
 }
 
@@ -657,7 +681,7 @@ HeaderSetCompressor.prototype.send = <span class="function"><span class="keyword
                   <span class="string">'Emitting header representation'</span>);
 
   <span class="keyword">if</span> (!rep.chunks) {
-    rep.chunks = HeaderSetCompressor.header(rep);
+    rep.chunks = HeaderSetCompressor.header(rep, <span class="keyword">this</span>._huffmanTable);
   }
   rep.chunks.forEach(<span class="keyword">this</span>.push);
 };</pre></div></div>
@@ -697,14 +721,14 @@ TransformStream class. It processes the input headers one by one:</p>
             </div>
             
             <div class="content"><div class='highlight'><pre>  <span class="keyword">var</span> nameMatch = -<span class="number">1</span>, fullMatch = -<span class="number">1</span>;
-  <span class="keyword">for</span> (<span class="keyword">var</span> index = <span class="number">0</span>; index &lt; <span class="keyword">this</span>._table.length; index++) {
-    entry = <span class="keyword">this</span>._table[index];
+  <span class="keyword">for</span> (<span class="keyword">var</span> droppedIndex = <span class="number">0</span>; droppedIndex &lt; <span class="keyword">this</span>._table.length; droppedIndex++) {
+    entry = <span class="keyword">this</span>._table[droppedIndex];
     <span class="keyword">if</span> (entry[<span class="number">0</span>] === name) {
       <span class="keyword">if</span> (entry[<span class="number">1</span>] === value) {
-        fullMatch = index;
+        fullMatch = droppedIndex;
         <span class="keyword">break</span>;
       } <span class="keyword">else</span> <span class="keyword">if</span> (nameMatch === -<span class="number">1</span>) {
-        nameMatch = index;
+        nameMatch = droppedIndex;
       }
     }
   }</pre></div></div>
@@ -723,7 +747,8 @@ TransformStream class. It processes the input headers one by one:</p>
 on its presence in the reference, the emitted and the keep set:</p>
 <ul>
 <li><p>If the entry is outside the reference set, then a single indexed representation puts the
-entry into it and emits the header.</p>
+entry into it and emits the header. Note that if the matched entry is in the static table,
+then it has to be added to the header table.</p>
 </li>
 <li><p>If it&#39;s already in the keep set, then 4 indexed representations are needed:</p>
 <ol>
@@ -754,6 +779,10 @@ in the reference set (that means don&#39;t remove at the end of the encoding pro
     rep = { name: fullMatch, value: fullMatch, index: -<span class="number">1</span> };
 
     <span class="keyword">if</span> (!entry.reference) {
+      <span class="keyword">if</span> (fullMatch &gt;= <span class="keyword">this</span>._table.length - <span class="keyword">this</span>._table._staticLength) {
+        entry = entryFromPair(pair);
+        <span class="keyword">this</span>._table.add(entry);
+      }
       <span class="keyword">this</span>.send(rep);
       entry.reference = <span class="literal">true</span>;
       entry.emitted = <span class="literal">true</span>;
@@ -797,29 +826,22 @@ in the reference set (that means don&#39;t remove at the end of the encoding pro
     entry = entryFromPair(pair);
     entry.emitted = <span class="literal">true</span>;
 
-    <span class="keyword">var</span> insertIndex;
-    <span class="keyword">if</span> (entry._size &gt; <span class="keyword">this</span>._table._limit / <span class="number">2</span>) {
-      insertIndex = -<span class="number">1</span>;
-    } <span class="keyword">else</span> <span class="keyword">if</span> (nameMatch !== -<span class="number">1</span>) {
-      insertIndex = nameMatch;
-    } <span class="keyword">else</span> {
-      insertIndex = <span class="literal">Infinity</span>;
-    }
+    <span class="keyword">var</span> indexing = (entry._size &lt; <span class="keyword">this</span>._table._limit / <span class="number">2</span>);
 
-    <span class="keyword">if</span> (insertIndex !== -<span class="number">1</span>) {
+    <span class="keyword">if</span> (indexing) {
       entry.reference = <span class="literal">true</span>;
-      <span class="keyword">var</span> droppedEntries = <span class="keyword">this</span>._table.add(insertIndex, entry);
-      <span class="keyword">for</span> (index = <span class="number">0</span>; index &lt; droppedEntries.length; index++) {
-        <span class="keyword">var</span> dropped = droppedEntries[index];
+      <span class="keyword">var</span> droppedEntries = <span class="keyword">this</span>._table.add(entry);
+      <span class="keyword">for</span> (droppedIndex <span class="keyword">in</span> droppedEntries) {
+        <span class="keyword">var</span> dropped = droppedEntries[droppedIndex];
         <span class="keyword">if</span> (dropped.keep) {
-          rep = { name: index, value: index, index: -<span class="number">1</span> };
+          rep = { name: droppedIndex, value: droppedIndex, index: <span class="literal">false</span> };
           <span class="keyword">this</span>.send(rep);
           <span class="keyword">this</span>.send(rep);
         }
       }
     }
 
-    <span class="keyword">this</span>.send({ name: (nameMatch !== -<span class="number">1</span>) ? nameMatch : name, value: value, index: insertIndex });
+    <span class="keyword">this</span>.send({ name: (nameMatch !== -<span class="number">1</span>) ? nameMatch : name, value: value, index: indexing });
   }
 
   callback();
@@ -878,7 +900,7 @@ TransformStream class. It gets called when there&#39;s no more header to compres
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-28">&#182;</a>
               </div>
-              <h2 id="-detailed-format-http-tools-ietf-org-html-draft-ietf-httpbis-header-compression-03-section-4-"><a href="http://tools.ietf.org/html/draft-ietf-httpbis-header-compression-03#section-4">Detailed Format</a></h2>
+              <h2 id="-detailed-format-http-tools-ietf-org-html-draft-ietf-httpbis-header-compression-04-section-4-"><a href="http://tools.ietf.org/html/draft-ietf-httpbis-header-compression-04#section-4">Detailed Format</a></h2>
 
             </div>
             
@@ -996,29 +1018,108 @@ TransformStream class. It gets called when there&#39;s no more header to compres
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-31">&#182;</a>
               </div>
-              <h3 id="string-literal-representation">String literal representation</h3>
-<p>Literal <strong>strings</strong> can represent header names or header values.  They are encoded in two parts:</p>
-<ol>
-<li>The string length, defined as the number of bytes needed to store its UTF-8 representation,
-is represented as an integer with a zero bits prefix.  If the string length is strictly less
-than 128, it is represented as one byte.</li>
-<li>The string value represented as a list of UTF-8 characters.</li>
-</ol>
+              <h3 id="huffman-encoding">Huffman Encoding</h3>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>HeaderSetCompressor.string = <span class="function"><span class="keyword">function</span> <span class="title">writeString</span><span class="params">(str)</span> {</span>
-  <span class="keyword">var</span> encodedString = <span class="keyword">new</span> Buffer(str, <span class="string">'utf8'</span>);
-  <span class="keyword">var</span> encodedLength = HeaderSetCompressor.integer(encodedString.length, <span class="number">0</span>);
-  <span class="keyword">return</span> encodedLength.concat(encodedString);
-};
+            <div class="content"><div class='highlight'><pre><span class="function"><span class="keyword">function</span> <span class="title">HuffmanTable</span><span class="params">(table)</span> {</span>
+  <span class="function"><span class="keyword">function</span> <span class="title">createTree</span><span class="params">(codes, position)</span> {</span>
+    <span class="keyword">if</span> (codes.length === <span class="number">1</span>) {
+      <span class="keyword">return</span> [table.indexOf(codes[<span class="number">0</span>])];
+    }
 
-HeaderSetDecompressor.string = <span class="function"><span class="keyword">function</span> <span class="title">readString</span><span class="params">(buffer)</span> {</span>
-  <span class="keyword">var</span> length = HeaderSetDecompressor.integer(buffer, <span class="number">0</span>);
-  <span class="keyword">var</span> str = buffer.toString(<span class="string">'utf8'</span>, buffer.cursor, buffer.cursor + length);
-  buffer.cursor += length;
-  <span class="keyword">return</span> str;
-};</pre></div></div>
+    <span class="keyword">else</span> {
+      position = position || <span class="number">0</span>;
+      <span class="keyword">var</span> zero = [];
+      <span class="keyword">var</span> one = [];
+      <span class="keyword">for</span> (<span class="keyword">var</span> i = <span class="number">0</span>; i &lt; codes.length; i++) {
+        <span class="keyword">var</span> string = codes[i];
+        <span class="keyword">if</span> (string[position] === <span class="string">'0'</span>) {
+          zero.push(string);
+        } <span class="keyword">else</span> {
+          one.push(string);
+        }
+      }
+      <span class="keyword">return</span> [createTree(zero, position + <span class="number">1</span>), createTree(one, position + <span class="number">1</span>)];
+    }
+  }
+
+  <span class="keyword">this</span>.tree = createTree(table);
+
+  <span class="keyword">this</span>.codes = table.map(<span class="function"><span class="keyword">function</span><span class="params">(bits)</span> {</span>
+    <span class="keyword">return</span> parseInt(bits, <span class="number">2</span>);
+  });
+  <span class="keyword">this</span>.lengths = table.map(<span class="function"><span class="keyword">function</span><span class="params">(bits)</span> {</span>
+    <span class="keyword">return</span> bits.length;
+  });
+}
+
+HuffmanTable.prototype.encode = <span class="function"><span class="keyword">function</span> <span class="title">encode</span><span class="params">(buffer)</span> {</span>
+  <span class="keyword">var</span> result = [];
+  <span class="keyword">var</span> space = <span class="number">8</span>;
+
+  <span class="function"><span class="keyword">function</span> <span class="title">add</span><span class="params">(data)</span> {</span>
+    <span class="keyword">if</span> (space === <span class="number">8</span>) {
+      result.push(data);
+    } <span class="keyword">else</span> {
+      result[result.length - <span class="number">1</span>] |= data;
+    }
+  }
+
+  <span class="keyword">for</span> (<span class="keyword">var</span> i = <span class="number">0</span>; i &lt; buffer.length; i++) {
+    <span class="keyword">var</span> byte = buffer[i];
+    <span class="keyword">var</span> code = <span class="keyword">this</span>.codes[byte];
+    <span class="keyword">var</span> length = <span class="keyword">this</span>.lengths[byte];
+
+    <span class="keyword">while</span> (length !== <span class="number">0</span>) {
+      <span class="keyword">if</span> (space &gt;= length) {
+        add(code &lt;&lt; (space - length));
+        code = <span class="number">0</span>;
+        space -= length;
+        length = <span class="number">0</span>;
+      } <span class="keyword">else</span> {
+        <span class="keyword">var</span> shift = length - space;
+        <span class="keyword">var</span> msb = code &gt;&gt; shift;
+        add(msb);
+        code -= msb &lt;&lt; shift;
+        length -= space;
+        space = <span class="number">0</span>;
+      }
+
+      <span class="keyword">if</span> (space === <span class="number">0</span>) {
+        space = <span class="number">8</span>;
+      }
+    }
+  }
+
+  <span class="keyword">if</span> (space !== <span class="number">8</span>) {
+    add(<span class="keyword">this</span>.codes[<span class="number">256</span>] &gt;&gt; (<span class="keyword">this</span>.lengths[<span class="number">256</span>] - space));
+  }
+
+  <span class="keyword">return</span> <span class="keyword">new</span> Buffer(result);
+}
+
+HuffmanTable.prototype.decode = <span class="function"><span class="keyword">function</span> <span class="title">decode</span><span class="params">(buffer)</span> {</span>
+  <span class="keyword">var</span> result = [];
+  <span class="keyword">var</span> subtree = <span class="keyword">this</span>.tree;
+
+  <span class="keyword">for</span> (<span class="keyword">var</span> i = <span class="number">0</span>; i &lt; buffer.length; i++) {
+    <span class="keyword">var</span> byte = buffer[i];
+
+    <span class="keyword">for</span> (<span class="keyword">var</span> j = <span class="number">0</span>; j &lt; <span class="number">8</span>; j++) {
+      <span class="keyword">var</span> bit = (byte &amp; <span class="number">128</span>) ? <span class="number">1</span> : <span class="number">0</span>;
+      byte = byte &lt;&lt; <span class="number">1</span>;
+
+      subtree = subtree[bit];
+      <span class="keyword">if</span> (subtree.length === <span class="number">1</span>) {
+        result.push(subtree[<span class="number">0</span>]);
+        subtree = <span class="keyword">this</span>.tree;
+      }
+    }
+  }
+
+  <span class="keyword">return</span> <span class="keyword">new</span> Buffer(result);
+}</pre></div></div>
             
         </li>
         
@@ -1029,121 +1130,531 @@ HeaderSetDecompressor.string = <span class="function"><span class="keyword">func
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-32">&#182;</a>
               </div>
-              <h3 id="header-represenations">Header represenations</h3>
-<p>The JavaScript object representation is described near the
-<code>HeaderTable.prototype.execute()</code> method definition.</p>
-<p><strong>All binary header representations</strong> start with a prefix signaling the representation type and
-an index represented using prefix coded integers:</p>
-<pre><code>  0   1   2   3   4   5   6   7
-+---+---+---+---+---+---+---+---+
-| 1 |        Index (7+)         |  Indexed Representation
-+---+---------------------------+
-
-+---+---+---+---+---+---+---+---+
-| 0 | 1 | 1 |    Index (5+)     |  Literal w/o Indexing
-+---+---+---+-------------------+
-
-+---+---+---+---+---+---+---+---+
-| 0 | 1 | 0 |    Index (5+)     |  Literal w/ Incremental Indexing
-+---+---+---+-------------------+
-
-+---+---+---+---+---+---+---+---+
-| 0 | 0 |      Index (6+)       |  Literal w/ Substitution Indexing
-+---+---+-----------------------+</code></pre>
-<p>The <strong>Indexed Representation</strong> consists of the 1-bit prefix and the Index that is represented as
-a 7-bit prefix coded integer and nothing else.</p>
-<p>After the first bits, <strong>all literal representations</strong> specify the header name, either as a
-pointer to the Header Table (Index) or a string literal. When the string literal representation
-is used, the Index is set to 0 and the string literal starts at the second byte.</p>
-<p>When using <strong>Substitution Indexing</strong>, a new index comes next represented as a 0-bit prefix
-integer, specifying the record in the Header Table that needs to be replaced.</p>
-<p>For <strong>all literal representations</strong>, the specification of the header value comes next. It is
-always represented as a string.</p>
+              <p>The initializer arrays for the Huffman tables are generated with feeding the tables from the
+spec to this sed command:</p>
+<pre><code>sed -e &quot;s/^.* [|]//g&quot; -e &quot;s/|//g&quot; -e &quot;s/ .*//g&quot; -e &quot;s/^/  &#39;/g&quot; -e &quot;s/$/&#39;,/g&quot;</code></pre>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre><span class="keyword">var</span> representations = {
-  indexed             : { prefix: <span class="number">7</span>, pattern: <span class="number">0x80</span> },
-  literal             : { prefix: <span class="number">5</span>, pattern: <span class="number">0x60</span> },
-  literalIncremental  : { prefix: <span class="number">5</span>, pattern: <span class="number">0x40</span> },
-  literalSubstitution : { prefix: <span class="number">6</span>, pattern: <span class="number">0x00</span> }
-};
+            <div class="content"><div class='highlight'><pre>HuffmanTable.requestHuffmanTable = <span class="keyword">new</span> HuffmanTable([
+  <span class="string">'111111111111111111110111010'</span>,
+  <span class="string">'111111111111111111110111011'</span>,
+  <span class="string">'111111111111111111110111100'</span>,
+  <span class="string">'111111111111111111110111101'</span>,
+  <span class="string">'111111111111111111110111110'</span>,
+  <span class="string">'111111111111111111110111111'</span>,
+  <span class="string">'111111111111111111111000000'</span>,
+  <span class="string">'111111111111111111111000001'</span>,
+  <span class="string">'111111111111111111111000010'</span>,
+  <span class="string">'111111111111111111111000011'</span>,
+  <span class="string">'111111111111111111111000100'</span>,
+  <span class="string">'111111111111111111111000101'</span>,
+  <span class="string">'111111111111111111111000110'</span>,
+  <span class="string">'111111111111111111111000111'</span>,
+  <span class="string">'111111111111111111111001000'</span>,
+  <span class="string">'111111111111111111111001001'</span>,
+  <span class="string">'111111111111111111111001010'</span>,
+  <span class="string">'111111111111111111111001011'</span>,
+  <span class="string">'111111111111111111111001100'</span>,
+  <span class="string">'111111111111111111111001101'</span>,
+  <span class="string">'111111111111111111111001110'</span>,
+  <span class="string">'111111111111111111111001111'</span>,
+  <span class="string">'111111111111111111111010000'</span>,
+  <span class="string">'111111111111111111111010001'</span>,
+  <span class="string">'111111111111111111111010010'</span>,
+  <span class="string">'111111111111111111111010011'</span>,
+  <span class="string">'111111111111111111111010100'</span>,
+  <span class="string">'111111111111111111111010101'</span>,
+  <span class="string">'111111111111111111111010110'</span>,
+  <span class="string">'111111111111111111111010111'</span>,
+  <span class="string">'111111111111111111111011000'</span>,
+  <span class="string">'111111111111111111111011001'</span>,
+  <span class="string">'11101000'</span>,
+  <span class="string">'111111111100'</span>,
+  <span class="string">'11111111111010'</span>,
+  <span class="string">'111111111111100'</span>,
+  <span class="string">'111111111111101'</span>,
+  <span class="string">'100100'</span>,
+  <span class="string">'1101110'</span>,
+  <span class="string">'111111111111110'</span>,
+  <span class="string">'11111111010'</span>,
+  <span class="string">'11111111011'</span>,
+  <span class="string">'1111111010'</span>,
+  <span class="string">'11111111100'</span>,
+  <span class="string">'11101001'</span>,
+  <span class="string">'100101'</span>,
+  <span class="string">'00100'</span>,
+  <span class="string">'0000'</span>,
+  <span class="string">'00101'</span>,
+  <span class="string">'00110'</span>,
+  <span class="string">'00111'</span>,
+  <span class="string">'100110'</span>,
+  <span class="string">'100111'</span>,
+  <span class="string">'101000'</span>,
+  <span class="string">'101001'</span>,
+  <span class="string">'101010'</span>,
+  <span class="string">'101011'</span>,
+  <span class="string">'101100'</span>,
+  <span class="string">'111101100'</span>,
+  <span class="string">'11101010'</span>,
+  <span class="string">'111111111111111110'</span>,
+  <span class="string">'101101'</span>,
+  <span class="string">'11111111111111100'</span>,
+  <span class="string">'111101101'</span>,
+  <span class="string">'11111111111011'</span>,
+  <span class="string">'1101111'</span>,
+  <span class="string">'11101011'</span>,
+  <span class="string">'11101100'</span>,
+  <span class="string">'11101101'</span>,
+  <span class="string">'11101110'</span>,
+  <span class="string">'1110000'</span>,
+  <span class="string">'111101110'</span>,
+  <span class="string">'111101111'</span>,
+  <span class="string">'111110000'</span>,
+  <span class="string">'111110001'</span>,
+  <span class="string">'1111111011'</span>,
+  <span class="string">'111110010'</span>,
+  <span class="string">'11101111'</span>,
+  <span class="string">'111110011'</span>,
+  <span class="string">'111110100'</span>,
+  <span class="string">'111110101'</span>,
+  <span class="string">'111110110'</span>,
+  <span class="string">'111110111'</span>,
+  <span class="string">'11110000'</span>,
+  <span class="string">'11110001'</span>,
+  <span class="string">'111111000'</span>,
+  <span class="string">'111111001'</span>,
+  <span class="string">'111111010'</span>,
+  <span class="string">'111111011'</span>,
+  <span class="string">'111111100'</span>,
+  <span class="string">'1111111100'</span>,
+  <span class="string">'11111111111100'</span>,
+  <span class="string">'111111111111111111111011010'</span>,
+  <span class="string">'1111111111100'</span>,
+  <span class="string">'11111111111101'</span>,
+  <span class="string">'101110'</span>,
+  <span class="string">'1111111111111111110'</span>,
+  <span class="string">'01000'</span>,
+  <span class="string">'101111'</span>,
+  <span class="string">'01001'</span>,
+  <span class="string">'110000'</span>,
+  <span class="string">'0001'</span>,
+  <span class="string">'110001'</span>,
+  <span class="string">'110010'</span>,
+  <span class="string">'110011'</span>,
+  <span class="string">'01010'</span>,
+  <span class="string">'1110001'</span>,
+  <span class="string">'1110010'</span>,
+  <span class="string">'01011'</span>,
+  <span class="string">'110100'</span>,
+  <span class="string">'01100'</span>,
+  <span class="string">'01101'</span>,
+  <span class="string">'01110'</span>,
+  <span class="string">'11110010'</span>,
+  <span class="string">'01111'</span>,
+  <span class="string">'10000'</span>,
+  <span class="string">'10001'</span>,
+  <span class="string">'110101'</span>,
+  <span class="string">'1110011'</span>,
+  <span class="string">'110110'</span>,
+  <span class="string">'11110011'</span>,
+  <span class="string">'11110100'</span>,
+  <span class="string">'11110101'</span>,
+  <span class="string">'11111111111111101'</span>,
+  <span class="string">'11111111101'</span>,
+  <span class="string">'11111111111111110'</span>,
+  <span class="string">'111111111101'</span>,
+  <span class="string">'111111111111111111111011011'</span>,
+  <span class="string">'111111111111111111111011100'</span>,
+  <span class="string">'111111111111111111111011101'</span>,
+  <span class="string">'111111111111111111111011110'</span>,
+  <span class="string">'111111111111111111111011111'</span>,
+  <span class="string">'111111111111111111111100000'</span>,
+  <span class="string">'111111111111111111111100001'</span>,
+  <span class="string">'111111111111111111111100010'</span>,
+  <span class="string">'111111111111111111111100011'</span>,
+  <span class="string">'111111111111111111111100100'</span>,
+  <span class="string">'111111111111111111111100101'</span>,
+  <span class="string">'111111111111111111111100110'</span>,
+  <span class="string">'111111111111111111111100111'</span>,
+  <span class="string">'111111111111111111111101000'</span>,
+  <span class="string">'111111111111111111111101001'</span>,
+  <span class="string">'111111111111111111111101010'</span>,
+  <span class="string">'111111111111111111111101011'</span>,
+  <span class="string">'111111111111111111111101100'</span>,
+  <span class="string">'111111111111111111111101101'</span>,
+  <span class="string">'111111111111111111111101110'</span>,
+  <span class="string">'111111111111111111111101111'</span>,
+  <span class="string">'111111111111111111111110000'</span>,
+  <span class="string">'111111111111111111111110001'</span>,
+  <span class="string">'111111111111111111111110010'</span>,
+  <span class="string">'111111111111111111111110011'</span>,
+  <span class="string">'111111111111111111111110100'</span>,
+  <span class="string">'111111111111111111111110101'</span>,
+  <span class="string">'111111111111111111111110110'</span>,
+  <span class="string">'111111111111111111111110111'</span>,
+  <span class="string">'111111111111111111111111000'</span>,
+  <span class="string">'111111111111111111111111001'</span>,
+  <span class="string">'111111111111111111111111010'</span>,
+  <span class="string">'111111111111111111111111011'</span>,
+  <span class="string">'111111111111111111111111100'</span>,
+  <span class="string">'111111111111111111111111101'</span>,
+  <span class="string">'111111111111111111111111110'</span>,
+  <span class="string">'111111111111111111111111111'</span>,
+  <span class="string">'11111111111111111110000000'</span>,
+  <span class="string">'11111111111111111110000001'</span>,
+  <span class="string">'11111111111111111110000010'</span>,
+  <span class="string">'11111111111111111110000011'</span>,
+  <span class="string">'11111111111111111110000100'</span>,
+  <span class="string">'11111111111111111110000101'</span>,
+  <span class="string">'11111111111111111110000110'</span>,
+  <span class="string">'11111111111111111110000111'</span>,
+  <span class="string">'11111111111111111110001000'</span>,
+  <span class="string">'11111111111111111110001001'</span>,
+  <span class="string">'11111111111111111110001010'</span>,
+  <span class="string">'11111111111111111110001011'</span>,
+  <span class="string">'11111111111111111110001100'</span>,
+  <span class="string">'11111111111111111110001101'</span>,
+  <span class="string">'11111111111111111110001110'</span>,
+  <span class="string">'11111111111111111110001111'</span>,
+  <span class="string">'11111111111111111110010000'</span>,
+  <span class="string">'11111111111111111110010001'</span>,
+  <span class="string">'11111111111111111110010010'</span>,
+  <span class="string">'11111111111111111110010011'</span>,
+  <span class="string">'11111111111111111110010100'</span>,
+  <span class="string">'11111111111111111110010101'</span>,
+  <span class="string">'11111111111111111110010110'</span>,
+  <span class="string">'11111111111111111110010111'</span>,
+  <span class="string">'11111111111111111110011000'</span>,
+  <span class="string">'11111111111111111110011001'</span>,
+  <span class="string">'11111111111111111110011010'</span>,
+  <span class="string">'11111111111111111110011011'</span>,
+  <span class="string">'11111111111111111110011100'</span>,
+  <span class="string">'11111111111111111110011101'</span>,
+  <span class="string">'11111111111111111110011110'</span>,
+  <span class="string">'11111111111111111110011111'</span>,
+  <span class="string">'11111111111111111110100000'</span>,
+  <span class="string">'11111111111111111110100001'</span>,
+  <span class="string">'11111111111111111110100010'</span>,
+  <span class="string">'11111111111111111110100011'</span>,
+  <span class="string">'11111111111111111110100100'</span>,
+  <span class="string">'11111111111111111110100101'</span>,
+  <span class="string">'11111111111111111110100110'</span>,
+  <span class="string">'11111111111111111110100111'</span>,
+  <span class="string">'11111111111111111110101000'</span>,
+  <span class="string">'11111111111111111110101001'</span>,
+  <span class="string">'11111111111111111110101010'</span>,
+  <span class="string">'11111111111111111110101011'</span>,
+  <span class="string">'11111111111111111110101100'</span>,
+  <span class="string">'11111111111111111110101101'</span>,
+  <span class="string">'11111111111111111110101110'</span>,
+  <span class="string">'11111111111111111110101111'</span>,
+  <span class="string">'11111111111111111110110000'</span>,
+  <span class="string">'11111111111111111110110001'</span>,
+  <span class="string">'11111111111111111110110010'</span>,
+  <span class="string">'11111111111111111110110011'</span>,
+  <span class="string">'11111111111111111110110100'</span>,
+  <span class="string">'11111111111111111110110101'</span>,
+  <span class="string">'11111111111111111110110110'</span>,
+  <span class="string">'11111111111111111110110111'</span>,
+  <span class="string">'11111111111111111110111000'</span>,
+  <span class="string">'11111111111111111110111001'</span>,
+  <span class="string">'11111111111111111110111010'</span>,
+  <span class="string">'11111111111111111110111011'</span>,
+  <span class="string">'11111111111111111110111100'</span>,
+  <span class="string">'11111111111111111110111101'</span>,
+  <span class="string">'11111111111111111110111110'</span>,
+  <span class="string">'11111111111111111110111111'</span>,
+  <span class="string">'11111111111111111111000000'</span>,
+  <span class="string">'11111111111111111111000001'</span>,
+  <span class="string">'11111111111111111111000010'</span>,
+  <span class="string">'11111111111111111111000011'</span>,
+  <span class="string">'11111111111111111111000100'</span>,
+  <span class="string">'11111111111111111111000101'</span>,
+  <span class="string">'11111111111111111111000110'</span>,
+  <span class="string">'11111111111111111111000111'</span>,
+  <span class="string">'11111111111111111111001000'</span>,
+  <span class="string">'11111111111111111111001001'</span>,
+  <span class="string">'11111111111111111111001010'</span>,
+  <span class="string">'11111111111111111111001011'</span>,
+  <span class="string">'11111111111111111111001100'</span>,
+  <span class="string">'11111111111111111111001101'</span>,
+  <span class="string">'11111111111111111111001110'</span>,
+  <span class="string">'11111111111111111111001111'</span>,
+  <span class="string">'11111111111111111111010000'</span>,
+  <span class="string">'11111111111111111111010001'</span>,
+  <span class="string">'11111111111111111111010010'</span>,
+  <span class="string">'11111111111111111111010011'</span>,
+  <span class="string">'11111111111111111111010100'</span>,
+  <span class="string">'11111111111111111111010101'</span>,
+  <span class="string">'11111111111111111111010110'</span>,
+  <span class="string">'11111111111111111111010111'</span>,
+  <span class="string">'11111111111111111111011000'</span>,
+  <span class="string">'11111111111111111111011001'</span>,
+  <span class="string">'11111111111111111111011010'</span>,
+  <span class="string">'11111111111111111111011011'</span>,
+  <span class="string">'11111111111111111111011100'</span>
+]);
 
-HeaderSetCompressor.header = <span class="function"><span class="keyword">function</span> <span class="title">writeHeader</span><span class="params">(header)</span> {</span>
-  <span class="keyword">var</span> representation, buffers = [];
-
-  <span class="keyword">if</span> (<span class="keyword">typeof</span> header.value === <span class="string">'number'</span>) {
-    representation = representations.indexed;
-  } <span class="keyword">else</span> <span class="keyword">if</span> (header.index === -<span class="number">1</span>) {
-    representation = representations.literal;
-  } <span class="keyword">else</span> <span class="keyword">if</span> (header.index === <span class="literal">Infinity</span>) {
-    representation = representations.literalIncremental;
-  } <span class="keyword">else</span> {
-    representation = representations.literalSubstitution;
-  }
-
-  <span class="keyword">if</span> (representation === representations.indexed) {
-    buffers.push(HeaderSetCompressor.integer(header.value, representation.prefix));
-
-  } <span class="keyword">else</span> {
-    <span class="keyword">if</span> (<span class="keyword">typeof</span> header.name === <span class="string">'number'</span>) {
-      buffers.push(HeaderSetCompressor.integer(header.name + <span class="number">1</span>, representation.prefix));
-    } <span class="keyword">else</span> {
-      buffers.push(HeaderSetCompressor.integer(<span class="number">0</span>, representation.prefix));
-      buffers.push(HeaderSetCompressor.string(header.name));
-    }
-
-    <span class="keyword">if</span> (representation === representations.literalSubstitution) {
-      buffers.push(HeaderSetCompressor.integer(header.index, <span class="number">0</span>));
-    }
-
-    buffers.push(HeaderSetCompressor.string(header.value));
-  }
-
-  buffers[<span class="number">0</span>][<span class="number">0</span>][<span class="number">0</span>] |= representation.pattern;
-
-  <span class="keyword">return</span> Array.prototype.concat.apply([], buffers); <span class="comment">// array of arrays of buffers -&gt; array of buffers</span>
-};
-
-HeaderSetDecompressor.header = <span class="function"><span class="keyword">function</span> <span class="title">readHeader</span><span class="params">(buffer)</span> {</span>
-  <span class="keyword">var</span> representation, header = {};
-
-  <span class="keyword">var</span> firstByte = buffer[buffer.cursor];
-  <span class="keyword">if</span> (firstByte &amp; <span class="number">0x80</span>) {
-    representation = representations.indexed;
-  } <span class="keyword">else</span> <span class="keyword">if</span> (firstByte &amp; <span class="number">0x40</span>) {
-    <span class="keyword">if</span> (firstByte &amp; <span class="number">0x20</span>) {
-      representation = representations.literal;
-    } <span class="keyword">else</span> {
-      representation = representations.literalIncremental;
-    }
-  } <span class="keyword">else</span> {
-    representation = representations.literalSubstitution;
-  }
-
-  <span class="keyword">if</span> (representation === representations.indexed) {
-    header.value = header.name = HeaderSetDecompressor.integer(buffer, representation.prefix);
-    header.index = -<span class="number">1</span>;
-
-  } <span class="keyword">else</span> {
-    header.name = HeaderSetDecompressor.integer(buffer, representation.prefix) - <span class="number">1</span>;
-    <span class="keyword">if</span> (header.name === -<span class="number">1</span>) {
-      header.name = HeaderSetDecompressor.string(buffer);
-    }
-
-    <span class="keyword">if</span> (representation === representations.literalSubstitution) {
-      header.index = HeaderSetDecompressor.integer(buffer, <span class="number">0</span>);
-    } <span class="keyword">else</span> <span class="keyword">if</span> (representation === representations.literalIncremental) {
-      header.index = <span class="literal">Infinity</span>;
-    } <span class="keyword">else</span> {
-      header.index = -<span class="number">1</span>;
-    }
-
-    header.value = HeaderSetDecompressor.string(buffer);
-  }
-
-  <span class="keyword">return</span> header;
-};</pre></div></div>
+HuffmanTable.responseHuffmanTable = <span class="keyword">new</span> HuffmanTable([
+  <span class="string">'1111111111111111110111100'</span>,
+  <span class="string">'1111111111111111110111101'</span>,
+  <span class="string">'1111111111111111110111110'</span>,
+  <span class="string">'1111111111111111110111111'</span>,
+  <span class="string">'1111111111111111111000000'</span>,
+  <span class="string">'1111111111111111111000001'</span>,
+  <span class="string">'1111111111111111111000010'</span>,
+  <span class="string">'1111111111111111111000011'</span>,
+  <span class="string">'1111111111111111111000100'</span>,
+  <span class="string">'1111111111111111111000101'</span>,
+  <span class="string">'1111111111111111111000110'</span>,
+  <span class="string">'1111111111111111111000111'</span>,
+  <span class="string">'1111111111111111111001000'</span>,
+  <span class="string">'1111111111111111111001001'</span>,
+  <span class="string">'1111111111111111111001010'</span>,
+  <span class="string">'1111111111111111111001011'</span>,
+  <span class="string">'1111111111111111111001100'</span>,
+  <span class="string">'1111111111111111111001101'</span>,
+  <span class="string">'1111111111111111111001110'</span>,
+  <span class="string">'1111111111111111111001111'</span>,
+  <span class="string">'1111111111111111111010000'</span>,
+  <span class="string">'1111111111111111111010001'</span>,
+  <span class="string">'1111111111111111111010010'</span>,
+  <span class="string">'1111111111111111111010011'</span>,
+  <span class="string">'1111111111111111111010100'</span>,
+  <span class="string">'1111111111111111111010101'</span>,
+  <span class="string">'1111111111111111111010110'</span>,
+  <span class="string">'1111111111111111111010111'</span>,
+  <span class="string">'1111111111111111111011000'</span>,
+  <span class="string">'1111111111111111111011001'</span>,
+  <span class="string">'1111111111111111111011010'</span>,
+  <span class="string">'1111111111111111111011011'</span>,
+  <span class="string">'0000'</span>,
+  <span class="string">'111111111010'</span>,
+  <span class="string">'1101010'</span>,
+  <span class="string">'1111111111010'</span>,
+  <span class="string">'11111111111100'</span>,
+  <span class="string">'111101100'</span>,
+  <span class="string">'1111111000'</span>,
+  <span class="string">'1111111111011'</span>,
+  <span class="string">'111101101'</span>,
+  <span class="string">'111101110'</span>,
+  <span class="string">'111111111011'</span>,
+  <span class="string">'11111111010'</span>,
+  <span class="string">'100010'</span>,
+  <span class="string">'100011'</span>,
+  <span class="string">'100100'</span>,
+  <span class="string">'1101011'</span>,
+  <span class="string">'0001'</span>,
+  <span class="string">'0010'</span>,
+  <span class="string">'0011'</span>,
+  <span class="string">'01000'</span>,
+  <span class="string">'01001'</span>,
+  <span class="string">'01010'</span>,
+  <span class="string">'100101'</span>,
+  <span class="string">'100110'</span>,
+  <span class="string">'01011'</span>,
+  <span class="string">'01100'</span>,
+  <span class="string">'01101'</span>,
+  <span class="string">'111101111'</span>,
+  <span class="string">'1111111111111010'</span>,
+  <span class="string">'1101100'</span>,
+  <span class="string">'1111111111100'</span>,
+  <span class="string">'111111111100'</span>,
+  <span class="string">'1111111111111011'</span>,
+  <span class="string">'1101101'</span>,
+  <span class="string">'11101010'</span>,
+  <span class="string">'11101011'</span>,
+  <span class="string">'11101100'</span>,
+  <span class="string">'11101101'</span>,
+  <span class="string">'11101110'</span>,
+  <span class="string">'100111'</span>,
+  <span class="string">'111110000'</span>,
+  <span class="string">'11101111'</span>,
+  <span class="string">'11110000'</span>,
+  <span class="string">'1111111001'</span>,
+  <span class="string">'111110001'</span>,
+  <span class="string">'101000'</span>,
+  <span class="string">'11110001'</span>,
+  <span class="string">'11110010'</span>,
+  <span class="string">'111110010'</span>,
+  <span class="string">'1111111010'</span>,
+  <span class="string">'111110011'</span>,
+  <span class="string">'101001'</span>,
+  <span class="string">'01110'</span>,
+  <span class="string">'111110100'</span>,
+  <span class="string">'111110101'</span>,
+  <span class="string">'11110011'</span>,
+  <span class="string">'1111111011'</span>,
+  <span class="string">'111110110'</span>,
+  <span class="string">'1111111100'</span>,
+  <span class="string">'11111111011'</span>,
+  <span class="string">'1111111111101'</span>,
+  <span class="string">'11111111100'</span>,
+  <span class="string">'111111111111100'</span>,
+  <span class="string">'111110111'</span>,
+  <span class="string">'11111111111111110'</span>,
+  <span class="string">'01111'</span>,
+  <span class="string">'1101110'</span>,
+  <span class="string">'101010'</span>,
+  <span class="string">'101011'</span>,
+  <span class="string">'10000'</span>,
+  <span class="string">'1101111'</span>,
+  <span class="string">'1110000'</span>,
+  <span class="string">'1110001'</span>,
+  <span class="string">'101100'</span>,
+  <span class="string">'111111000'</span>,
+  <span class="string">'111111001'</span>,
+  <span class="string">'1110010'</span>,
+  <span class="string">'101101'</span>,
+  <span class="string">'101110'</span>,
+  <span class="string">'101111'</span>,
+  <span class="string">'110000'</span>,
+  <span class="string">'111111010'</span>,
+  <span class="string">'110001'</span>,
+  <span class="string">'110010'</span>,
+  <span class="string">'110011'</span>,
+  <span class="string">'110100'</span>,
+  <span class="string">'1110011'</span>,
+  <span class="string">'11110100'</span>,
+  <span class="string">'1110100'</span>,
+  <span class="string">'11110101'</span>,
+  <span class="string">'111111011'</span>,
+  <span class="string">'1111111111111100'</span>,
+  <span class="string">'11111111111101'</span>,
+  <span class="string">'1111111111111101'</span>,
+  <span class="string">'1111111111111110'</span>,
+  <span class="string">'1111111111111111111011100'</span>,
+  <span class="string">'1111111111111111111011101'</span>,
+  <span class="string">'1111111111111111111011110'</span>,
+  <span class="string">'1111111111111111111011111'</span>,
+  <span class="string">'1111111111111111111100000'</span>,
+  <span class="string">'1111111111111111111100001'</span>,
+  <span class="string">'1111111111111111111100010'</span>,
+  <span class="string">'1111111111111111111100011'</span>,
+  <span class="string">'1111111111111111111100100'</span>,
+  <span class="string">'1111111111111111111100101'</span>,
+  <span class="string">'1111111111111111111100110'</span>,
+  <span class="string">'1111111111111111111100111'</span>,
+  <span class="string">'1111111111111111111101000'</span>,
+  <span class="string">'1111111111111111111101001'</span>,
+  <span class="string">'1111111111111111111101010'</span>,
+  <span class="string">'1111111111111111111101011'</span>,
+  <span class="string">'1111111111111111111101100'</span>,
+  <span class="string">'1111111111111111111101101'</span>,
+  <span class="string">'1111111111111111111101110'</span>,
+  <span class="string">'1111111111111111111101111'</span>,
+  <span class="string">'1111111111111111111110000'</span>,
+  <span class="string">'1111111111111111111110001'</span>,
+  <span class="string">'1111111111111111111110010'</span>,
+  <span class="string">'1111111111111111111110011'</span>,
+  <span class="string">'1111111111111111111110100'</span>,
+  <span class="string">'1111111111111111111110101'</span>,
+  <span class="string">'1111111111111111111110110'</span>,
+  <span class="string">'1111111111111111111110111'</span>,
+  <span class="string">'1111111111111111111111000'</span>,
+  <span class="string">'1111111111111111111111001'</span>,
+  <span class="string">'1111111111111111111111010'</span>,
+  <span class="string">'1111111111111111111111011'</span>,
+  <span class="string">'1111111111111111111111100'</span>,
+  <span class="string">'1111111111111111111111101'</span>,
+  <span class="string">'1111111111111111111111110'</span>,
+  <span class="string">'1111111111111111111111111'</span>,
+  <span class="string">'111111111111111110000000'</span>,
+  <span class="string">'111111111111111110000001'</span>,
+  <span class="string">'111111111111111110000010'</span>,
+  <span class="string">'111111111111111110000011'</span>,
+  <span class="string">'111111111111111110000100'</span>,
+  <span class="string">'111111111111111110000101'</span>,
+  <span class="string">'111111111111111110000110'</span>,
+  <span class="string">'111111111111111110000111'</span>,
+  <span class="string">'111111111111111110001000'</span>,
+  <span class="string">'111111111111111110001001'</span>,
+  <span class="string">'111111111111111110001010'</span>,
+  <span class="string">'111111111111111110001011'</span>,
+  <span class="string">'111111111111111110001100'</span>,
+  <span class="string">'111111111111111110001101'</span>,
+  <span class="string">'111111111111111110001110'</span>,
+  <span class="string">'111111111111111110001111'</span>,
+  <span class="string">'111111111111111110010000'</span>,
+  <span class="string">'111111111111111110010001'</span>,
+  <span class="string">'111111111111111110010010'</span>,
+  <span class="string">'111111111111111110010011'</span>,
+  <span class="string">'111111111111111110010100'</span>,
+  <span class="string">'111111111111111110010101'</span>,
+  <span class="string">'111111111111111110010110'</span>,
+  <span class="string">'111111111111111110010111'</span>,
+  <span class="string">'111111111111111110011000'</span>,
+  <span class="string">'111111111111111110011001'</span>,
+  <span class="string">'111111111111111110011010'</span>,
+  <span class="string">'111111111111111110011011'</span>,
+  <span class="string">'111111111111111110011100'</span>,
+  <span class="string">'111111111111111110011101'</span>,
+  <span class="string">'111111111111111110011110'</span>,
+  <span class="string">'111111111111111110011111'</span>,
+  <span class="string">'111111111111111110100000'</span>,
+  <span class="string">'111111111111111110100001'</span>,
+  <span class="string">'111111111111111110100010'</span>,
+  <span class="string">'111111111111111110100011'</span>,
+  <span class="string">'111111111111111110100100'</span>,
+  <span class="string">'111111111111111110100101'</span>,
+  <span class="string">'111111111111111110100110'</span>,
+  <span class="string">'111111111111111110100111'</span>,
+  <span class="string">'111111111111111110101000'</span>,
+  <span class="string">'111111111111111110101001'</span>,
+  <span class="string">'111111111111111110101010'</span>,
+  <span class="string">'111111111111111110101011'</span>,
+  <span class="string">'111111111111111110101100'</span>,
+  <span class="string">'111111111111111110101101'</span>,
+  <span class="string">'111111111111111110101110'</span>,
+  <span class="string">'111111111111111110101111'</span>,
+  <span class="string">'111111111111111110110000'</span>,
+  <span class="string">'111111111111111110110001'</span>,
+  <span class="string">'111111111111111110110010'</span>,
+  <span class="string">'111111111111111110110011'</span>,
+  <span class="string">'111111111111111110110100'</span>,
+  <span class="string">'111111111111111110110101'</span>,
+  <span class="string">'111111111111111110110110'</span>,
+  <span class="string">'111111111111111110110111'</span>,
+  <span class="string">'111111111111111110111000'</span>,
+  <span class="string">'111111111111111110111001'</span>,
+  <span class="string">'111111111111111110111010'</span>,
+  <span class="string">'111111111111111110111011'</span>,
+  <span class="string">'111111111111111110111100'</span>,
+  <span class="string">'111111111111111110111101'</span>,
+  <span class="string">'111111111111111110111110'</span>,
+  <span class="string">'111111111111111110111111'</span>,
+  <span class="string">'111111111111111111000000'</span>,
+  <span class="string">'111111111111111111000001'</span>,
+  <span class="string">'111111111111111111000010'</span>,
+  <span class="string">'111111111111111111000011'</span>,
+  <span class="string">'111111111111111111000100'</span>,
+  <span class="string">'111111111111111111000101'</span>,
+  <span class="string">'111111111111111111000110'</span>,
+  <span class="string">'111111111111111111000111'</span>,
+  <span class="string">'111111111111111111001000'</span>,
+  <span class="string">'111111111111111111001001'</span>,
+  <span class="string">'111111111111111111001010'</span>,
+  <span class="string">'111111111111111111001011'</span>,
+  <span class="string">'111111111111111111001100'</span>,
+  <span class="string">'111111111111111111001101'</span>,
+  <span class="string">'111111111111111111001110'</span>,
+  <span class="string">'111111111111111111001111'</span>,
+  <span class="string">'111111111111111111010000'</span>,
+  <span class="string">'111111111111111111010001'</span>,
+  <span class="string">'111111111111111111010010'</span>,
+  <span class="string">'111111111111111111010011'</span>,
+  <span class="string">'111111111111111111010100'</span>,
+  <span class="string">'111111111111111111010101'</span>,
+  <span class="string">'111111111111111111010110'</span>,
+  <span class="string">'111111111111111111010111'</span>,
+  <span class="string">'111111111111111111011000'</span>,
+  <span class="string">'111111111111111111011001'</span>,
+  <span class="string">'111111111111111111011010'</span>,
+  <span class="string">'111111111111111111011011'</span>,
+  <span class="string">'111111111111111111011100'</span>,
+  <span class="string">'111111111111111111011101'</span>
+]);</pre></div></div>
             
         </li>
         
@@ -1154,9 +1665,57 @@ HeaderSetDecompressor.header = <span class="function"><span class="keyword">func
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-33">&#182;</a>
               </div>
-              <h1 id="integration-with-http-2">Integration with HTTP/2</h1>
+              <h3 id="string-literal-representation">String literal representation</h3>
+<p>Literal <strong>strings</strong> can represent header names or header values. There&#39;s two variant of the
+string encoding:</p>
+<p>String literal with Huffman encoding:</p>
+<pre><code>  0   1   2   3   4   5   6   7
++---+---+---+---+---+---+---+---+
+| 1 |  Value Length Prefix (7)  |
++---+---+---+---+---+---+---+---+
+|   Value Length (0-N bytes)    |
++---+---+---+---+---+---+---+---+
+...
++---+---+---+---+---+---+---+---+
+| Huffman Encoded Data  |Padding|
++---+---+---+---+---+---+---+---+</code></pre>
+<p>String literal without Huffman encoding:</p>
+<pre><code>  0   1   2   3   4   5   6   7
++---+---+---+---+---+---+---+---+
+| 0 |  Value Length Prefix (7)  |
++---+---+---+---+---+---+---+---+
+|   Value Length (0-N bytes)    |
++---+---+---+---+---+---+---+---+
+...
++---+---+---+---+---+---+---+---+
+|  Field Bytes Without Encoding |
++---+---+---+---+---+---+---+---+</code></pre>
 
             </div>
+            
+            <div class="content"><div class='highlight'><pre>HeaderSetCompressor.string = <span class="function"><span class="keyword">function</span> <span class="title">writeString</span><span class="params">(str, huffmanTable)</span> {</span>
+  str = <span class="keyword">new</span> Buffer(str, <span class="string">'utf8'</span>);
+
+  <span class="keyword">var</span> huffman = huffmanTable.encode(str);
+  <span class="keyword">if</span> (huffman.length &lt; str.length) {
+    <span class="keyword">var</span> length = HeaderSetCompressor.integer(huffman.length, <span class="number">7</span>)
+    length[<span class="number">0</span>][<span class="number">0</span>] |= <span class="number">128</span>;
+    <span class="keyword">return</span> length.concat(huffman);
+  }
+
+  <span class="keyword">else</span> {
+    length = HeaderSetCompressor.integer(str.length, <span class="number">7</span>)
+    <span class="keyword">return</span> length.concat(str);
+  }
+};
+
+HeaderSetDecompressor.string = <span class="function"><span class="keyword">function</span> <span class="title">readString</span><span class="params">(buffer, huffmanTable)</span> {</span>
+  <span class="keyword">var</span> huffman = buffer[buffer.cursor] &amp; <span class="number">128</span>;
+  <span class="keyword">var</span> length = HeaderSetDecompressor.integer(buffer, <span class="number">7</span>);
+  <span class="keyword">var</span> encoded = buffer.slice(buffer.cursor, buffer.cursor + length);
+  buffer.cursor += length;
+  <span class="keyword">return</span> (huffman ? huffmanTable.decode(encoded) : encoded).toString(<span class="string">'utf8'</span>);
+};</pre></div></div>
             
         </li>
         
@@ -1166,6 +1725,157 @@ HeaderSetDecompressor.header = <span class="function"><span class="keyword">func
               
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-34">&#182;</a>
+              </div>
+              <h3 id="header-represenations">Header represenations</h3>
+<p>The JavaScript object representation is described near the
+<code>HeaderSetDecompressor.prototype._execute()</code> method definition.</p>
+<p><strong>All binary header representations</strong> start with a prefix signaling the representation type and
+an index represented using prefix coded integers:</p>
+<pre><code>  0   1   2   3   4   5   6   7
++---+---+---+---+---+---+---+---+
+| 1 |        Index (7+)         |  Indexed Representation
++---+---------------------------+
+
+  0   1   2   3   4   5   6   7
++---+---+---+---+---+---+---+---+
+| 0 | 1 |      Index (6+)       |
++---+---+---+-------------------+  Literal w/o Indexing
+|       Value Length (8+)       |
++-------------------------------+  w/ Indexed Name
+| Value String (Length octets)  |
++-------------------------------+
+
+  0   1   2   3   4   5   6   7
++---+---+---+---+---+---+---+---+
+| 0 | 1 |           0           |
++---+---+---+-------------------+
+|       Name Length (8+)        |
++-------------------------------+  Literal w/o Indexing
+|  Name String (Length octets)  |
++-------------------------------+  w/ New Name
+|       Value Length (8+)       |
++-------------------------------+
+| Value String (Length octets)  |
++-------------------------------+
+
+  0   1   2   3   4   5   6   7
++---+---+---+---+---+---+---+---+
+| 0 | 0 |      Index (6+)       |
++---+---+---+-------------------+  Literal w/ Incremental Indexing
+|       Value Length (8+)       |
++-------------------------------+  w/ Indexed Name
+| Value String (Length octets)  |
++-------------------------------+
+
+  0   1   2   3   4   5   6   7
++---+---+---+---+---+---+---+---+
+| 0 | 0 |           0           |
++---+---+---+-------------------+
+|       Name Length (8+)        |
++-------------------------------+  Literal w/ Incremental Indexing
+|  Name String (Length octets)  |
++-------------------------------+  w/ New Name
+|       Value Length (8+)       |
++-------------------------------+
+| Value String (Length octets)  |
++-------------------------------+</code></pre>
+<p>The <strong>Indexed Representation</strong> consists of the 1-bit prefix and the Index that is represented as
+a 7-bit prefix coded integer and nothing else.</p>
+<p>After the first bits, <strong>all literal representations</strong> specify the header name, either as a
+pointer to the Header Table (Index) or a string literal. When the string literal representation
+is used, the Index is set to 0 and the string literal starts at the second byte.</p>
+<p>For <strong>all literal representations</strong>, the specification of the header value comes next. It is
+always represented as a string.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="keyword">var</span> representations = {
+  indexed             : { prefix: <span class="number">7</span>, pattern: <span class="number">0x80</span> },
+  literal             : { prefix: <span class="number">6</span>, pattern: <span class="number">0x40</span> },
+  literalIncremental  : { prefix: <span class="number">6</span>, pattern: <span class="number">0x00</span> }
+};
+
+HeaderSetCompressor.header = <span class="function"><span class="keyword">function</span> <span class="title">writeHeader</span><span class="params">(header, huffmanTable)</span> {</span>
+  <span class="keyword">var</span> representation, buffers = [];
+
+  <span class="keyword">if</span> (<span class="keyword">typeof</span> header.value === <span class="string">'number'</span>) {
+    representation = representations.indexed;
+  } <span class="keyword">else</span> <span class="keyword">if</span> (header.index) {
+    representation = representations.literalIncremental;
+  } <span class="keyword">else</span> {
+    representation = representations.literal;
+  }
+
+  <span class="keyword">if</span> (representation === representations.indexed) {
+    buffers.push(HeaderSetCompressor.integer(header.value, representation.prefix));
+
+  } <span class="keyword">else</span> {
+    <span class="keyword">if</span> (<span class="keyword">typeof</span> header.name === <span class="string">'number'</span>) {
+      buffers.push(HeaderSetCompressor.integer(header.name + <span class="number">1</span>, representation.prefix));
+    } <span class="keyword">else</span> {
+      buffers.push(HeaderSetCompressor.integer(<span class="number">0</span>, representation.prefix));
+      buffers.push(HeaderSetCompressor.string(header.name, huffmanTable));
+    }
+
+    buffers.push(HeaderSetCompressor.string(header.value, huffmanTable));
+  }
+
+  buffers[<span class="number">0</span>][<span class="number">0</span>][<span class="number">0</span>] |= representation.pattern;
+
+  <span class="keyword">return</span> Array.prototype.concat.apply([], buffers); <span class="comment">// array of arrays of buffers -&gt; array of buffers</span>
+};
+
+HeaderSetDecompressor.header = <span class="function"><span class="keyword">function</span> <span class="title">readHeader</span><span class="params">(buffer, huffmanTable)</span> {</span>
+  <span class="keyword">var</span> representation, header = {};
+
+  <span class="keyword">var</span> firstByte = buffer[buffer.cursor];
+  <span class="keyword">if</span> (firstByte &amp; <span class="number">0x80</span>) {
+    representation = representations.indexed;
+  } <span class="keyword">else</span> <span class="keyword">if</span> (firstByte &amp; <span class="number">0x40</span>) {
+    representation = representations.literal;
+  } <span class="keyword">else</span> {
+    representation = representations.literalIncremental;
+  }
+
+  <span class="keyword">if</span> (representation === representations.indexed) {
+    header.value = header.name = HeaderSetDecompressor.integer(buffer, representation.prefix);
+    header.index = <span class="literal">false</span>;
+
+  } <span class="keyword">else</span> {
+    header.name = HeaderSetDecompressor.integer(buffer, representation.prefix) - <span class="number">1</span>;
+    <span class="keyword">if</span> (header.name === -<span class="number">1</span>) {
+      header.name = HeaderSetDecompressor.string(buffer, huffmanTable);
+    }
+
+    header.value = HeaderSetDecompressor.string(buffer, huffmanTable);
+
+    header.index = (representation === representations.literalIncremental);
+  }
+
+  <span class="keyword">return</span> header;
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-35">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-35">&#182;</a>
+              </div>
+              <h1 id="integration-with-http-2">Integration with HTTP/2</h1>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-36">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-36">&#182;</a>
               </div>
               <p>This section describes the interaction between the compressor/decompressor and the rest of the
 HTTP/2 implementation. The <code>Compressor</code> and the <code>Decompressor</code> makes up a layer between the
@@ -1191,11 +1901,11 @@ these two representations:</p>
         </li>
         
         
-        <li id="section-35">
+        <li id="section-37">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-35">&#182;</a>
+                <a class="pilcrow" href="#section-37">&#182;</a>
               </div>
               <h2 id="the-compressor-class">The Compressor class</h2>
 
@@ -1204,11 +1914,11 @@ these two representations:</p>
         </li>
         
         
-        <li id="section-36">
+        <li id="section-38">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-36">&#182;</a>
+                <a class="pilcrow" href="#section-38">&#182;</a>
               </div>
               <p>The Compressor transform stream is basically stateless.</p>
 
@@ -1221,19 +1931,36 @@ these two representations:</p>
   <span class="keyword">this</span>._log = log.child({ component: <span class="string">'compressor'</span> });
 
   assert((type === <span class="string">'REQUEST'</span>) || (type === <span class="string">'RESPONSE'</span>));
-  <span class="keyword">var</span> initialTable = (type === <span class="string">'REQUEST'</span>) ? HeaderTable.initialRequestTable
-                                          : HeaderTable.initialResponseTable;
-  <span class="keyword">this</span>._table = <span class="keyword">new</span> HeaderTable(<span class="keyword">this</span>._log, initialTable);
+  <span class="keyword">this</span>._huffmanTable = (type === <span class="string">'REQUEST'</span>) ? HuffmanTable.requestHuffmanTable
+                                            : HuffmanTable.responseHuffmanTable;
+  <span class="keyword">this</span>._table = <span class="keyword">new</span> HeaderTable(<span class="keyword">this</span>._log);
 }</pre></div></div>
             
         </li>
         
         
-        <li id="section-37">
+        <li id="section-39">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-37">&#182;</a>
+                <a class="pilcrow" href="#section-39">&#182;</a>
+              </div>
+              <p>Changing the header table size</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>Compressor.prototype.setTableSizeLimit = <span class="function"><span class="keyword">function</span> <span class="title">setTableSizeLimit</span><span class="params">(size)</span> {</span>
+  <span class="keyword">this</span>._table.setSizeLimit(size);
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-40">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-40">&#182;</a>
               </div>
               <p><code>compress</code> takes a header set, and compresses it using a new <code>HeaderSetCompressor</code> stream
 instance. This means that from now on, the advantages of streaming header encoding are lost,
@@ -1242,7 +1969,7 @@ but the API becomes simpler.</p>
             </div>
             
             <div class="content"><div class='highlight'><pre>Compressor.prototype.compress = <span class="function"><span class="keyword">function</span> <span class="title">compress</span><span class="params">(headers)</span> {</span>
-  <span class="keyword">var</span> compressor = <span class="keyword">new</span> HeaderSetCompressor(<span class="keyword">this</span>._log, <span class="keyword">this</span>._table);
+  <span class="keyword">var</span> compressor = <span class="keyword">new</span> HeaderSetCompressor(<span class="keyword">this</span>._log, <span class="keyword">this</span>._table, <span class="keyword">this</span>._huffmanTable);
   <span class="keyword">for</span> (<span class="keyword">var</span> name <span class="keyword">in</span> headers) {
     <span class="keyword">var</span> value = headers[name];
     <span class="keyword">if</span> (value <span class="keyword">instanceof</span> Array) {
@@ -1265,11 +1992,11 @@ but the API becomes simpler.</p>
         </li>
         
         
-        <li id="section-38">
+        <li id="section-41">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-38">&#182;</a>
+                <a class="pilcrow" href="#section-41">&#182;</a>
               </div>
               <p>When a <code>frame</code> arrives</p>
 
@@ -1280,11 +2007,11 @@ but the API becomes simpler.</p>
         </li>
         
         
-        <li id="section-39">
+        <li id="section-42">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-39">&#182;</a>
+                <a class="pilcrow" href="#section-42">&#182;</a>
               </div>
               <ul>
 <li>and it is a HEADERS or PUSH_PROMISE frame<ul>
@@ -1321,9 +2048,6 @@ marks the last frame and the END_STREAM flag which is always false before the en
           stream: frame.stream
         };
       }
-      <span class="keyword">if</span> (chunkFrame.type !== <span class="string">'PUSH_PROMISE'</span>) {
-        chunkFrame.flags.END_STREAM = last &amp;&amp; frame.flags.END_STREAM;
-      }
       chunkFrame.data = chunks[i];
 
       <span class="keyword">this</span>.push(chunkFrame);
@@ -1333,11 +2057,11 @@ marks the last frame and the END_STREAM flag which is always false before the en
         </li>
         
         
-        <li id="section-40">
+        <li id="section-43">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-40">&#182;</a>
+                <a class="pilcrow" href="#section-43">&#182;</a>
               </div>
               <ul>
 <li>otherwise, the frame is forwarded without taking any action</li>
@@ -1355,11 +2079,11 @@ marks the last frame and the END_STREAM flag which is always false before the en
         </li>
         
         
-        <li id="section-41">
+        <li id="section-44">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-41">&#182;</a>
+                <a class="pilcrow" href="#section-44">&#182;</a>
               </div>
               <h2 id="the-decompressor-class">The Decompressor class</h2>
 
@@ -1368,11 +2092,11 @@ marks the last frame and the END_STREAM flag which is always false before the en
         </li>
         
         
-        <li id="section-42">
+        <li id="section-45">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-42">&#182;</a>
+                <a class="pilcrow" href="#section-45">&#182;</a>
               </div>
               <p>The Decompressor is a stateful transform stream, since it has to collect multiple frames first,
 and the decoding comes after unifying the payload of those frames.</p>
@@ -1389,9 +2113,9 @@ and <code>this._stream</code> respectively.</p>
   <span class="keyword">this</span>._log = log.child({ component: <span class="string">'compressor'</span> });
 
   assert((type === <span class="string">'REQUEST'</span>) || (type === <span class="string">'RESPONSE'</span>));
-  <span class="keyword">var</span> initialTable = (type === <span class="string">'REQUEST'</span>) ? HeaderTable.initialRequestTable
-                                          : HeaderTable.initialResponseTable;
-  <span class="keyword">this</span>._table = <span class="keyword">new</span> HeaderTable(<span class="keyword">this</span>._log, initialTable);
+  <span class="keyword">this</span>._huffmanTable = (type === <span class="string">'REQUEST'</span>) ? HuffmanTable.requestHuffmanTable
+                                            : HuffmanTable.responseHuffmanTable;
+  <span class="keyword">this</span>._table = <span class="keyword">new</span> HeaderTable(<span class="keyword">this</span>._log);
 
   <span class="keyword">this</span>._inProgress = <span class="literal">false</span>;
   <span class="keyword">this</span>._base = <span class="literal">undefined</span>;
@@ -1400,11 +2124,28 @@ and <code>this._stream</code> respectively.</p>
         </li>
         
         
-        <li id="section-43">
+        <li id="section-46">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-43">&#182;</a>
+                <a class="pilcrow" href="#section-46">&#182;</a>
+              </div>
+              <p>Changing the header table size</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>Decompressor.prototype.setTableSizeLimit = <span class="function"><span class="keyword">function</span> <span class="title">setTableSizeLimit</span><span class="params">(size)</span> {</span>
+  <span class="keyword">this</span>._table.setSizeLimit(size);
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-47">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-47">&#182;</a>
               </div>
               <p><code>decompress</code> takes a full header block, and decompresses it using a new <code>HeaderSetDecompressor</code>
 stream instance. This means that from now on, the advantages of streaming header decoding are
@@ -1413,7 +2154,7 @@ lost, but the API becomes simpler.</p>
             </div>
             
             <div class="content"><div class='highlight'><pre>Decompressor.prototype.decompress = <span class="function"><span class="keyword">function</span> <span class="title">decompress</span><span class="params">(block)</span> {</span>
-  <span class="keyword">var</span> decompressor = <span class="keyword">new</span> HeaderSetDecompressor(<span class="keyword">this</span>._log, <span class="keyword">this</span>._table);
+  <span class="keyword">var</span> decompressor = <span class="keyword">new</span> HeaderSetDecompressor(<span class="keyword">this</span>._log, <span class="keyword">this</span>._table, <span class="keyword">this</span>._huffmanTable);
   decompressor.end(block);
 
   <span class="keyword">var</span> headers = {};
@@ -1438,11 +2179,11 @@ lost, but the API becomes simpler.</p>
         </li>
         
         
-        <li id="section-44">
+        <li id="section-48">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-44">&#182;</a>
+                <a class="pilcrow" href="#section-48">&#182;</a>
               </div>
               <p>When a <code>frame</code> arrives</p>
 
@@ -1453,11 +2194,11 @@ lost, but the API becomes simpler.</p>
         </li>
         
         
-        <li id="section-45">
+        <li id="section-49">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-45">&#182;</a>
+                <a class="pilcrow" href="#section-49">&#182;</a>
               </div>
               <ul>
 <li>and the collection process is already <code>_inProgress</code>, the frame is simply stored, except if
@@ -1478,11 +2219,11 @@ it&#39;s an illegal frame</li>
         </li>
         
         
-        <li id="section-46">
+        <li id="section-50">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-46">&#182;</a>
+                <a class="pilcrow" href="#section-50">&#182;</a>
               </div>
               <ul>
 <li>and the collection process is not <code>_inProgress</code>, but the new frame&#39;s type is HEADERS or
@@ -1500,11 +2241,11 @@ PUSH_PROMISE, a new collection process begins</li>
         </li>
         
         
-        <li id="section-47">
+        <li id="section-51">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-47">&#182;</a>
+                <a class="pilcrow" href="#section-51">&#182;</a>
               </div>
               <ul>
 <li>otherwise, the frame is forwarded without taking any action</li>
@@ -1519,11 +2260,11 @@ PUSH_PROMISE, a new collection process begins</li>
         </li>
         
         
-        <li id="section-48">
+        <li id="section-52">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-48">&#182;</a>
+                <a class="pilcrow" href="#section-52">&#182;</a>
               </div>
               <ul>
 <li>When the frame signals that it&#39;s the last in the series, the header block chunks are
@@ -1554,11 +2295,11 @@ decompressed headers.</li>
         </li>
         
         
-        <li id="section-49">
+        <li id="section-53">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-49">&#182;</a>
+                <a class="pilcrow" href="#section-53">&#182;</a>
               </div>
               <h1 id="helper-functions">Helper functions</h1>
 
@@ -1567,11 +2308,11 @@ decompressed headers.</li>
         </li>
         
         
-        <li id="section-50">
+        <li id="section-54">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-50">&#182;</a>
+                <a class="pilcrow" href="#section-54">&#182;</a>
               </div>
               <p>Concatenate an array of buffers into a new buffer</p>
 
@@ -1594,11 +2335,11 @@ decompressed headers.</li>
         </li>
         
         
-        <li id="section-51">
+        <li id="section-55">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-51">&#182;</a>
+                <a class="pilcrow" href="#section-55">&#182;</a>
               </div>
               <p>Cut <code>buffer</code> into chunks not larger than <code>size</code></p>
 

@@ -144,8 +144,8 @@ code other than NO_ERROR</p>
 </li>
 <li><p><strong>createStream(): stream</strong>: initiate a new stream</p>
 </li>
-<li><p><strong>set(settings)</strong>: change the value of one or more settings according to the key-value pairs
-of <code>settings</code></p>
+<li><p><strong>set(settings, callback)</strong>: change the value of one or more settings according to the
+key-value pairs of <code>settings</code>. The callback is called after the peer acknowledged the changes.</p>
 </li>
 <li><p><strong>ping([callback])</strong>: send a ping and call callback when the answer arrives</p>
 </li>
@@ -1107,6 +1107,23 @@ implemented by child classes. It forwards the given frame to the appropriate str
                 <a class="pilcrow" href="#section-51">&#182;</a>
               </div>
               <ul>
+<li>Setting up the callback queue for setting acknowledgements</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">this</span>._settingsAckCallbacks = [];</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-52">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-52">&#182;</a>
+              </div>
+              <ul>
 <li>Sending the initial settings.</li>
 </ul>
 
@@ -1119,11 +1136,11 @@ implemented by child classes. It forwards the given frame to the appropriate str
         </li>
         
         
-        <li id="section-52">
+        <li id="section-53">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-52">&#182;</a>
+                <a class="pilcrow" href="#section-53">&#182;</a>
               </div>
               <ul>
 <li>Forwarding SETTINGS frames to the <code>_receiveSettings</code> method</li>
@@ -1137,11 +1154,11 @@ implemented by child classes. It forwards the given frame to the appropriate str
         </li>
         
         
-        <li id="section-53">
+        <li id="section-54">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-53">&#182;</a>
+                <a class="pilcrow" href="#section-54">&#182;</a>
               </div>
               <ul>
 <li>Checking that the first frame the other endpoint sends is SETTINGS</li>
@@ -1151,30 +1168,10 @@ implemented by child classes. It forwards the given frame to the appropriate str
             
             <div class="content"><div class='highlight'><pre>Connection.prototype._onFirstFrameReceived = <span class="function"><span class="keyword">function</span> <span class="title">_onFirstFrameReceived</span><span class="params">(frame)</span> {</span>
   <span class="keyword">if</span> ((frame.stream === <span class="number">0</span>) &amp;&amp; (frame.type === <span class="string">'SETTINGS'</span>)) {
-    <span class="keyword">this</span>._log.debug({ settings: frame.settings },
-                    <span class="string">'Receiving the first SETTINGS frame as part of the connection header.'</span>);
+    <span class="keyword">this</span>._log.debug(<span class="string">'Receiving the first SETTINGS frame as part of the connection header.'</span>);
   } <span class="keyword">else</span> {
     <span class="keyword">this</span>._log.fatal({ frame: frame }, <span class="string">'Invalid connection header: first frame is not SETTINGS.'</span>);
     <span class="keyword">this</span>.emit(<span class="string">'error'</span>);
-  }
-};</pre></div></div>
-            
-        </li>
-        
-        
-        <li id="section-54">
-            <div class="annotation">
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-54">&#182;</a>
-              </div>
-              <p>Handling of incoming SETTINGS frames.</p>
-
-            </div>
-            
-            <div class="content"><div class='highlight'><pre>Connection.prototype._receiveSettings = <span class="function"><span class="keyword">function</span> <span class="title">_receiveSettings</span><span class="params">(frame)</span> {</span>
-  <span class="keyword">for</span> (<span class="keyword">var</span> name <span class="keyword">in</span> frame.settings) {
-    <span class="keyword">this</span>.emit(<span class="string">'RECEIVING_'</span> + name, frame.settings[name]);
   }
 };</pre></div></div>
             
@@ -1187,14 +1184,121 @@ implemented by child classes. It forwards the given frame to the appropriate str
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-55">&#182;</a>
               </div>
+              <p>Handling of incoming SETTINGS frames.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>Connection.prototype._receiveSettings = <span class="function"><span class="keyword">function</span> <span class="title">_receiveSettings</span><span class="params">(frame)</span> {</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-56">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-56">&#182;</a>
+              </div>
+              <ul>
+<li>If it&#39;s an ACK, call the appropriate callback</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">if</span> (frame.flags.ACK) {
+    <span class="keyword">var</span> callback = <span class="keyword">this</span>._settingsAckCallbacks.shift();
+    <span class="keyword">if</span> (callback) {
+      callback();
+    }
+  }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-57">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-57">&#182;</a>
+              </div>
+              <ul>
+<li>If it&#39;s a setting change request, then send an ACK and change the appropriate settings</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">else</span> {
+    <span class="keyword">if</span> (!<span class="keyword">this</span>._closed) {
+      <span class="keyword">this</span>.push({
+        type: <span class="string">'SETTINGS'</span>,
+        flags: { ACK: <span class="literal">true</span> },
+        stream: <span class="number">0</span>,
+        settings: {}
+      });
+    }
+    <span class="keyword">for</span> (<span class="keyword">var</span> name <span class="keyword">in</span> frame.settings) {
+      <span class="keyword">this</span>.emit(<span class="string">'RECEIVING_'</span> + name, frame.settings[name]);
+    }
+  }
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-58">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-58">&#182;</a>
+              </div>
               <p>Changing one or more settings value and sending out a SETTINGS frame</p>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>Connection.prototype.set = <span class="function"><span class="keyword">function</span> <span class="title">set</span><span class="params">(settings)</span> {</span>
-  <span class="keyword">this</span>.push({
+            <div class="content"><div class='highlight'><pre>Connection.prototype.set = <span class="function"><span class="keyword">function</span> <span class="title">set</span><span class="params">(settings, callback)</span> {</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-59">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-59">&#182;</a>
+              </div>
+              <ul>
+<li>Calling the callback and emitting event when the change is acknowledges</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  callback = callback || <span class="function"><span class="keyword">function</span> <span class="title">noop</span><span class="params">()</span> {</span>};
+  <span class="keyword">var</span> self = <span class="keyword">this</span>;
+  <span class="keyword">this</span>._settingsAckCallbacks.push(<span class="function"><span class="keyword">function</span><span class="params">()</span> {</span>
+    <span class="keyword">for</span> (<span class="keyword">var</span> name <span class="keyword">in</span> settings) {
+      self.emit(<span class="string">'ACKNOWLEDGED_'</span> + name, settings[name]);
+    }
+    callback();
+  });</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-60">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-60">&#182;</a>
+              </div>
+              <ul>
+<li>Sending out the SETTINGS frame</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">this</span>.push({
     type: <span class="string">'SETTINGS'</span>,
-    flags: {},
+    flags: { ACK: <span class="literal">false</span> },
     stream: <span class="number">0</span>,
     settings: settings
   });
@@ -1206,11 +1310,11 @@ implemented by child classes. It forwards the given frame to the appropriate str
         </li>
         
         
-        <li id="section-56">
+        <li id="section-61">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-56">&#182;</a>
+                <a class="pilcrow" href="#section-61">&#182;</a>
               </div>
               <h2 id="lifecycle-management">Lifecycle management</h2>
 
@@ -1219,11 +1323,11 @@ implemented by child classes. It forwards the given frame to the appropriate str
         </li>
         
         
-        <li id="section-57">
+        <li id="section-62">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-57">&#182;</a>
+                <a class="pilcrow" href="#section-62">&#182;</a>
               </div>
               <p>The main responsibilities of lifecycle management code:</p>
 <ul>
@@ -1247,11 +1351,11 @@ implemented by child classes. It forwards the given frame to the appropriate str
         </li>
         
         
-        <li id="section-58">
+        <li id="section-63">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-58">&#182;</a>
+                <a class="pilcrow" href="#section-63">&#182;</a>
               </div>
               <p>Generating a string of length 16 with random hexadecimal digits</p>
 
@@ -1270,11 +1374,11 @@ implemented by child classes. It forwards the given frame to the appropriate str
         </li>
         
         
-        <li id="section-59">
+        <li id="section-64">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-59">&#182;</a>
+                <a class="pilcrow" href="#section-64">&#182;</a>
               </div>
               <p>Sending a ping and calling <code>callback</code> when the answer arrives</p>
 
@@ -1289,7 +1393,7 @@ implemented by child classes. It forwards the given frame to the appropriate str
   <span class="keyword">this</span>.push({
     type: <span class="string">'PING'</span>,
     flags: {
-      PONG: <span class="literal">false</span>
+      ACK: <span class="literal">false</span>
     },
     stream: <span class="number">0</span>,
     data: data
@@ -1299,18 +1403,18 @@ implemented by child classes. It forwards the given frame to the appropriate str
         </li>
         
         
-        <li id="section-60">
+        <li id="section-65">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-60">&#182;</a>
+                <a class="pilcrow" href="#section-65">&#182;</a>
               </div>
               <p>Answering pings</p>
 
             </div>
             
             <div class="content"><div class='highlight'><pre>Connection.prototype._receivePing = <span class="function"><span class="keyword">function</span> <span class="title">_receivePing</span><span class="params">(frame)</span> {</span>
-  <span class="keyword">if</span> (frame.flags.PONG) {
+  <span class="keyword">if</span> (frame.flags.ACK) {
     <span class="keyword">var</span> id = frame.data.toString(<span class="string">'hex'</span>);
     <span class="keyword">if</span> (id <span class="keyword">in</span> <span class="keyword">this</span>._pings) {
       <span class="keyword">this</span>._log.debug({ data: frame.data }, <span class="string">'Receiving answer for a PING.'</span>);
@@ -1328,7 +1432,7 @@ implemented by child classes. It forwards the given frame to the appropriate str
     <span class="keyword">this</span>.push({
       type: <span class="string">'PING'</span>,
       flags: {
-        PONG: <span class="literal">true</span>
+        ACK: <span class="literal">true</span>
       },
       stream: <span class="number">0</span>,
       data: frame.data
@@ -1339,11 +1443,11 @@ implemented by child classes. It forwards the given frame to the appropriate str
         </li>
         
         
-        <li id="section-61">
+        <li id="section-66">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-61">&#182;</a>
+                <a class="pilcrow" href="#section-66">&#182;</a>
               </div>
               <p>Terminating the connection</p>
 
@@ -1379,11 +1483,11 @@ Connection.prototype._receiveGoaway = <span class="function"><span class="keywor
         </li>
         
         
-        <li id="section-62">
+        <li id="section-67">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-62">&#182;</a>
+                <a class="pilcrow" href="#section-67">&#182;</a>
               </div>
               <h2 id="flow-control">Flow control</h2>
 
@@ -1392,11 +1496,11 @@ Connection.prototype._receiveGoaway = <span class="function"><span class="keywor
         </li>
         
         
-        <li id="section-63">
+        <li id="section-68">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-63">&#182;</a>
+                <a class="pilcrow" href="#section-68">&#182;</a>
               </div>
               
             </div>
@@ -1406,11 +1510,11 @@ Connection.prototype._receiveGoaway = <span class="function"><span class="keywor
         </li>
         
         
-        <li id="section-64">
+        <li id="section-69">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-64">&#182;</a>
+                <a class="pilcrow" href="#section-69">&#182;</a>
               </div>
               <p>Handling of initial window size of individual streams.</p>
 
@@ -1433,11 +1537,11 @@ Connection.prototype._receiveGoaway = <span class="function"><span class="keywor
         </li>
         
         
-        <li id="section-65">
+        <li id="section-70">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-65">&#182;</a>
+                <a class="pilcrow" href="#section-70">&#182;</a>
               </div>
               <p>The initial connection flow control window is 65535 bytes.</p>
 
@@ -1448,11 +1552,11 @@ Connection.prototype._receiveGoaway = <span class="function"><span class="keywor
         </li>
         
         
-        <li id="section-66">
+        <li id="section-71">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-66">&#182;</a>
+                <a class="pilcrow" href="#section-71">&#182;</a>
               </div>
               <p>A SETTINGS frame can alter the initial flow control window size for all current streams. When the
 value of SETTINGS_INITIAL_WINDOW_SIZE changes, a receiver MUST adjust the window size of all
@@ -1477,11 +1581,11 @@ the difference between the new value and the old value.</p>
         </li>
         
         
-        <li id="section-67">
+        <li id="section-72">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-67">&#182;</a>
+                <a class="pilcrow" href="#section-72">&#182;</a>
               </div>
               <p><code>_setStreamFlowControl()</code> may be used to disable/enable flow control. In practice, it is just
 for turning off flow control since it can not be turned on.</p>

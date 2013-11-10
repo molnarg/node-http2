@@ -512,6 +512,11 @@ Endpoint.prototype._initializeDataFlow = <span class="function"><span class="key
   pipeAndFilter(<span class="keyword">this</span>._compressor, <span class="keyword">this</span>._serializer, filters.beforeSerialization);
   pipeAndFilter(<span class="keyword">this</span>._deserializer, <span class="keyword">this</span>._decompressor, filters.afterDeserialization);
   pipeAndFilter(<span class="keyword">this</span>._decompressor, <span class="keyword">this</span>._connection, filters.afterDecompression);
+
+  <span class="keyword">this</span>._connection.on(<span class="string">'ACKNOWLEDGED_SETTINGS_HEADER_TABLE_SIZE'</span>,
+                      <span class="keyword">this</span>._decompressor.setTableSizeLimit.bind(<span class="keyword">this</span>._decompressor))
+  <span class="keyword">this</span>._connection.on(<span class="string">'RECEIVING_SETTINGS_HEADER_TABLE_SIZE'</span>,
+                      <span class="keyword">this</span>._compressor.setTableSizeLimit.bind(<span class="keyword">this</span>._compressor))
 };
 
 <span class="keyword">var</span> noread = {};
