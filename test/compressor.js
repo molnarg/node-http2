@@ -245,7 +245,8 @@ var test_header_sets = [{
   headers: {
     ':status': '200',
     'user-agent': 'my-user-agent',
-    'cookie': ['first', 'second', 'third', 'third'],
+    'cookie': 'first; second; third; third; fourth',
+    'multiple': ['first', 'second', 'third', 'third; fourth'],
     'verylong': (new Buffer(9000)).toString('hex')
   }
 }];
