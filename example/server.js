@@ -9,7 +9,7 @@ var read = fs.createReadStream;
 var join = path.join;
 
 // Advertised protocol version
-var implementedVersion = 'HTTP-draft-09/2.0';
+var implementedVersion = http2.ImplementedVersion;
 
 // Bunyan logger
 var log = require('../test/util').createLogger('server');
