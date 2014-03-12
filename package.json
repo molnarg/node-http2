@@ -37,7 +37,8 @@
   "author": "Gábor Molnár <gabor@molnar.es> (http://gabor.molnar.es)",
   "contributors": [
     "Nick Hurley",
-    "Mike Belshe"
+    "Mike Belshe",
+    "Yoshihiro Iwanaga"
   ],
   "license": "MIT",
   "readmeFilename": "README.md"
