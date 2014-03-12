@@ -1,7 +1,7 @@
 node-http2
 ==========
 
-An HTTP/2 ([draft-ietf-httpbis-http2-09](http://tools.ietf.org/html/draft-ietf-httpbis-http2-9))
+An HTTP/2 ([draft-ietf-httpbis-http2-10](http://tools.ietf.org/html/draft-ietf-httpbis-http2-10))
 client and server implementation for node.js.
 
 Installation
