@@ -183,16 +183,16 @@
     <h1>Code coverage report for <span class="entity">lib/http.js</span></h1>
     <h2>
         
-        Statements: <span class="metric">94% <small>(392 / 417)</small></span> &nbsp;&nbsp;&nbsp;&nbsp;
+        Statements: <span class="metric">93.19% <small>(397 / 426)</small></span> &nbsp;&nbsp;&nbsp;&nbsp;
         
         
-        Branches: <span class="metric">80.63% <small>(129 / 160)</small></span> &nbsp;&nbsp;&nbsp;&nbsp;
+        Branches: <span class="metric">79.88% <small>(131 / 164)</small></span> &nbsp;&nbsp;&nbsp;&nbsp;
         
         
-        Functions: <span class="metric">93.65% <small>(59 / 63)</small></span> &nbsp;&nbsp;&nbsp;&nbsp;
+        Functions: <span class="metric">93.75% <small>(60 / 64)</small></span> &nbsp;&nbsp;&nbsp;&nbsp;
         
         
-        Lines: <span class="metric">94% <small>(392 / 417)</small></span> &nbsp;&nbsp;&nbsp;&nbsp;
+        Lines: <span class="metric">93.19% <small>(397 / 426)</small></span> &nbsp;&nbsp;&nbsp;&nbsp;
         
     </h2>
     <div class="path"><a href="../index.html">All files</a> &#187; <a href="index.html">lib/</a> &#187; http.js</div>
@@ -1182,7 +1182,26 @@
 981
 982
 983
-984</td><td class="line-coverage"><span class="cline-any cline-neutral">&nbsp;</span>
+984
+985
+986
+987
+988
+989
+990
+991
+992
+993
+994
+995
+996
+997
+998
+999
+1000
+1001
+1002
+1003</td><td class="line-coverage"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1394,17 +1413,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">24</span>
-<span class="cline-any cline-yes">168</span>
-<span class="cline-any cline-yes">168</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">24</span>
@@ -1433,6 +1442,35 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">60</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">24</span>
+<span class="cline-any cline-yes">168</span>
+<span class="cline-any cline-yes">168</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">24</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">73</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">73</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -2288,7 +2326,7 @@
 //
 // [1]: http://nodejs.org/api/https.html
 // [2]: http://nodejs.org/api/http.html
-// [3]: http://tools.ietf.org/html/draft-ietf-httpbis-http2-10#section-8.1.3.2
+// [3]: http://tools.ietf.org/html/draft-ietf-httpbis-http2-11#section-8.1.3.2
 // [expect-continue]: https://github.com/http2/http2-spec/issues/18
 // [connect]: https://github.com/http2/http2-spec/issues/230
 &nbsp;
@@ -2371,23 +2409,13 @@ function IncomingMessage(stream) {
 }
 IncomingMessage.prototype = Object.create(PassThrough.prototype, { constructor: { value: IncomingMessage } });
 &nbsp;
-// [Request Header Fields](http://tools.ietf.org/html/draft-ietf-httpbis-http2-10#section-8.1.3.1)
+// [Request Header Fields](http://tools.ietf.org/html/draft-ietf-httpbis-http2-11#section-8.1.3.1)
 // * `headers` argument: HTTP/2.0 request and response header fields carry information as a series
 //   of key-value pairs. This includes the target URI for the request, the status code for the
 //   response, as well as HTTP header fields.
 IncomingMessage.prototype._onHeaders = function _onHeaders(headers) {
-  // * An HTTP/2.0 request or response MUST NOT include any of the following header fields:
-  //   Connection, Host, Keep-Alive, Proxy-Connection, TE, Transfer-Encoding, and Upgrade. A server
-  //   MUST treat the presence of any of these header fields as a stream error of type
-  //   PROTOCOL_ERROR.
-  for (var i = 0; i &lt; deprecatedHeaders.length; i++) {
-    var key = deprecatedHeaders[i];
-    <span class="missing-if-branch" title="if path not taken"" >I</span>if (key in headers) {
-<span class="cstat-no" title="statement not covered" >      this._log.error({ key: key, value: headers[key] }, 'Deprecated header found');</span>
-<span class="cstat-no" title="statement not covered" >      this.stream.emit('error', 'PROTOCOL_ERROR');</span>
-<span class="cstat-no" title="statement not covered" >      return;</span>
-    }
-  }
+  // * Detects malformed headers
+  this._validateHeaders(headers);
 &nbsp;
   // * Store the _regular_ headers in `this.headers`
   for (var name in headers) {
@@ -2412,12 +2440,41 @@ IncomingMessage.prototype.setTimeout = noop;
 IncomingMessage.prototype._checkSpecialHeader = function _checkSpecialHeader(key, value) {
   <span class="missing-if-branch" title="if path not taken"" >I</span>if ((typeof value !== 'string') || (value.length === 0)) {
 <span class="cstat-no" title="statement not covered" >    this._log.error({ key: key, value: value }, 'Invalid or missing special header field');</span>
-<span class="cstat-no" title="statement not covered" >    this.stream.emit('error', 'PROTOCOL_ERROR');</span>
+<span class="cstat-no" title="statement not covered" >    this.stream.reset('PROTOCOL_ERROR');</span>
   }
 &nbsp;
   return value;
-}
-;
+};
+&nbsp;
+IncomingMessage.prototype._validateHeaders = function _validateHeaders(headers) {
+  // * An HTTP/2.0 request or response MUST NOT include any of the following header fields:
+  //   Connection, Host, Keep-Alive, Proxy-Connection, TE, Transfer-Encoding, and Upgrade. A server
+  //   MUST treat the presence of any of these header fields as a stream error of type
+  //   PROTOCOL_ERROR.
+  for (var i = 0; i &lt; deprecatedHeaders.length; i++) {
+    var key = deprecatedHeaders[i];
+    <span class="missing-if-branch" title="if path not taken"" >I</span>if (key in headers) {
+<span class="cstat-no" title="statement not covered" >      this._log.error({ key: key, value: headers[key] }, 'Deprecated header found');</span>
+<span class="cstat-no" title="statement not covered" >      this.stream.reset('PROTOCOL_ERROR');</span>
+<span class="cstat-no" title="statement not covered" >      return;</span>
+    }
+  }
+&nbsp;
+  for (var headerName in headers) {
+    // * Empty header name field is malformed
+    <span class="missing-if-branch" title="if path not taken"" >I</span>if (headerName.length &lt;= 1) {
+<span class="cstat-no" title="statement not covered" >      this.stream.reset('PROTOCOL_ERROR');</span>
+<span class="cstat-no" title="statement not covered" >      return;</span>
+    }
+    // * A request or response containing uppercase header name field names MUST be
+    //   treated as malformed (Section 8.1.3.5). Implementations that detect malformed
+    //   requests or responses need to ensure that the stream ends.
+    <span class="missing-if-branch" title="if path not taken"" >I</span>if(/[A-Z]/.test(headerName)) {
+<span class="cstat-no" title="statement not covered" >      this.stream.reset('PROTOCOL_ERROR');</span>
+<span class="cstat-no" title="statement not covered" >      return;</span>
+    }
+  }
+};
 &nbsp;
 // OutgoingMessage class
 // ---------------------
@@ -2664,7 +2721,7 @@ function IncomingRequest(stream) {
 }
 IncomingRequest.prototype = Object.create(IncomingMessage.prototype, { constructor: { value: IncomingRequest } });
 &nbsp;
-// [Request Header Fields](http://tools.ietf.org/html/draft-ietf-httpbis-http2-10#section-8.1.3.1)
+// [Request Header Fields](http://tools.ietf.org/html/draft-ietf-httpbis-http2-11#section-8.1.3.1)
 // * `headers` argument: HTTP/2.0 request and response header fields carry information as a series
 //   of key-value pairs. This includes the target URI for the request, the status code for the
 //   response, as well as HTTP header fields.
@@ -3095,7 +3152,7 @@ function IncomingResponse(stream) {
 }
 IncomingResponse.prototype = Object.create(IncomingMessage.prototype, { constructor: { value: IncomingResponse } });
 &nbsp;
-// [Response Header Fields](http://tools.ietf.org/html/draft-ietf-httpbis-http2-10#section-8.1.3.2)
+// [Response Header Fields](http://tools.ietf.org/html/draft-ietf-httpbis-http2-11#section-8.1.3.2)
 // * `headers` argument: HTTP/2.0 request and response header fields carry information as a series
 //   of key-value pairs. This includes the target URI for the request, the status code for the
 //   response, as well as HTTP header fields.
@@ -3153,7 +3210,7 @@ IncomingPromise.prototype._onPromise = OutgoingRequest.prototype._onPromise;
 
 </div>
 <div class="footer">
-    <div class="meta">Generated by <a href="http://istanbul-js.org/" target="_blank">istanbul</a> at Wed Mar 12 2014 11:29:21 GMT+0100 (CET)</div>
+    <div class="meta">Generated by <a href="http://istanbul-js.org/" target="_blank">istanbul</a> at Mon Apr 21 2014 13:54:53 GMT+0200 (CEST)</div>
 </div>
 
 <script src="../prettify.js"></script>
