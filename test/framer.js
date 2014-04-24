@@ -203,6 +203,14 @@ var test_frames = [{
     origin: "https://onlyme.example.com"
   },
   buffer: new Buffer('0037' + '0A' + '00' + '00000000' + '01E13380' + '115B' + '00' + '02' + '6832' + '12' + '616C747376632E6578616D706C652E636F6D' + '68747470733A2F2F6F6E6C796D652E6578616D706C652E636F6D', 'hex')
+
+}, {
+  frame: {
+    type: 'BLOCKED',
+    flags: { },
+    stream: 10
+  },
+  buffer: new Buffer('0000' + '0B' + '00' + '0000000A', 'hex')
 }];
 
 var deserializer_test_frames = test_frames.slice(0);
