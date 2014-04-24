@@ -1,7 +1,7 @@
 node-http2-protocol
 ===================
 
-An HTTP/2 ([draft-ietf-httpbis-http2-11](http://tools.ietf.org/html/draft-ietf-httpbis-http2-11))
+An HTTP/2 ([draft-ietf-httpbis-http2-12](http://tools.ietf.org/html/draft-ietf-httpbis-http2-12))
 framing layer implementaion for node.js.
 
 Installation
