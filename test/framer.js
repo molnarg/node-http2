@@ -34,8 +34,7 @@ var test_frames = [{
   frame: {
     type: 'HEADERS',
     flags: { END_STREAM: false, END_SEGMENT: false, END_HEADERS: false,
-             PAD_LOW: false, PAD_HIGH: false, PRIORITY_GROUP: false,
-             PRIORITY_DEPENDENCY: false },
+             PAD_LOW: false, PAD_HIGH: false, PRIORITY: false },
     stream: 15,
 
     data: new Buffer('12345678', 'hex')
@@ -46,82 +45,54 @@ var test_frames = [{
   frame: {
     type: 'HEADERS',
     flags: { END_STREAM: false, END_SEGMENT: false, END_HEADERS: false,
-             PAD_LOW: false, PAD_HIGH: false, PRIORITY_GROUP: true,
-             PRIORITY_DEPENDENCY: false },
+             PAD_LOW: false, PAD_HIGH: false, PRIORITY: true },
     stream: 15,
-    priorityGroup: 23,
-    groupWeight: 5,
-
-    data: new Buffer('12345678', 'hex')
-  },
-  buffer: new Buffer('0009' + '01' + '20' + '0000000F' + '00000017' + '05' + '12345678', 'hex')
-
-}, {
-  frame: {
-    type: 'HEADERS',
-    flags: { END_STREAM: false, END_SEGMENT: false, END_HEADERS: false,
-             PAD_LOW: false, PAD_HIGH: false, PRIORITY_GROUP: false,
-             PRIORITY_DEPENDENCY: true },
-    stream: 15,
-    priorityDependency: 23,
+    priorityDependency: 10,
+    priorityWeight: 5,
     exclusiveDependency: false,
 
     data: new Buffer('12345678', 'hex')
   },
-  buffer: new Buffer('0008' + '01' + '40' + '0000000F' + '00000017' + '12345678', 'hex')
+  buffer: new Buffer('0009' + '01' + '20' + '0000000F' + '0000000A' + '05' + '12345678', 'hex')
+
 
 }, {
   frame: {
     type: 'HEADERS',
     flags: { END_STREAM: false, END_SEGMENT: false, END_HEADERS: false,
-             PAD_LOW: false, PAD_HIGH: false, PRIORITY_GROUP: false,
-             PRIORITY_DEPENDENCY: true },
+             PAD_LOW: false, PAD_HIGH: false, PRIORITY: true },
     stream: 15,
-    priorityDependency: 23,
+    priorityDependency: 10,
+    priorityWeight: 5,
     exclusiveDependency: true,
 
     data: new Buffer('12345678', 'hex')
   },
-  buffer: new Buffer('0008' + '01' + '40' + '0000000F' + '80000017' + '12345678', 'hex')
+  buffer: new Buffer('0009' + '01' + '20' + '0000000F' + '8000000A' + '05' + '12345678', 'hex')
 
 }, {
   frame: {
     type: 'PRIORITY',
-    flags: { RESERVED1: false, RESERVED2: false, RESERVED4: false,
-             RESERVED8: false, RESERVED16: false, PRIORITY_GROUP: true,
-             PRIORITY_DEPENDENCY: false },
+    flags: { },
     stream: 10,
 
-    priorityGroup: 23,
-    groupWeight: 5
-  },
-  buffer: new Buffer('0005' + '02' + '20' + '0000000A' + '00000017' + '05', 'hex')
-
-}, {
-  frame: {
-    type: 'PRIORITY',
-    flags: { RESERVED1: false, RESERVED2: false, RESERVED4: false,
-             RESERVED8: false, RESERVED16: false, PRIORITY_GROUP: false,
-             PRIORITY_DEPENDENCY: true },
-    stream: 10,
-
-    priorityDependency: 23,
+    priorityDependency: 9,
+    priorityWeight: 5,
     exclusiveDependency: false
   },
-  buffer: new Buffer('0004' + '02' + '40' + '0000000A' + '00000017', 'hex')
+  buffer: new Buffer('0005' + '02' + '00' + '0000000A' + '00000009' + '05', 'hex')
 
 }, {
   frame: {
     type: 'PRIORITY',
-    flags: { RESERVED1: false, RESERVED2: false, RESERVED4: false,
-             RESERVED8: false, RESERVED16: false, PRIORITY_GROUP: false,
-             PRIORITY_DEPENDENCY: true },
+    flags: { },
     stream: 10,
 
-    priorityDependency: 23,
+    priorityDependency: 9,
+    priorityWeight: 5,
     exclusiveDependency: true
   },
-  buffer: new Buffer('0004' + '02' + '40' + '0000000A' + '80000017', 'hex')
+  buffer: new Buffer('0005' + '02' + '00' + '0000000A' + '80000009' + '05', 'hex')
 
 }, {
   frame: {
@@ -250,8 +221,7 @@ var padded_test_frames = [{
   frame: {
     type: 'HEADERS',
     flags: { END_STREAM: false, END_SEGMENT: false, END_HEADERS: false,
-             PAD_LOW: true, PAD_HIGH: false, PRIORITY_GROUP: false,
-             PRIORITY_DEPENDENCY: false },
+             PAD_LOW: true, PAD_HIGH: false, PRIORITY: false },
     stream: 15,
 
     data: new Buffer('12345678', 'hex')
@@ -263,46 +233,31 @@ var padded_test_frames = [{
   frame: {
     type: 'HEADERS',
     flags: { END_STREAM: false, END_SEGMENT: false, END_HEADERS: false,
-             PAD_LOW: true, PAD_HIGH: false, PRIORITY_GROUP: true,
-             PRIORITY_DEPENDENCY: false },
+             PAD_LOW: true, PAD_HIGH: false, PRIORITY: true },
     stream: 15,
-    priorityGroup: 23,
-    groupWeight: 5,
-
-    data: new Buffer('12345678', 'hex')
-  },
-  // length + type + flags + stream + pad_low control + priority group + group weight + data + padding
-  buffer: new Buffer('0010' + '01' + '28' + '0000000F' + '06' + '00000017' + '05' + '12345678' + '000000000000', 'hex')
-
-}, {
-  frame: {
-    type: 'HEADERS',
-    flags: { END_STREAM: false, END_SEGMENT: false, END_HEADERS: false,
-             PAD_LOW: true, PAD_HIGH: false, PRIORITY_GROUP: false,
-             PRIORITY_DEPENDENCY: true },
-    stream: 15,
-    priorityDependency: 23,
+    priorityDependency: 10,
+    priorityWeight: 5,
     exclusiveDependency: false,
 
     data: new Buffer('12345678', 'hex')
   },
-  // length + type + flags + stream + pad_low control + priority dependency + data + padding
-  buffer: new Buffer('000F' + '01' + '48' + '0000000F' + '06' + '00000017' + '12345678' + '000000000000', 'hex')
+  // length + type + flags + stream + pad_low control + priority dependency + priority weight + data + padding
+  buffer: new Buffer('0010' + '01' + '28' + '0000000F' + '06' + '0000000A' + '05' + '12345678' + '000000000000', 'hex')
 
 }, {
   frame: {
     type: 'HEADERS',
     flags: { END_STREAM: false, END_SEGMENT: false, END_HEADERS: false,
-             PAD_LOW: true, PAD_HIGH: false, PRIORITY_GROUP: false,
-             PRIORITY_DEPENDENCY: true },
+             PAD_LOW: true, PAD_HIGH: false, PRIORITY: true },
     stream: 15,
-    priorityDependency: 23,
+    priorityDependency: 10,
+    priorityWeight: 5,
     exclusiveDependency: true,
 
     data: new Buffer('12345678', 'hex')
   },
-  // length + type + flags + stream + pad_low control + priority dependency + data + padding
-  buffer: new Buffer('000F' + '01' + '48' + '0000000F' + '06' + '80000017' + '12345678' + '000000000000', 'hex')
+  // length + type + flags + stream + pad_low control + priority dependency + priority weight + data + padding
+  buffer: new Buffer('0010' + '01' + '28' + '0000000F' + '06' + '8000000A' + '05' + '12345678' + '000000000000', 'hex')
 
 }, {
   frame: {
