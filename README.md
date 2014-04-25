@@ -1,7 +1,7 @@
 node-http2-protocol
 ===================
 
-An HTTP/2 ([draft-ietf-httpbis-http2-11](http://tools.ietf.org/html/draft-ietf-httpbis-http2-11))
+An HTTP/2 ([draft-ietf-httpbis-http2-12](http://tools.ietf.org/html/draft-ietf-httpbis-http2-12))
 framing layer implementaion for node.js.
 
 Installation
@@ -50,12 +50,12 @@ point to understand the code.
 ### Test coverage ###
 
 To generate a code coverage report, run `npm test --coverage` (it may be slow, be patient).
-Code coverage summary as of version 0.11.0:
+Code coverage summary as of version 0.12.0:
 ```
-Statements   : 91.66% ( 1363/1487 )
-Branches     : 85.48% ( 577/675 )
-Functions    : 92.41% ( 146/158 )
-Lines        : 91.69% ( 1357/1480 )
+Statements   : 91.6% ( 1352/1476 )
+Branches     : 85.15% ( 562/660 )
+Functions    : 92.5% ( 148/160 )
+Lines        : 91.69% ( 1346/1468 )
 ```
 
 There's a hosted version of the detailed (line-by-line) coverage report
