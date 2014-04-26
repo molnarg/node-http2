@@ -1,6 +1,10 @@
 Version history
 ===============
 
+### 0.12.1 (2014-04-26) ###
+
+* Support for sending BLOCKED frame
+
 ### 0.12.0 (2014-04-24) ###
 
 * Upgrade to the latest draft: [draft-ietf-httpbis-http2-12][draft-12]
