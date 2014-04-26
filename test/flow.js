@@ -43,6 +43,7 @@ describe('flow.js', function() {
 
         flow._window = 0;
         flow._queue.push({ type: 'DATA', flags: {}, data: { length: 1 } });
+        expect(flow.read().type).to.equal('BLOCKED');
         expect(flow.read()).to.equal(null);
 
         expect(sendCalled).to.equal(1);
@@ -196,6 +197,63 @@ describe('flow.js', function() {
         // Start piping
         flow1.pipe(flow2).pipe(flow1);
       });
+    });
+
+    describe('when running out of window', function() {
+      it('should send a BLOCKED frame', function(done) {
+        // Sender side
+        console.log(flow1._flowControlId, flow2._flowControlId)
+        var frameNumber = util.random(5, 8);
+        var input = [];
+        flow1._send = function _send() {
+          if (input.length >= frameNumber) {
+            this.push({ type: 'DATA', flags: { END_STREAM: true }, data: new Buffer(0) });
+            this.push(null);
+          } else {
+            var buffer = new Buffer(util.random(1000, 100000));
+            input.push(buffer);
+            this.push({ type: 'DATA', flags: {}, data: buffer });
+          }
+        };
+
+        // Receiver side
+        // Do not send WINDOW_UPDATESs except when the other side sends BLOCKED
+        var output = [];
+        flow2._restoreWindow = util.noop;
+        flow2._receive = function _receive(frame, callback) {
+          if (frame.type === 'DATA') {
+            output.push(frame.data);
+          }
+          if (frame.flags.END_STREAM) {
+            this.emit('end_stream');
+          }
+          if (frame.type === 'BLOCKED') {
+            setTimeout(function() {
+              this._push({
+                type: 'WINDOW_UPDATE',
+                flags: {},
+                stream: this._flowControlId,
+                window_size: this._received
+              });
+              this._received = 0;
+            }.bind(this), 20);
+          }
+          callback();
+        };
+
+        // Checking results
+        flow2.on('end_stream', function() {
+          input = util.concat(input);
+          output = util.concat(output);
+
+          expect(input).to.deep.equal(output);
+
+          done();
+        });
+
+        // Start piping
+        flow1.pipe(flow2).pipe(flow1);
+      })
     });
   });
 });
