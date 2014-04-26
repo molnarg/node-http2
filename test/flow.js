@@ -3,6 +3,8 @@ var util = require('./util');
 
 var Flow = require('../lib/flow').Flow;
 
+var MAX_PAYLOAD_SIZE = 4096;
+
 function createFlow(log) {
   var flowControlId = util.random(10, 100);
   var flow = new Flow(flowControlId);
@@ -176,6 +178,7 @@ describe('flow.js', function() {
         var output = [];
         flow2._receive = function _receive(frame, callback) {
           if (frame.type === 'DATA') {
+            expect(frame.data.length).to.be.lte(MAX_PAYLOAD_SIZE)
             output.push(frame.data);
           }
           if (frame.flags.END_STREAM) {
@@ -222,6 +225,7 @@ describe('flow.js', function() {
         flow2._restoreWindow = util.noop;
         flow2._receive = function _receive(frame, callback) {
           if (frame.type === 'DATA') {
+            expect(frame.data.length).to.be.lte(MAX_PAYLOAD_SIZE)
             output.push(frame.data);
           }
           if (frame.flags.END_STREAM) {
