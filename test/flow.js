@@ -35,20 +35,18 @@ describe('flow.js', function() {
     describe('._send() method', function() {
       it('is called when the output buffer should be filled with more frames and the flow' +
          'control queue is empty', function() {
-        var sendCalled = 0;
         var notFlowControlledFrame = { type: 'PRIORITY', flags: {}, priority: 1 };
         flow._send = function _send() {
-          sendCalled += 1;
           this.push(notFlowControlledFrame);
         };
         expect(flow.read()).to.equal(notFlowControlledFrame);
 
         flow._window = 0;
         flow._queue.push({ type: 'DATA', flags: {}, data: { length: 1 } });
-        expect(flow.read().type).to.equal('BLOCKED');
+        var frame = flow.read();
+        while (frame.type === notFlowControlledFrame.type) frame = flow.read();
+        expect(frame.type).to.equal('BLOCKED');
         expect(flow.read()).to.equal(null);
-
-        expect(sendCalled).to.equal(1);
       });
       it('has to be overridden by the child class, otherwise it throws', function() {
         expect(flow._send.bind(flow)).to.throw(Error);
@@ -205,7 +203,6 @@ describe('flow.js', function() {
     describe('when running out of window', function() {
       it('should send a BLOCKED frame', function(done) {
         // Sender side
-        console.log(flow1._flowControlId, flow2._flowControlId)
         var frameNumber = util.random(5, 8);
         var input = [];
         flow1._send = function _send() {
