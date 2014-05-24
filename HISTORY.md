@@ -1,6 +1,10 @@
 Version history
 ===============
 
+### 0.12.2 (2014-05-25) ###
+
+* Support for node 0.11.x
+
 ### 0.12.1 (2014-04-26) ###
 
 * Support for sending BLOCKED frame
