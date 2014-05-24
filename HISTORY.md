@@ -1,6 +1,11 @@
 Version history
 ===============
 
+### 2.5.1 (2014-05-25) ###
+
+* Support for node 0.11.x
+* New cipher suite priority list with comformant ciphers on the top (only available in node >=0.11.x)
+
 ### 2.5.0 (2014-04-24) ###
 
 * Upgrade to the latest draft: [draft-ietf-httpbis-http2-12]
