@@ -1,6 +1,10 @@
 Version history
 ===============
 
+### 2.5.2 (2014-05-25) ###
+
+* Fix a bug that occurs when the ALPN negotiation is unsuccessful
+
 ### 2.5.1 (2014-05-25) ###
 
 * Support for node 0.11.x
