@@ -1,6 +1,10 @@
 Version history
 ===============
 
+### 0.12.3 (2014-06-15) ###
+
+* Exposing API to send ALTSVC frames
+
 ### 0.12.2 (2014-05-25) ###
 
 * Support for node 0.11.x
