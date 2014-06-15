@@ -1,6 +1,10 @@
 Version history
 ===============
 
+### 2.5.3 (2014-06-15) ###
+
+* Exposing API to send ALTSVC frames
+
 ### 2.5.2 (2014-05-25) ###
 
 * Fix a bug that occurs when the ALPN negotiation is unsuccessful
