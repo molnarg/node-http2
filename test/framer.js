@@ -22,7 +22,7 @@ var test_frames = [{
   frame: {
     type: 'DATA',
     flags: { END_STREAM: false, END_SEGMENT: false, RESERVED4: false,
-             PAD_LOW: false, PAD_HIGH: false, COMPRESSED: false },
+             PAD_LOW: false, PAD_HIGH: false },
     stream: 10,
 
     data: new Buffer('12345678', 'hex')
@@ -114,15 +114,13 @@ var test_frames = [{
       SETTINGS_HEADER_TABLE_SIZE: 0x12345678,
       SETTINGS_ENABLE_PUSH: true,
       SETTINGS_MAX_CONCURRENT_STREAMS: 0x01234567,
-      SETTINGS_INITIAL_WINDOW_SIZE:    0x89ABCDEF,
-      SETTINGS_COMPRESS_DATA: true
+      SETTINGS_INITIAL_WINDOW_SIZE:    0x89ABCDEF
     }
   },
-  buffer: new Buffer('0019' + '04' + '00' + '0000000A' +   '01' + '12345678' +
+  buffer: new Buffer('0014' + '04' + '00' + '0000000A' +   '01' + '12345678' +
                                                            '02' + '00000001' +
                                                            '03' + '01234567' +
-                                                           '04' + '89ABCDEF' +
-                                                           '05' + '00000001', 'hex')
+                                                           '04' + '89ABCDEF', 'hex')
 
 }, {
   frame: {
@@ -218,7 +216,7 @@ var padded_test_frames = [{
   frame: {
     type: 'DATA',
     flags: { END_STREAM: false, END_SEGMENT: false, RESERVED4: false,
-             PAD_LOW: true, PAD_HIGH: false, COMPRESSED: false },
+             PAD_LOW: true, PAD_HIGH: false },
     stream: 10,
     data: new Buffer('12345678', 'hex')
   },
