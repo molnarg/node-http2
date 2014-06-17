@@ -167,8 +167,7 @@ var test_frames = [{
 }, {
   frame: {
     type: 'CONTINUATION',
-    flags: { RESERVED1: false, RESERVED2: false, END_HEADERS: true,
-             PAD_LOW: false, PAD_HIGH: false },
+    flags: { RESERVED1: false, RESERVED2: false, END_HEADERS: true },
     stream: 10,
 
     data: new Buffer('12345678', 'hex')
@@ -265,17 +264,6 @@ var padded_test_frames = [{
   // length + type + flags + stream + pad_low control + priority dependency + priority weight + data + padding
   buffer: new Buffer('0010' + '01' + '28' + '0000000F' + '06' + '8000000A' + '05' + '12345678' + '000000000000', 'hex')
 
-}, {
-  frame: {
-    type: 'CONTINUATION',
-    flags: { RESERVED1: false, RESERVED2: false, END_HEADERS: true,
-             PAD_LOW: true, PAD_HIGH: false },
-    stream: 10,
-
-    data: new Buffer('12345678', 'hex')
-  },
-  // length + type + flags + stream + pad_low control + data + padding
-  buffer: new Buffer('000B' + '09' + '0C' + '0000000A' + '06' + '12345678' + '000000000000', 'hex')
 }, {
   frame: {
     type: 'PUSH_PROMISE',
