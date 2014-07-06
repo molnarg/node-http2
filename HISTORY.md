@@ -1,6 +1,12 @@
 Version history
 ===============
 
+### 2.6.0 (2014-06-18) ###
+
+* Upgrade to the latest draft: [draft-ietf-httpbis-http2-13]
+
+[draft-ietf-httpbis-http2-13]: http://tools.ietf.org/html/draft-ietf-httpbis-http2-13
+
 ### 2.5.3 (2014-06-15) ###
 
 * Exposing API to send ALTSVC frames
