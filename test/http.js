@@ -85,7 +85,7 @@ describe('http.js', function() {
       request[name].apply(request, originalArguments);
       var mockFallbackRequest = { on: util.noop };
       mockFallbackRequest[name] = function() {
-        expect(arguments).to.deep.equal(originalArguments);
+        expect(Array.prototype.slice.call(arguments)).to.deep.equal(originalArguments);
         done();
       };
       request._fallback(mockFallbackRequest);
