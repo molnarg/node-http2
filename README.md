@@ -4,6 +4,8 @@ node-http2
 An HTTP/2 ([draft-ietf-httpbis-http2-13](http://tools.ietf.org/html/draft-ietf-httpbis-http2-13))
 client and server implementation for node.js.
 
+![Travis CI status](https://travis-ci.org/molnarg/node-http2.svg?branch=master)
+
 Installation
 ------------
 
