@@ -120,7 +120,7 @@ describe('http.js', function() {
         } else {
           called = true;
         }
-      }, once: util.noop };
+      }, once: util.noop, on: util.noop };
       var response = new http2.OutgoingResponse(stream);
 
       response.writeHead(200);
@@ -430,6 +430,60 @@ describe('http.js', function() {
               });
               pushStream.on('end', done);
             });
+          });
+        });
+      });
+    });
+    describe('closing client connection socket', function() {
+      it('should close streams on server', function(done) {
+        var server = http2.createServer(options, function(request, response) {
+          response.on('close', done);
+
+          response.writeHead(200);
+        });
+
+        var agent = new http2.Agent();
+        server.listen(1243, function() {
+          http2.get({
+            scheme: 'https:',
+            host: 'localhost',
+            port: 1243,
+            path: '/foo',
+            agent: agent
+          }, function(response) {
+            agent.endpoints['false:localhost:1243'].socket.destroy();
+          });
+        });
+      });
+    });
+    describe('canceling client response', function() {
+      it('should close server response', function(done) {
+        var server = http2.createServer(options, function(request, response) {
+          response.on('close', function() {
+            done();
+          });
+
+          response.writeHead(200);
+        });
+
+        server.listen(1245, function() {
+          http2.get('https://localhost:1245/foo', function(response) {
+            response.cancel();
+          });
+        });
+      });
+      it('should close client response', function(done) {
+        var server = http2.createServer(options, function(request, response) {
+          response.writeHead(200);
+        });
+
+        server.listen(1246, function() {
+          http2.get('https://localhost:1246/foo', function(response) {
+            response.on('close', function() {
+              done();
+            });
+
+            response.cancel();
           });
         });
       });
