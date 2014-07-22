@@ -111,6 +111,22 @@ describe('http.js', function() {
       });
     });
   });
+  describe('OutgoingResponse', function() {
+    it.only('should throw error when writeHead is called multiple times on it', function() {
+      var called = false;
+      var stream = { _log: util.log, headers: function () {
+        if (called) {
+          throw new Error('Should not send headers twice');
+        } else {
+          called = true;
+        }
+      }, once: util.noop };
+      var response = new http2.OutgoingResponse(stream);
+
+      response.writeHead(200);
+      response.writeHead(404)
+    });
+  });
   describe('test scenario', function() {
     describe('simple request', function() {
       it('should work as expected', function(done) {
