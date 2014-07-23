@@ -112,7 +112,7 @@ describe('http.js', function() {
     });
   });
   describe('OutgoingResponse', function() {
-    it.only('should throw error when writeHead is called multiple times on it', function() {
+    it('should throw error when writeHead is called multiple times on it', function() {
       var called = false;
       var stream = { _log: util.log, headers: function () {
         if (called) {
