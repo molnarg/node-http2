@@ -1,7 +1,7 @@
 var expect = require('chai').expect;
 var util = require('./util');
 
-var Flow = require('../lib/flow').Flow;
+var Flow = require('../lib/protocol/flow').Flow;
 
 var MAX_PAYLOAD_SIZE = 4096;
 

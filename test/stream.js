@@ -1,7 +1,7 @@
 var expect = require('chai').expect;
 var util = require('./util');
 
-var stream = require('../lib/stream');
+var stream = require('../lib/protocol/stream');
 var Stream = stream.Stream;
 
 function createStream() {
