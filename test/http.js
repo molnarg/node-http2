@@ -120,7 +120,7 @@ describe('http.js', function() {
         } else {
           called = true;
         }
-      }, once: util.noop, on: util.noop };
+      }, once: util.noop };
       var response = new http2.OutgoingResponse(stream);
 
       response.writeHead(200);
