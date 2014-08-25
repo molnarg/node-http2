@@ -239,7 +239,7 @@ describe('http.js', function() {
         var path = '/x';
         var message = 'Hello world';
 
-        var server = http2.createServer({
+        var server = http2.raw.createServer({
           plain: true,
           log: util.serverLog
         }, function(request, response) {
@@ -248,7 +248,7 @@ describe('http.js', function() {
         });
 
         server.listen(1237, function() {
-          var request = http2.request({
+          var request = http2.raw.request({
             plain: true,
             host: 'localhost',
             port: 1237,
