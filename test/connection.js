@@ -82,9 +82,9 @@ describe('connection.js', function() {
   describe('test scenario', function() {
     var c, s;
     beforeEach(function() {
-      c = new Connection(util.log.child({ role: 'client' }), 1, settings);
-      s = new Connection(util.log.child({ role: 'client' }), 2, settings);
-      c.pipe(s).pipe(c);
+      c = new Connection(util.clientLog, 1, settings);
+      s = new Connection(util.serverLog, 2, settings);
+      c.pipe(new util.CloneStream()).pipe(s).pipe(new util.CloneStream()).pipe(c);
     });
 
     describe('connection setup', function() {
@@ -224,13 +224,61 @@ describe('connection.js', function() {
         });
       });
     });
-    describe('closing the connection on one end', function() {
-      it('should result in closed streams on both ends', function(done) {
-        done = util.callNTimes(2, done);
-        c.on('end', done);
-        s.on('end', done);
+    describe('receiving GOAWAY', function() {
+      it('should make creating new streams impossible', function() {
+        // Before and after the server sends GOAWAY
+        expect(c.createStream()).to.not.equal(null);
+        s.goaway();
+        expect(c.createStream()).to.equal(null);
 
+        // Before and after the client sends GOAWAY
+        expect(s.createStream()).to.not.equal(null);
+        c.goaway();
+        expect(s.createStream()).to.equal(null);
+      });
+    });
+    describe('making a request and then closing the connection', function() {
+      it('should gracefully end the connection', function(done) {
+        // Request and response data
+        var request_headers = {
+          ':method': 'GET',
+          ':path': '/'
+        };
+        var request_data = new Buffer(0);
+        var response_headers = {
+          ':status': '200'
+        };
+        var response_data = new Buffer('12345678', 'hex');
+
+        // Setting up server
+        s.on('stream', function(server_stream) {
+          server_stream.on('headers', function(headers) {
+            expect(headers).to.deep.equal(request_headers);
+            server_stream.headers(response_headers);
+            server_stream.end(response_data);
+          });
+        });
+
+        // Sending request
+        var client_stream = c.createStream();
+        client_stream.headers(request_headers);
+        client_stream.end(request_data);
+
+        // Closing the connection
         c.close();
+
+        // Waiting for answer and then for the TCP connection to end gracefully
+        done = util.callNTimes(4, done);
+        client_stream.on('headers', function(headers) {
+          expect(headers).to.deep.equal(response_headers);
+          done();
+        });
+        client_stream.on('data', function(data) {
+          expect(data).to.deep.equal(response_data);
+          done();
+        });
+        c.on('finish', done);
+        s.on('finish', done);
       });
     });
   });

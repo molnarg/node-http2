@@ -1,6 +1,7 @@
 var path = require('path');
 var fs = require('fs');
 var spawn = require('child_process').spawn;
+var Transform = require('stream').Transform;
 
 function noop() {}
 exports.noop = noop;
@@ -87,3 +88,19 @@ exports.shuffleBuffers = function shuffleBuffers(buffers) {
 
   return output;
 }
+
+function CloneStream() {
+  Transform.call(this, { objectMode: true });
+}
+CloneStream.prototype = Object.create(Transform.prototype);
+
+CloneStream.prototype._transform = function(object, encoding, done) {
+  var clone = {};
+  for (var name in object) {
+    clone[name] = object[name];
+  }
+  this.push(clone);
+  done();
+};
+
+exports.CloneStream = CloneStream;

@@ -232,8 +232,11 @@ describe('stream.js', function() {
             [true, false].forEach(function(sending) {
               var stream = createStream();
               stream.state = state;
+              var errorEmitted = false;
+              stream.on('error', function() { errorEmitted = true; });
               stream._transition(sending, { type: 'RST_STREAM', flags: {} });
               expect(stream.state).to.be.equal('CLOSED');
+              expect(sending ^ errorEmitted).to.equal(1);
             });
           });
       });
