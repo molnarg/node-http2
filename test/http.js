@@ -434,5 +434,53 @@ describe('http.js', function() {
         });
       });
     });
+    describe('closing client connection socket', function() {
+      it('should close streams on server', function(done) {
+        var server = http2.createServer(options, function(request, response) {
+          request.once('error', util.noop);
+          response.once('error', util.noop);
+          response.once('close', done);
+
+          response.writeHead(200);
+        });
+
+        var agent = new http2.Agent();
+        server.listen(1243, function() {
+          http2.get({
+            scheme: 'https:',
+            host: 'localhost',
+            port: 1243,
+            path: '/foo',
+            agent: agent
+          }, function(response) {
+            response.once('error', util.noop);
+            agent.endpoints['false:localhost:1243'].socket.destroy();
+          }).once('error', util.noop);
+        });
+      });
+      it('should close streams on client', function(done) {
+        var server = http2.createServer(options, function(request, response) {
+          request.once('error', util.noop);
+          response.once('error', util.noop);
+
+          response.writeHead(200);
+        });
+
+        var agent = new http2.Agent();
+        server.listen(1244, function() {
+          http2.get({
+            scheme: 'https:',
+            host: 'localhost',
+            port: 1244,
+            path: '/foo',
+            agent: agent
+          }, function(response) {
+            response.once('close', done);
+            response.once('error', util.noop);
+            agent.endpoints['false:localhost:1244'].socket.destroy();
+          }).once('error', util.noop);
+        });
+      });
+    });
   });
 });
