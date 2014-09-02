@@ -120,7 +120,7 @@ describe('http.js', function() {
         } else {
           called = true;
         }
-      }, once: util.noop };
+      }, once: util.noop, on: util.noop };
       var response = new http2.OutgoingResponse(stream);
 
       response.writeHead(200);
@@ -430,6 +430,46 @@ describe('http.js', function() {
               });
               pushStream.on('end', done);
             });
+          });
+        });
+      });
+    });
+    describe('closing client connection socket', function() {
+      it('should close streams on server', function(done) {
+        var server = http2.createServer(options, function(request, response) {
+          response.once('close', done);
+          response.writeHead(200);
+        });
+
+        var agent = new http2.Agent();
+        server.listen(1243, function() {
+          http2.get({
+            scheme: 'https:',
+            host: 'localhost',
+            port: 1243,
+            path: '/foo',
+            agent: agent
+          }, function(response) {
+            agent.endpoints['false:localhost:1243'].socket.destroy();
+          });
+        });
+      });
+      it('should close streams on client', function(done) {
+        var server = http2.createServer(options, function(request, response) {
+          response.writeHead(200);
+        });
+
+        var agent = new http2.Agent();
+        server.listen(1244, function() {
+          http2.get({
+            scheme: 'https:',
+            host: 'localhost',
+            port: 1244,
+            path: '/foo',
+            agent: agent
+          }, function(response) {
+            response.once('close', done);
+            agent.endpoints['false:localhost:1244'].socket.destroy();
           });
         });
       });
