@@ -5,7 +5,7 @@ var stream = require('../lib/protocol/stream');
 var Stream = stream.Stream;
 
 function createStream() {
-  var stream = new Stream(util.log);
+  var stream = new Stream(util.log, null);
   stream.upstream._window = Infinity;
   return stream;
 }
@@ -106,7 +106,7 @@ var example_frames = [
   { type: 'RST_STREAM', flags: {}, error: 'CANCEL' },
   { type: 'HEADERS', flags: {}, headers: {}, priority: undefined },
   { type: 'DATA', flags: {}, data: new Buffer(5) },
-  { type: 'PUSH_PROMISE', flags: {}, headers: {}, promised_stream: new Stream(util.log) }
+  { type: 'PUSH_PROMISE', flags: {}, headers: {}, promised_stream: new Stream(util.log, null) }
 ];
 
 var invalid_incoming_frames = {
@@ -173,7 +173,7 @@ var invalid_outgoing_frames = {
     { type: 'WINDOW_UPDATE', flags: {}, settings: {} },
     { type: 'HEADERS', flags: {}, headers: {}, priority: undefined },
     { type: 'DATA', flags: {}, data: new Buffer(5) },
-    { type: 'PUSH_PROMISE', flags: {}, headers: {}, promised_stream: new Stream(util.log) }
+    { type: 'PUSH_PROMISE', flags: {}, headers: {}, promised_stream: new Stream(util.log, null) }
   ]
 };
 
