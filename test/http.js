@@ -264,6 +264,31 @@ describe('http.js', function() {
         });
       });
     });
+    describe('get over plain TCP', function() {
+      it('should work as expected', function(done) {
+        var path = '/x';
+        var message = 'Hello world';
+
+        var server = http2.raw.createServer({
+          plain: true,
+          log: util.serverLog
+        }, function(request, response) {
+          expect(request.url).to.equal(path);
+          response.end(message);
+        });
+
+        server.listen(1237, function() {
+          var request = http2.raw.get('http://localhost:1237/x', function(response) {
+            response.on('data', function(data) {
+              expect(data.toString()).to.equal(message);
+              server.close();
+              done();
+            });
+          });
+          request.end();
+        });
+      });
+    });
     describe('request to an HTTPS/1 server', function() {
       it('should fall back to HTTPS/1 successfully', function(done) {
         var path = '/x';
