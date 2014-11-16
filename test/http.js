@@ -240,7 +240,6 @@ describe('http.js', function() {
         var message = 'Hello world';
 
         var server = http2.raw.createServer({
-          plain: true,
           log: util.serverLog
         }, function(request, response) {
           expect(request.url).to.equal(path);
@@ -270,7 +269,6 @@ describe('http.js', function() {
         var message = 'Hello world';
 
         var server = http2.raw.createServer({
-          plain: true,
           log: util.serverLog
         }, function(request, response) {
           expect(request.url).to.equal(path);
