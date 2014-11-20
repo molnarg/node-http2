@@ -151,12 +151,16 @@ $ HTTP2_LOG=info node ./example/client.js 'http://localhost:8080/server.js' >/de
 Contributors
 ------------
 
+The co-maintainer of the project is [Nick Hurley](https://github.com/todesschaf).
+
 Code contributions are always welcome! People who contributed to node-http2 so far:
 
-* Nick Hurley
-* Mike Belshe
-* Yoshihiro Iwanaga
-* vsemogutor
+* [Nick Hurley](https://github.com/todesschaf)
+* [Mike Belshe](https://github.com/mbelshe)
+* [Yoshihiro Iwanaga](https://github.com/iwanaga)
+* [Igor Novikov](https://github.com/vsemogutor)
+* [James Willcox](https://github.com/snorp)
+* [David Björklund](https://github.com/kesla)
 
 Special thanks to Google for financing the development of this module as part of their [Summer of
 Code program](https://developers.google.com/open-source/soc/) (project: [HTTP/2 prototype server
