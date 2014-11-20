@@ -1,7 +1,13 @@
 Version history
 ===============
 
-### 3.0.0 (2014-08-XX) ###
+### 3.0.1 (2014-11-20) ###
+
+* Bugfix release.
+* Fixed #81 and #87
+* Fixed a bug in flow control (without GitHub issue)
+
+### 3.0.0 (2014-08-25) ###
 
 * Re-join node-http2 and node-http2-protocol into one repository
 * API Changes
