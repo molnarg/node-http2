@@ -124,7 +124,7 @@ describe('http.js', function() {
       var response = new http2.OutgoingResponse(stream);
 
       response.writeHead(200);
-      response.writeHead(404)
+      response.writeHead(404);
     });
   });
   describe('test scenario', function() {

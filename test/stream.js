@@ -188,7 +188,7 @@ describe('stream.js', function() {
             stream.state = state;
             stream.once('connectionError', function() { connectionErrorHappened = true; });
             stream._transition(false, invalid_frame);
-            expect(connectionErrorHappened)
+            expect(connectionErrorHappened);
           });
         });
 
