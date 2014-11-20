@@ -149,6 +149,36 @@ describe('http.js', function() {
         });
       });
     });
+    describe('100 simple request in a series', function() {
+      it('should work as expected', function(done) {
+        var path = '/x';
+        var message = 'Hello world';
+
+        var server = http2.createServer(options, function(request, response) {
+          expect(request.url).to.equal(path);
+          response.end(message);
+        });
+
+        var n = 100;
+        server.listen(1242, function() {
+          doRequest();
+          function doRequest() {
+            http2.get('https://localhost:1242' + path, function(response) {
+              response.on('data', function(data) {
+                expect(data.toString()).to.equal(message);
+                if (n) {
+                  n -= 1;
+                  doRequest();
+                } else {
+                  server.close();
+                  done();
+                }
+              });
+            });
+          }
+        });
+      });
+    });
     describe('request with payload', function() {
       it('should work as expected', function(done) {
         var path = '/x';
