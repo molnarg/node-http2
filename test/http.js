@@ -240,7 +240,6 @@ describe('http.js', function() {
         var message = 'Hello world';
 
         var server = http2.raw.createServer({
-          plain: true,
           log: util.serverLog
         }, function(request, response) {
           expect(request.url).to.equal(path);
@@ -254,6 +253,30 @@ describe('http.js', function() {
             port: 1237,
             path: path
           }, function(response) {
+            response.on('data', function(data) {
+              expect(data.toString()).to.equal(message);
+              server.close();
+              done();
+            });
+          });
+          request.end();
+        });
+      });
+    });
+    describe('get over plain TCP', function() {
+      it('should work as expected', function(done) {
+        var path = '/x';
+        var message = 'Hello world';
+
+        var server = http2.raw.createServer({
+          log: util.serverLog
+        }, function(request, response) {
+          expect(request.url).to.equal(path);
+          response.end(message);
+        });
+
+        server.listen(1237, function() {
+          var request = http2.raw.get('http://localhost:1237/x', function(response) {
             response.on('data', function(data) {
               expect(data.toString()).to.equal(message);
               server.close();
