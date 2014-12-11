@@ -161,6 +161,7 @@ Code contributions are always welcome! People who contributed to node-http2 so f
 * [Igor Novikov](https://github.com/vsemogutor)
 * [James Willcox](https://github.com/snorp)
 * [David Björklund](https://github.com/kesla)
+* [Patrick McManus](https://github.com/mcmanus)
 
 Special thanks to Google for financing the development of this module as part of their [Summer of
 Code program](https://developers.google.com/open-source/soc/) (project: [HTTP/2 prototype server
