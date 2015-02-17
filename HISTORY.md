@@ -1,6 +1,10 @@
 Version history
 ===============
 
+### 3.1.2 (2015-02-17) ###
+
+* Update the example server to have a safe push example.
+
 ### 3.1.1 (2015-01-29) ###
 
 * Bugfix release.
