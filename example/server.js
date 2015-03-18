@@ -24,14 +24,14 @@ function onRequest(request, response) {
 
   // Reading file from disk if it exists and is safe.
   else if ((filename.indexOf(__dirname) === 0) && fs.existsSync(filename) && fs.statSync(filename).isFile()) {
-    response.writeHead('200');
+    response.writeHead(200);
 
     fs.createReadStream(filename).pipe(response);
   }
 
   // Otherwise responding with 404.
   else {
-    response.writeHead('404');
+    response.writeHead(404);
     response.end();
   }
 }
