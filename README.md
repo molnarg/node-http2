@@ -165,7 +165,7 @@ Code contributions are always welcome! People who contributed to node-http2 so f
 
 Special thanks to Google for financing the development of this module as part of their [Summer of
 Code program](https://developers.google.com/open-source/soc/) (project: [HTTP/2 prototype server
-implementation](https://google-melange.appspot.com/gsoc/project/google/gsoc2013/molnarg/5001)), and
+implementation](https://google-melange.appspot.com/gsoc/project/details/google/gsoc2013/molnarg/5818821692620800)), and
 Nick Hurley of Mozilla, my GSoC mentor, who helped with regular code review and technical advices.
 
 License
