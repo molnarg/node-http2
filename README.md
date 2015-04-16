@@ -41,9 +41,20 @@ require('http2').createServer(options, function(request, response) {
 ### Using as a client ###
 
 ```javascript
-process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
-
 require('http2').get('https://localhost:8080/', function(response) {
+  response.pipe(process.stdout);
+});
+```
+
+Self-signed certificates must be specified for each request to avoid
+verification errors. In this case, using an `Agent` is more convenient:
+
+```javascript
+var agent = new (require('http2').Agent)({
+  key: fs.readFileSync('./example/localhost.key'),
+  ca: fs.readFileSync('./example/localhost.crt')
+});
+agent.get('https://localhost:8080/', function(response) {
   response.pipe(process.stdout);
 });
 ```

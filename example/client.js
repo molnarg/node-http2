@@ -4,11 +4,13 @@ var http2 = require('..');
 
 // Setting the global logger (optional)
 http2.globalAgent = new http2.Agent({
+  // Avoid verification errors for self-signed certs.
+  key: fs.readFileSync(path.join(__dirname, '/localhost.key')),
+  ca: fs.readFileSync(path.join(__dirname, '/localhost.crt')),
+  strictSSL: true,
+  rejectUnauthorized: true,
   log: require('../test/util').createLogger('client')
 });
-
-// We use self signed certs in the example code so we ignore cert errors
-process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 
 // Sending the request
 var url = process.argv.pop();
