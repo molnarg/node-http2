@@ -46,19 +46,6 @@ require('http2').get('https://localhost:8080/', function(response) {
 });
 ```
 
-Self-signed certificates must be specified for each request to avoid
-verification errors. In this case, using an `Agent` is more convenient:
-
-```javascript
-var agent = new (require('http2').Agent)({
-  key: fs.readFileSync('./example/localhost.key'),
-  ca: fs.readFileSync('./example/localhost.crt')
-});
-agent.get('https://localhost:8080/', function(response) {
-  response.pipe(process.stdout);
-});
-```
-
 ### Simple static file server ###
 
 An simple static file server serving up content from its own directory is available in the `example`
