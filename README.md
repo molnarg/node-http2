@@ -41,9 +41,18 @@ require('http2').createServer(options, function(request, response) {
 ### Using as a client ###
 
 ```javascript
-process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
-
-require('http2').get('https://localhost:8080/', function(response) {
+require('http2').get({
+  url: 'https://localhost:8080/'
+  
+  // Ignore SSL security for SELF-SIGNED CERTIFICATES only
+  agent:  new https.Agent({
+    host: 'localhost'
+  , port: '8080'
+  , path: '/'
+  , rejectUnauthorized: false
+  })
+  
+}, function(response) {
   response.pipe(process.stdout);
 });
 ```
