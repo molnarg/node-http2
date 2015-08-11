@@ -543,6 +543,57 @@ describe('http.js', function() {
         });
       });
     });
+    describe('raise events from all sent and received frames',function(){
+      it('should work as expected', function (done) {
+        var path = '/x';
+        var receiveFrameTypes = [];
+        var sentFrameTypes = [];
+        var message = 'Hello world!';
+        var server = http2.createServer(options, function (request, response) {
+          expect(request.url).to.equal(path);
+
+          request.on('data', util.noop);
+          request.once('end', function () {
+            response.end(message);
+          });
+        });
+
+        server.listen(1245, function () {
+          var request = http2.request({
+            protocol: 'https:',
+            host: 'localhost',
+            port: 1245,
+            path: path,
+
+            onEndpoint: function (endpoint) {
+              endpoint.on('sentFrame', function (frame) {
+                sentFrameTypes.push(frame.type);
+              });
+
+              endpoint.on('receivedFrame', function (frame) {
+                receiveFrameTypes.push(frame.type);
+
+              });
+            }
+          });
+
+          request.end();
+          request.on('response', function (response) {
+
+            response.once('finish', function () {
+              expect(sentFrameTypes).to.include('SETTINGS');
+              expect(sentFrameTypes).to.include('HEADERS');
+
+              expect(receiveFrameTypes).to.include('SETTINGS');
+              expect(receiveFrameTypes).to.include('HEADERS');
+              expect(receiveFrameTypes).to.include('DATA');
+
+              done();
+            });
+          });
+        });
+      });
+    });
     describe('server push', function() {
       it('should work as expected', function(done) {
         var path = '/x';

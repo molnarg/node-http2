@@ -65,7 +65,7 @@ describe('connection.js', function() {
     describe('invalid operation', function() {
       describe('unsolicited ping answer', function() {
         it('should be ignored', function() {
-          var connection = new Connection(util.log, 1, settings);
+          var connection = new Connection({log: util.log, firstStreamId: 1, connectionSettings: settings});
 
           connection._receivePing({
             stream: 0,
@@ -82,8 +82,8 @@ describe('connection.js', function() {
   describe('test scenario', function() {
     var c, s;
     beforeEach(function() {
-      c = new Connection(util.log.child({ role: 'client' }), 1, settings);
-      s = new Connection(util.log.child({ role: 'client' }), 2, settings);
+      c = new Connection({log: util.log.child({ role: 'client' }), firstStreamId: 1, connectionSettings: settings});
+      s = new Connection({log: util.log.child({ role: 'client' }), firstStreamId: 2, connectionSettings: settings});
       c.pipe(s).pipe(c);
     });
 
