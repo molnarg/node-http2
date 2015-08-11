@@ -143,7 +143,7 @@ $ HTTP2_LOG=info node ./example/server.js
 ```
 
 ```bash
-$ HTTP2_LOG=info node ./example/client.js 'http://localhost:8080/server.js' >/dev/null
+$ HTTP2_LOG=info node ./example/client.js 'https://localhost:8080/server.js' >/dev/null
 ```
 
 Contributors
