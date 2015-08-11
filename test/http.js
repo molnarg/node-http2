@@ -2,21 +2,31 @@ var expect = require('chai').expect;
 var util = require('./util');
 var fs = require('fs');
 var path = require('path');
+var url = require('url');
 
 var http2 = require('../lib/http');
 var https = require('https');
 
-process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
-
-var options = {
+var serverOptions = {
   key: fs.readFileSync(path.join(__dirname, '../example/localhost.key')),
   cert: fs.readFileSync(path.join(__dirname, '../example/localhost.crt')),
+  rejectUnauthorized: true,
   log: util.serverLog
 };
 
-http2.globalAgent = new http2.Agent({ log: util.clientLog });
+var agentOptions = {
+  key: serverOptions.key,
+  ca: serverOptions.cert,
+  rejectUnauthorized: true,
+  log: util.clientLog
+};
+
+var globalAgent = new http2.Agent(agentOptions);
 
 describe('http.js', function() {
+  beforeEach(function() {
+    http2.globalAgent = globalAgent;
+  });
   describe('Server', function() {
     describe('new Server(options)', function() {
       it('should throw if called without \'plain\' or TLS options', function() {
@@ -30,7 +40,7 @@ describe('http.js', function() {
     });
     describe('property `timeout`', function() {
       it('should be a proxy for the backing HTTPS server\'s `timeout` property', function() {
-        var server = new http2.Server(options);
+        var server = new http2.Server(serverOptions);
         var backingServer = server._server;
         var newTimeout = 10;
         server.timeout = newTimeout;
@@ -40,7 +50,7 @@ describe('http.js', function() {
     });
     describe('method `setTimeout(timeout, [callback])`', function() {
       it('should be a proxy for the backing HTTPS server\'s `setTimeout` method', function() {
-        var server = new http2.Server(options);
+        var server = new http2.Server(serverOptions);
         var backingServer = server._server;
         var newTimeout = 10;
         var newCallback = util.noop;
@@ -64,6 +74,31 @@ describe('http.js', function() {
       });
     });
     describe('method `request(options, [callback])`', function() {
+      it('should use a new agent for request-specific TLS settings', function(done) {
+        var path = '/x';
+        var message = 'Hello world';
+
+        var server = http2.createServer(serverOptions, function(request, response) {
+          expect(request.url).to.equal(path);
+          response.end(message);
+        });
+
+        server.listen(1234, function() {
+          var options = url.parse('https://localhost:1234' + path);
+          options.key = agentOptions.key;
+          options.ca = agentOptions.ca;
+          options.rejectUnauthorized = true;
+
+          http2.globalAgent = new http2.Agent({ log: util.clientLog });
+          http2.get(options, function(response) {
+            response.on('data', function(data) {
+              expect(data.toString()).to.equal(message);
+              server.close();
+              done();
+            });
+          });
+        });
+      });
       it('should throw when trying to use with \'http\' scheme', function() {
         expect(function() {
           var agent = new http2.Agent({ log: util.clientLog });
@@ -133,7 +168,7 @@ describe('http.js', function() {
         var path = '/x';
         var message = 'Hello world';
 
-        var server = http2.createServer(options, function(request, response) {
+        var server = http2.createServer(serverOptions, function(request, response) {
           expect(request.url).to.equal(path);
           response.end(message);
         });
@@ -153,12 +188,12 @@ describe('http.js', function() {
       it('should work as expected', function(originalDone) {
         var path = '/x';
         var message = 'Hello world';
-        done = util.callNTimes(2, function() {
+        var done = util.callNTimes(2, function() {
           server.close();
           originalDone();
         });
 
-        var server = http2.createServer(options, function(request, response) {
+        var server = http2.createServer(serverOptions, function(request, response) {
           expect(request.url).to.equal(path);
           response.end(message);
         });
@@ -184,7 +219,7 @@ describe('http.js', function() {
         var path = '/x';
         var message = 'Hello world';
 
-        var server = http2.createServer(options, function(request, response) {
+        var server = http2.createServer(serverOptions, function(request, response) {
           expect(request.url).to.equal(path);
           response.end(message);
         });
@@ -214,7 +249,7 @@ describe('http.js', function() {
         var path = '/x';
         var message = 'Hello world';
 
-        var server = http2.createServer(options, function(request, response) {
+        var server = http2.createServer(serverOptions, function(request, response) {
           expect(request.url).to.equal(path);
           request.once('data', function(data) {
             expect(data.toString()).to.equal(message);
@@ -244,7 +279,7 @@ describe('http.js', function() {
         var headerName = 'name';
         var headerValue = 'value';
 
-        var server = http2.createServer(options, function(request, response) {
+        var server = http2.createServer(serverOptions, function(request, response) {
           // Request URL and headers
           expect(request.url).to.equal(path);
           expect(request.headers[headerName]).to.equal(headerValue);
@@ -352,7 +387,7 @@ describe('http.js', function() {
         var path = '/x';
         var message = 'Hello world';
 
-        var server = https.createServer(options, function(request, response) {
+        var server = https.createServer(serverOptions, function(request, response) {
           expect(request.url).to.equal(path);
           response.end(message);
         });
@@ -371,12 +406,12 @@ describe('http.js', function() {
       it('should fall back to HTTPS/1 successfully', function(originalDone) {
         var path = '/x';
         var message = 'Hello world';
-        done = util.callNTimes(2, function() {
+        var done = util.callNTimes(2, function() {
           server.close();
           originalDone();
         });
 
-        var server = https.createServer(options, function(request, response) {
+        var server = https.createServer(serverOptions, function(request, response) {
           expect(request.url).to.equal(path);
           response.end(message);
         });
@@ -402,13 +437,15 @@ describe('http.js', function() {
         var path = '/x';
         var message = 'Hello world';
 
-        var server = http2.createServer(options, function(request, response) {
+        var server = http2.createServer(serverOptions, function(request, response) {
           expect(request.url).to.equal(path);
           response.end(message);
         });
 
         server.listen(1236, function() {
-          https.get('https://localhost:1236' + path, function(response) {
+          var options = url.parse('https://localhost:1236' + path);
+          options.agent = new https.Agent(agentOptions);
+          https.get(options, function(response) {
             response.on('data', function(data) {
               expect(data.toString()).to.equal(message);
               done();
@@ -422,7 +459,7 @@ describe('http.js', function() {
         var path = '/x';
         var message = 'Hello world';
 
-        var server = http2.createServer(options, function(request, response) {
+        var server = http2.createServer(serverOptions, function(request, response) {
           expect(request.url).to.equal(path);
           response.end(message);
         });
@@ -451,7 +488,7 @@ describe('http.js', function() {
         var path = '/x';
         var message = 'Hello world';
 
-        var server = http2.createServer(options, function(request, response) {
+        var server = http2.createServer(serverOptions, function(request, response) {
           expect(request.url).to.equal(path);
           response.end(message);
         });
@@ -481,7 +518,7 @@ describe('http.js', function() {
         var requestTrailers = { 'content-md5': 'x' };
         var responseTrailers = { 'content-md5': 'y' };
 
-        var server = http2.createServer(options, function(request, response) {
+        var server = http2.createServer(serverOptions, function(request, response) {
           expect(request.url).to.equal(path);
           request.on('data', util.noop);
           request.once('end', function() {
@@ -513,7 +550,7 @@ describe('http.js', function() {
         var pushedPath = '/y';
         var pushedMessage = 'Hello world 2';
 
-        var server = http2.createServer(options, function(request, response) {
+        var server = http2.createServer(serverOptions, function(request, response) {
           expect(request.url).to.equal(path);
           var push1 = response.push('/y');
           push1.end(pushedMessage);
