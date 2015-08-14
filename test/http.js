@@ -543,6 +543,52 @@ describe('http.js', function() {
         });
       });
     });
+    describe('Handle socket error', function () {
+      it('HTTPS on Connection Refused error', function (done) {
+        var path = '/x';
+        var request = http2.request('https://127.0.0.1:6666' + path);
+
+        request.on('error', function (err) {
+          expect(err.errno).to.equal('ECONNREFUSED');
+          done();
+        });
+
+        request.on('response', function (response) {
+          server._server._handle.destroy();
+
+          response.on('data', util.noop);
+
+          response.once('end', function () {
+            done(new Error('Request should have failed'));
+          });
+        });
+
+        request.end();
+
+      });
+      it('HTTP on Connection Refused error', function (done) {
+        var path = '/x';
+
+        var request = http2.raw.request('http://127.0.0.1:6666' + path);
+
+        request.on('error', function (err) {
+          expect(err.errno).to.equal('ECONNREFUSED');
+          done();
+        });
+
+        request.on('response', function (response) {
+          server._server._handle.destroy();
+
+          response.on('data', util.noop);
+
+          response.once('end', function () {
+            done(new Error('Request should have failed'));
+          });
+        });
+
+        request.end();
+      });
+    });
     describe('server push', function() {
       it('should work as expected', function(done) {
         var path = '/x';
