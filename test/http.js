@@ -511,6 +511,84 @@ describe('http.js', function() {
         });
       });
     });
+    describe('https server node module specification conformance', function() {
+      it('should provide API for remote HTTP 1.1 client address', function(done) {
+        var remoteAddress = null;
+        var remotePort = null;
+
+        var server = http2.createServer(serverOptions, function(request, response) {
+          // HTTPS 1.1 client with Node 0.10 server
+          if (!request.remoteAddress) {
+            if (request.socket.socket) {
+              remoteAddress = request.socket.socket.remoteAddress;
+              remotePort = request.socket.socket.remotePort;
+            } else {
+              remoteAddress = request.socket.remoteAddress;
+              remotePort = request.socket.remotePort;
+            }
+          } else {
+            // HTTPS 1.1/2.0 client with Node 0.12 server
+            remoteAddress = request.remoteAddress;
+            remotePort = request.remotePort;
+          }
+          response.write('Pong');
+          response.end();
+        });
+
+        server.listen(1259, 'localhost', function() {
+          var request = https.request({
+            host: 'localhost',
+            port: 1259,
+            path: '/',
+            ca: serverOptions.cert
+          });
+          request.write('Ping');
+          request.end();
+          request.on('response', function(response) {
+            response.on('data', function(data) {
+              var localAddress = response.socket.address();
+              expect(remoteAddress).to.equal(localAddress.address);
+              expect(remotePort).to.equal(localAddress.port);
+              server.close();
+              done();
+            });
+          });
+        });
+      });
+      it('should provide API for remote HTTP 2.0 client address', function(done) {
+        var remoteAddress = null;
+        var remotePort = null;
+        var localAddress = null;
+
+        var server = http2.createServer(serverOptions, function(request, response) {
+          remoteAddress = request.remoteAddress;
+          remotePort = request.remotePort;
+          response.write('Pong');
+          response.end();
+        });
+
+        server.listen(1258, 'localhost', function() {
+          var request = http2.request({
+            host: 'localhost',
+            port: 1258,
+            path: '/'
+          });
+          request.write('Ping');
+          globalAgent.on('false:localhost:1258', function(endpoint) {
+            localAddress = endpoint.socket.address();
+          });
+          request.end();
+          request.on('response', function(response) {
+            response.on('data', function(data) {
+              expect(remoteAddress).to.equal(localAddress.address);
+              expect(remotePort).to.equal(localAddress.port);
+              server.close();
+              done();
+            });
+          });
+        });
+      });
+    });
     describe('request and response with trailers', function() {
       it('should work as expected', function(done) {
         var path = '/x';
