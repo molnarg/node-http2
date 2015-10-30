@@ -71,11 +71,8 @@ For a server push example, see the source code of the example
 
 Status
 ------
-
-* ALPN is not yet supported in node.js (see
-  [this issue](https://github.com/joyent/node/issues/5945)). For ALPN support, you will have to use
-  [Shigeki Ohtsu's node.js fork](https://github.com/shigeki/node/tree/alpn_support) until this code
-  gets merged upstream.
+* ALPN is supported as of node 5.0.0 (see
+  [previous issue](https://github.com/joyent/node/issues/5945)). For ALPN support with previous versions, you will have to use [Shigeki Ohtsu's node.js fork](https://github.com/shigeki/node/tree/alpn_support)
 * Upgrade mechanism to start HTTP/2 over unencrypted channel is not implemented yet
   (issue [#4](https://github.com/molnarg/node-http2/issues/4))
 * Other minor features found in
