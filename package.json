@@ -3,15 +3,16 @@
   "version": "3.2.0",
   "description": "An HTTP/2 client and server implementation",
   "main": "lib/index.js",
-  "engines" : {
-    "node" : ">=0.12.0"
+  "engines": {
+    "node": ">=0.12.0"
   },
   "devDependencies": {
-    "istanbul": "*",
+    "bunyan": "*",
     "chai": "*",
-    "mocha": "*",
     "docco": "*",
-    "bunyan": "*"
+    "istanbul": "*",
+    "mocha": "*",
+    "server-destroy": "^1.0.1"
   },
   "scripts": {
     "test": "istanbul test _mocha -- --reporter spec --slow 500 --timeout 15000",

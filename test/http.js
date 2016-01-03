@@ -161,6 +161,31 @@ describe('http.js', function() {
       response.writeHead(200);
       response.writeHead(404);
     });
+    it('field finished should be Boolean', function(){
+      var stream = { _log: util.log, headers: function () {}, once: util.noop };
+      var response = new http2.OutgoingResponse(stream);
+      expect(response.finished).to.be.a('Boolean');
+    });
+    it('field finished should initially be false and then go to true when response completes',function(done){
+      var res;
+      var server = http2.createServer(serverOptions, function(request, response) {
+        res = response;
+        expect(res.finished).to.be.false;
+        response.end('HiThere');
+      });
+      server.listen(1236, function() {
+        http2.get('https://localhost:1236/finished-test', function(response) {
+          response.on('data', function(data){
+            var sink = data; //
+          });
+          response.on('end',function(){
+            expect(res.finished).to.be.true;
+            server.close();
+            done();
+          });
+        });
+      });
+    });
   });
   describe('test scenario', function() {
     describe('simple request', function() {
