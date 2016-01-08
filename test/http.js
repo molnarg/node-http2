@@ -39,6 +39,36 @@ describe('http.js', function() {
         }).to.throw(Error);
       });
     });
+    describe('method `listen()`', function () {
+      it('should emit `listening` event', function (done) {
+        var server = http2.createServer(serverOptions);
+
+        server.on('listening', function () {
+          server.close();
+
+          done();
+        })
+
+        server.listen(0);
+      });
+      it('should emit `error` on failure', function (done) {
+        var server = http2.createServer(serverOptions);
+
+        // This TCP server is used to explicitly take a port to make
+        // server.listen() fails.
+        var net = require('net').createServer();
+
+        server.on('error', function () {
+          net.close()
+
+          done();
+        });
+
+        net.listen(0, function () {
+          server.listen(this.address().port);
+        });
+      });
+    });
     describe('property `timeout`', function() {
       it('should be a proxy for the backing HTTPS server\'s `timeout` property', function() {
         var server = new http2.Server(serverOptions);
