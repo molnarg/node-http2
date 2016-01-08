@@ -3,6 +3,7 @@ var util = require('./util');
 var fs = require('fs');
 var path = require('path');
 var url = require('url');
+var net = require('net');
 
 var http2 = require('../lib/http');
 var https = require('https');
@@ -586,6 +587,26 @@ describe('http.js', function() {
               done();
             });
           });
+        });
+      });
+      it('should expose net.Socket as .socket and .connection', function(done) {
+        var server = http2.createServer(serverOptions, function(request, response) {
+          expect(request.socket).to.equal(request.connection);
+          expect(request.socket).to.be.instanceof(net.Socket);
+          response.write('Pong');
+          response.end();
+          done();
+        });
+
+        server.listen(1248, 'localhost', function() {
+          var request = https.request({
+            host: 'localhost',
+            port: 1248,
+            path: '/',
+            ca: serverOptions.cert
+          });
+          request.write('Ping');
+          request.end();
         });
       });
     });
