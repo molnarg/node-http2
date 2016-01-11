@@ -1,6 +1,14 @@
 Version history
 ===============
 
+### 3.3.1 (2016-01-11) ###
+
+* Fix some DoS bugs (issues 145, 146, 147, and 148)
+
+### 3.3.0 (2016-01-10) ###
+
+* Bugfix updates from pull requests
+
 ### 3.2.0 (2015-02-19) ###
 
 * Update ALPN token to final RFC version (h2).
