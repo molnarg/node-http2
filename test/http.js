@@ -186,14 +186,14 @@ describe('http.js', function() {
         } else {
           called = true;
         }
-      }, once: util.noop };
+      }, once: util.noop, on: util.noop };
       var response = new http2.OutgoingResponse(stream);
 
       response.writeHead(200);
       response.writeHead(404);
     });
     it('field finished should be Boolean', function(){
-      var stream = { _log: util.log, headers: function () {}, once: util.noop };
+      var stream = { _log: util.log, headers: function () {}, once: util.noop, on: util.noop };
       var response = new http2.OutgoingResponse(stream);
       expect(response.finished).to.be.a('Boolean');
     });
