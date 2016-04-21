@@ -1,6 +1,10 @@
 Version history
 ===============
 
+### 3.3.3 (2016-04-21) ###
+
+* Bugfixes from pull requests (https://github.com/molnarg/node-http2/search?q=milestone%3Av3.3.3&type=Issues&utf8=%E2%9C%93)
+
 ### 3.3.2 (2016-01-11) ###
 
 * Fix an incompatibility with Firefox (issue 167)
