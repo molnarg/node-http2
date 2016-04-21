@@ -349,6 +349,9 @@ describe('http.js', function() {
           response.removeHeader('nonexistent');
           expect(response.getHeader('nonexistent')).to.equal(undefined);
 
+          // A set-cookie header which should always be an array
+          response.setHeader('set-cookie', 'foo');
+
           // Don't send date
           response.sendDate = false;
 
@@ -375,6 +378,8 @@ describe('http.js', function() {
           request.on('response', function(response) {
             expect(response.headers[headerName]).to.equal(headerValue);
             expect(response.headers['nonexistent']).to.equal(undefined);
+            expect(response.headers['set-cookie']).to.an.instanceof(Array)
+            expect(response.headers['set-cookie']).to.deep.equal(['foo'])
             expect(response.headers['date']).to.equal(undefined);
             response.on('data', function(data) {
               expect(data.toString()).to.equal(message);
