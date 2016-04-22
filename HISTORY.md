@@ -1,6 +1,9 @@
 Version history
 ===============
 
+### 3.3.4 (2016-04-22) ###
+* More PR bugfixes (https://github.com/molnarg/node-http2/issues?q=milestone%3Av3.3.4)
+
 ### 3.3.3 (2016-04-21) ###
 
 * Bugfixes from pull requests (https://github.com/molnarg/node-http2/search?q=milestone%3Av3.3.3&type=Issues&utf8=%E2%9C%93)
