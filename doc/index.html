@@ -16,18 +16,21 @@
           <a class="large" href="javascript:void(0);">Jump To &hellip;</a>
           <a class="small" href="javascript:void(0);">+</a>
           <div id="jump_wrapper">
-          <div id="jump_page">
-            
+          <div id="jump_page_wrapper">
+            <div id="jump_page">
               
-              <a class="source" href="http.html">
-                http.js
-              </a>
-            
+                
+                <a class="source" href="http.html">
+                  http.js
+                </a>
               
-              <a class="source" href="index.html">
-                index.js
-              </a>
-            
+                
+                <a class="source" href="index.html">
+                  index.js
+                </a>
+              
+              <a class="source" href="protocol/index.html">Protocol</a>
+            </div>
           </div>
         </li>
       </ul>
@@ -48,23 +51,24 @@
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-1">&#182;</a>
               </div>
-              <p><a href="https://github.com/molnarg/node-http2">node-http2</a> is an <a href="http://tools.ietf.org/html/draft-ietf-httpbis-http2-11">HTTP/2 (draft 11)</a> implementation for <a href="http://nodejs.org/">node.js</a>.</p>
-<p>The core of the protocol is implemented by the <a href="https://github.com/molnarg/node-http2-protocol">http2-protocol</a> module. This module provides
-two important features on top of http2-protocol:</p>
+              <p><a href="https://github.com/molnarg/node-http2">node-http2</a> is an <a href="https://tools.ietf.org/html/rfc7540">HTTP/2</a> implementation for <a href="https://nodejs.org/">node.js</a>.</p>
+<p>The core of the protocol is implemented in the protocol sub-directory. This directory provides
+two important features on top of the protocol:</p>
 <ul>
 <li><p>Implementation of different negotiation schemes that can be used to start a HTTP2 connection.
 These include TLS ALPN, Upgrade and Plain TCP.</p>
 </li>
-<li><p>Providing an API very similar to the standard node.js <a href="http://nodejs.org/api/https.html">HTTPS module API</a>
-(which is in turn very similar to the <a href="http://nodejs.org/api/http.html">HTTP module API</a>).</p>
+<li><p>Providing an API very similar to the standard node.js <a href="https://nodejs.org/api/https.html">HTTPS module API</a>
+(which is in turn very similar to the <a href="https://nodejs.org/api/http.html">HTTP module API</a>).</p>
 </li>
 </ul>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>module.exports   = require(<span class="string">'./http'</span>);
+            <div class="content"><div class='highlight'><pre>
+<span class="hljs-built_in">module</span>.exports   = <span class="hljs-built_in">require</span>(<span class="hljs-string">'./http'</span>);
 
-<span class="comment">/*
+<span class="hljs-comment">/*
                   HTTP API
 
                |            ^

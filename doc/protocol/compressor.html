@@ -1,0 +1,2217 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+  <title>compressor.js</title>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <meta name="viewport" content="width=device-width, target-densitydpi=160dpi, initial-scale=1.0; maximum-scale=1.0; user-scalable=0;">
+  <link rel="stylesheet" media="all" href="docco.css" />
+</head>
+<body>
+  <div id="container">
+    <div id="background"></div>
+    
+      <ul id="jump_to">
+        <li>
+          <a class="large" href="javascript:void(0);">Jump To &hellip;</a>
+          <a class="small" href="javascript:void(0);">+</a>
+          <div id="jump_wrapper">
+          <div id="jump_page_wrapper">
+            <div id="jump_page">
+              <a class="source" href="../index.html">API</a>
+              
+                
+                <a class="source" href="compressor.html">
+                  compressor.js
+                </a>
+              
+                
+                <a class="source" href="connection.html">
+                  connection.js
+                </a>
+              
+                
+                <a class="source" href="endpoint.html">
+                  endpoint.js
+                </a>
+              
+                
+                <a class="source" href="flow.html">
+                  flow.js
+                </a>
+              
+                
+                <a class="source" href="framer.html">
+                  framer.js
+                </a>
+              
+                
+                <a class="source" href="index.html">
+                  index.js
+                </a>
+              
+                
+                <a class="source" href="stream.html">
+                  stream.js
+                </a>
+              
+            </div>
+          </div>
+        </li>
+      </ul>
+    
+    <ul class="sections">
+        
+          <li id="title">
+              <div class="annotation">
+                  <h1>compressor.js</h1>
+              </div>
+          </li>
+        
+        
+        
+        <li id="section-1">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-1">&#182;</a>
+              </div>
+              <p>The implementation of the <a href="https://tools.ietf.org/html/rfc7541">HTTP/2 Header Compression</a> spec is separated from
+the ‘integration’ part which handles HEADERS and PUSH_PROMISE frames. The compression itself is
+implemented in the first part of the file, and consists of three classes: <code>HeaderTable</code>,
+<code>HeaderSetDecompressor</code> and <code>HeaderSetCompressor</code>. The two latter classes are
+<a href="https://nodejs.org/api/stream.html#stream_class_stream_transform">Transform Stream</a> subclasses that operate in <a href="https://nodejs.org/api/stream.html#stream_new_stream_readable_options">object mode</a>.
+These transform chunks of binary data into <code>[name, value]</code> pairs and vice versa, and store their
+state in <code>HeaderTable</code> instances.</p>
+<p>The ‘integration’ part is also implemented by two <a href="https://nodejs.org/api/stream.html#stream_class_stream_transform">Transform Stream</a> subclasses
+that operate in <a href="https://nodejs.org/api/stream.html#stream_new_stream_readable_options">object mode</a>: the <code>Compressor</code> and the <code>Decompressor</code>. These
+provide a layer between the <a href="framer.html">framer</a> and the
+<a href="connection.html">connection handling component</a>.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>
+exports.HeaderTable = HeaderTable;
+exports.HuffmanTable = HuffmanTable;
+exports.HeaderSetCompressor = HeaderSetCompressor;
+exports.HeaderSetDecompressor = HeaderSetDecompressor;
+exports.Compressor = Compressor;
+exports.Decompressor = Decompressor;
+
+<span class="hljs-keyword">var</span> TransformStream = <span class="hljs-built_in">require</span>(<span class="hljs-string">'stream'</span>).Transform;
+<span class="hljs-keyword">var</span> assert = <span class="hljs-built_in">require</span>(<span class="hljs-string">'assert'</span>);
+<span class="hljs-keyword">var</span> util = <span class="hljs-built_in">require</span>(<span class="hljs-string">'util'</span>);</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-2">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-2">&#182;</a>
+              </div>
+              <h1 id="header-compression">Header compression</h1>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-3">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-3">&#182;</a>
+              </div>
+              
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-4">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-4">&#182;</a>
+              </div>
+              <h2 id="the-headertable-class">The HeaderTable class</h2>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-5">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-5">&#182;</a>
+              </div>
+              
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-6">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-6">&#182;</a>
+              </div>
+              <p>The <a href="https://tools.ietf.org/html/rfc7541#section-2.3.2">Header Table</a> is a component used to associate headers to index values. It is basically an
+ordered list of <code>[name, value]</code> pairs, so it’s implemented as a subclass of <code>Array</code>.
+In this implementation, the Header Table and the <a href="https://tools.ietf.org/html/rfc7541#section-2.3.1">Static Table</a> are handled as a single table.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">HeaderTable</span>(<span class="hljs-params">log, limit</span>) </span>{
+  <span class="hljs-keyword">var</span> self = HeaderTable.staticTable.map(entryFromPair);
+  self._log = log;
+  self._limit = limit || DEFAULT_HEADER_TABLE_LIMIT;
+  self._staticLength = self.length;
+  self._size = <span class="hljs-number">0</span>;
+  self._enforceLimit = HeaderTable.prototype._enforceLimit;
+  self.add = HeaderTable.prototype.add;
+  self.setSizeLimit = HeaderTable.prototype.setSizeLimit;
+  <span class="hljs-keyword">return</span> self;
+}
+
+<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">entryFromPair</span>(<span class="hljs-params">pair</span>) </span>{
+  <span class="hljs-keyword">var</span> entry = pair.slice();
+  entry._size = size(entry);
+  <span class="hljs-keyword">return</span> entry;
+}</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-7">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-7">&#182;</a>
+              </div>
+              <p>The encoder decides how to update the header table and as such can control how much memory is
+used by the header table.  To limit the memory requirements on the decoder side, the header table
+size is bounded.</p>
+<ul>
+<li>The default header table size limit is 4096 bytes.</li>
+<li>The size of an entry is defined as follows: the size of an entry is the sum of its name’s
+length in bytes, of its value’s length in bytes and of 32 bytes.</li>
+<li>The size of a header table is the sum of the size of its entries.</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="hljs-keyword">var</span> DEFAULT_HEADER_TABLE_LIMIT = <span class="hljs-number">4096</span>;
+
+<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">size</span>(<span class="hljs-params">entry</span>) </span>{
+  <span class="hljs-keyword">return</span> (<span class="hljs-keyword">new</span> Buffer(entry[<span class="hljs-number">0</span>] + entry[<span class="hljs-number">1</span>], <span class="hljs-string">'utf8'</span>)).length + <span class="hljs-number">32</span>;
+}</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-8">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-8">&#182;</a>
+              </div>
+              <p>The <code>add(index, entry)</code> can be used to <a href="https://tools.ietf.org/html/rfc7541#section-4">manage the header table</a>:</p>
+<ul>
+<li>it pushes the new <code>entry</code> at the beggining of the table</li>
+<li><p>before doing such a modification, it has to be ensured that the header table size will stay
+lower than or equal to the header table size limit. To achieve this, entries are evicted from
+the end of the header table until the size of the header table is less than or equal to
+<code>(this._limit - entry.size)</code>, or until the table is empty.</p>
+<pre><code>       &lt;----------  Index Address Space ----------&gt;
+       <span class="xml"><span class="hljs-tag">&lt;<span class="hljs-title">--</span> <span class="hljs-attribute">Static</span>  <span class="hljs-attribute">Table</span> <span class="hljs-attribute">--</span>&gt;</span>  <span class="hljs-tag">&lt;<span class="hljs-title">--</span> <span class="hljs-attribute">Header</span>  <span class="hljs-attribute">Table</span> <span class="hljs-attribute">--</span>&gt;</span>
+       +---+-----------+---+  +---+-----------+---+
+       | 0 |    ...    | k |  |k+1|    ...    | n |
+       +---+-----------+---+  +---+-----------+---+
+                              ^                   |
+                              |                   V
+                       Insertion Point       Drop Point</span>
+</code></pre></li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>
+HeaderTable.prototype._enforceLimit = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">_enforceLimit</span>(<span class="hljs-params">limit</span>) </span>{
+  <span class="hljs-keyword">var</span> droppedEntries = [];
+  <span class="hljs-keyword">while</span> ((<span class="hljs-keyword">this</span>._size &gt; <span class="hljs-number">0</span>) &amp;&amp; (<span class="hljs-keyword">this</span>._size &gt; limit)) {
+    <span class="hljs-keyword">var</span> dropped = <span class="hljs-keyword">this</span>.pop();
+    <span class="hljs-keyword">this</span>._size -= dropped._size;
+    droppedEntries.unshift(dropped);
+  }
+  <span class="hljs-keyword">return</span> droppedEntries;
+};
+
+HeaderTable.prototype.add = <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">entry</span>) </span>{
+  <span class="hljs-keyword">var</span> limit = <span class="hljs-keyword">this</span>._limit - entry._size;
+  <span class="hljs-keyword">var</span> droppedEntries = <span class="hljs-keyword">this</span>._enforceLimit(limit);
+
+  <span class="hljs-keyword">if</span> (<span class="hljs-keyword">this</span>._size &lt;= limit) {
+    <span class="hljs-keyword">this</span>.splice(<span class="hljs-keyword">this</span>._staticLength, <span class="hljs-number">0</span>, entry);
+    <span class="hljs-keyword">this</span>._size += entry._size;
+  }
+
+  <span class="hljs-keyword">return</span> droppedEntries;
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-9">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-9">&#182;</a>
+              </div>
+              <p>The table size limit can be changed externally. In this case, the same eviction algorithm is used</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>HeaderTable.prototype.setSizeLimit = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">setSizeLimit</span>(<span class="hljs-params">limit</span>) </span>{
+  <span class="hljs-keyword">this</span>._limit = limit;
+  <span class="hljs-keyword">this</span>._enforceLimit(<span class="hljs-keyword">this</span>._limit);
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-10">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-10">&#182;</a>
+              </div>
+              <h2 id="-the-static-table-https-tools-ietf-org-html-rfc7541-section-2-3-1-"><a href="https://tools.ietf.org/html/rfc7541#section-2.3.1">The Static Table</a></h2>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-11">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-11">&#182;</a>
+              </div>
+              
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-12">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-12">&#182;</a>
+              </div>
+              <p>The table is generated with feeding the table from the spec to the following sed command:</p>
+<pre><code>sed -re <span class="hljs-string">"s/\s*\| [0-9]+\s*\| ([^ ]*)/  [ '\1'/g"</span> -e <span class="hljs-string">"s/\|\s([^ ]*)/, '\1'/g"</span> -e <span class="hljs-string">'s/ \|/],/g'</span>
+</code></pre>
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>
+HeaderTable.staticTable  = [
+  [ <span class="hljs-string">':authority'</span>                  , <span class="hljs-string">''</span>            ],
+  [ <span class="hljs-string">':method'</span>                     , <span class="hljs-string">'GET'</span>         ],
+  [ <span class="hljs-string">':method'</span>                     , <span class="hljs-string">'POST'</span>        ],
+  [ <span class="hljs-string">':path'</span>                       , <span class="hljs-string">'/'</span>           ],
+  [ <span class="hljs-string">':path'</span>                       , <span class="hljs-string">'/index.html'</span> ],
+  [ <span class="hljs-string">':scheme'</span>                     , <span class="hljs-string">'http'</span>        ],
+  [ <span class="hljs-string">':scheme'</span>                     , <span class="hljs-string">'https'</span>       ],
+  [ <span class="hljs-string">':status'</span>                     , <span class="hljs-string">'200'</span>         ],
+  [ <span class="hljs-string">':status'</span>                     , <span class="hljs-string">'204'</span>         ],
+  [ <span class="hljs-string">':status'</span>                     , <span class="hljs-string">'206'</span>         ],
+  [ <span class="hljs-string">':status'</span>                     , <span class="hljs-string">'304'</span>         ],
+  [ <span class="hljs-string">':status'</span>                     , <span class="hljs-string">'400'</span>         ],
+  [ <span class="hljs-string">':status'</span>                     , <span class="hljs-string">'404'</span>         ],
+  [ <span class="hljs-string">':status'</span>                     , <span class="hljs-string">'500'</span>         ],
+  [ <span class="hljs-string">'accept-charset'</span>              , <span class="hljs-string">''</span>            ],
+  [ <span class="hljs-string">'accept-encoding'</span>             , <span class="hljs-string">'gzip, deflate'</span>],
+  [ <span class="hljs-string">'accept-language'</span>             , <span class="hljs-string">''</span>            ],
+  [ <span class="hljs-string">'accept-ranges'</span>               , <span class="hljs-string">''</span>            ],
+  [ <span class="hljs-string">'accept'</span>                      , <span class="hljs-string">''</span>            ],
+  [ <span class="hljs-string">'access-control-allow-origin'</span> , <span class="hljs-string">''</span>            ],
+  [ <span class="hljs-string">'age'</span>                         , <span class="hljs-string">''</span>            ],
+  [ <span class="hljs-string">'allow'</span>                       , <span class="hljs-string">''</span>            ],
+  [ <span class="hljs-string">'authorization'</span>               , <span class="hljs-string">''</span>            ],
+  [ <span class="hljs-string">'cache-control'</span>               , <span class="hljs-string">''</span>            ],
+  [ <span class="hljs-string">'content-disposition'</span>         , <span class="hljs-string">''</span>            ],
+  [ <span class="hljs-string">'content-encoding'</span>            , <span class="hljs-string">''</span>            ],
+  [ <span class="hljs-string">'content-language'</span>            , <span class="hljs-string">''</span>            ],
+  [ <span class="hljs-string">'content-length'</span>              , <span class="hljs-string">''</span>            ],
+  [ <span class="hljs-string">'content-location'</span>            , <span class="hljs-string">''</span>            ],
+  [ <span class="hljs-string">'content-range'</span>               , <span class="hljs-string">''</span>            ],
+  [ <span class="hljs-string">'content-type'</span>                , <span class="hljs-string">''</span>            ],
+  [ <span class="hljs-string">'cookie'</span>                      , <span class="hljs-string">''</span>            ],
+  [ <span class="hljs-string">'date'</span>                        , <span class="hljs-string">''</span>            ],
+  [ <span class="hljs-string">'etag'</span>                        , <span class="hljs-string">''</span>            ],
+  [ <span class="hljs-string">'expect'</span>                      , <span class="hljs-string">''</span>            ],
+  [ <span class="hljs-string">'expires'</span>                     , <span class="hljs-string">''</span>            ],
+  [ <span class="hljs-string">'from'</span>                        , <span class="hljs-string">''</span>            ],
+  [ <span class="hljs-string">'host'</span>                        , <span class="hljs-string">''</span>            ],
+  [ <span class="hljs-string">'if-match'</span>                    , <span class="hljs-string">''</span>            ],
+  [ <span class="hljs-string">'if-modified-since'</span>           , <span class="hljs-string">''</span>            ],
+  [ <span class="hljs-string">'if-none-match'</span>               , <span class="hljs-string">''</span>            ],
+  [ <span class="hljs-string">'if-range'</span>                    , <span class="hljs-string">''</span>            ],
+  [ <span class="hljs-string">'if-unmodified-since'</span>         , <span class="hljs-string">''</span>            ],
+  [ <span class="hljs-string">'last-modified'</span>               , <span class="hljs-string">''</span>            ],
+  [ <span class="hljs-string">'link'</span>                        , <span class="hljs-string">''</span>            ],
+  [ <span class="hljs-string">'location'</span>                    , <span class="hljs-string">''</span>            ],
+  [ <span class="hljs-string">'max-forwards'</span>                , <span class="hljs-string">''</span>            ],
+  [ <span class="hljs-string">'proxy-authenticate'</span>          , <span class="hljs-string">''</span>            ],
+  [ <span class="hljs-string">'proxy-authorization'</span>         , <span class="hljs-string">''</span>            ],
+  [ <span class="hljs-string">'range'</span>                       , <span class="hljs-string">''</span>            ],
+  [ <span class="hljs-string">'referer'</span>                     , <span class="hljs-string">''</span>            ],
+  [ <span class="hljs-string">'refresh'</span>                     , <span class="hljs-string">''</span>            ],
+  [ <span class="hljs-string">'retry-after'</span>                 , <span class="hljs-string">''</span>            ],
+  [ <span class="hljs-string">'server'</span>                      , <span class="hljs-string">''</span>            ],
+  [ <span class="hljs-string">'set-cookie'</span>                  , <span class="hljs-string">''</span>            ],
+  [ <span class="hljs-string">'strict-transport-security'</span>   , <span class="hljs-string">''</span>            ],
+  [ <span class="hljs-string">'transfer-encoding'</span>           , <span class="hljs-string">''</span>            ],
+  [ <span class="hljs-string">'user-agent'</span>                  , <span class="hljs-string">''</span>            ],
+  [ <span class="hljs-string">'vary'</span>                        , <span class="hljs-string">''</span>            ],
+  [ <span class="hljs-string">'via'</span>                         , <span class="hljs-string">''</span>            ],
+  [ <span class="hljs-string">'www-authenticate'</span>            , <span class="hljs-string">''</span>            ]
+];</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-13">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-13">&#182;</a>
+              </div>
+              <h2 id="the-headersetdecompressor-class">The HeaderSetDecompressor class</h2>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-14">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-14">&#182;</a>
+              </div>
+              
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-15">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-15">&#182;</a>
+              </div>
+              <p>A <code>HeaderSetDecompressor</code> instance is a transform stream that can be used to <em>decompress a
+single header set</em>. Its input is a stream of binary data chunks and its output is a stream of
+<code>[name, value]</code> pairs.</p>
+<p>Currently, it is not a proper streaming decompressor implementation, since it buffer its input
+until the end os the stream, and then processes the whole header block at once.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>
+util.inherits(HeaderSetDecompressor, TransformStream);
+<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">HeaderSetDecompressor</span>(<span class="hljs-params">log, table</span>) </span>{
+  TransformStream.call(<span class="hljs-keyword">this</span>, { objectMode: <span class="hljs-literal">true</span> });
+
+  <span class="hljs-keyword">this</span>._log = log.child({ component: <span class="hljs-string">'compressor'</span> });
+  <span class="hljs-keyword">this</span>._table = table;
+  <span class="hljs-keyword">this</span>._chunks = [];
+}</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-16">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-16">&#182;</a>
+              </div>
+              <p><code>_transform</code> is the implementation of the <a href="https://nodejs.org/api/stream.html#stream_transform_transform_chunk_encoding_callback">corresponding virtual function</a> of the
+TransformStream class. It collects the data chunks for later processing.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>HeaderSetDecompressor.prototype._transform = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">_transform</span>(<span class="hljs-params">chunk, encoding, callback</span>) </span>{
+  <span class="hljs-keyword">this</span>._chunks.push(chunk);
+  callback();
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-17">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-17">&#182;</a>
+              </div>
+              <p><code>execute(rep)</code> executes the given <a href="https://tools.ietf.org/html/rfc7541#section-6">header representation</a>.</p>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-18">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-18">&#182;</a>
+              </div>
+              <p>The <em>JavaScript object representation</em> of a header representation:</p>
+<pre><code>{
+  name: <span class="hljs-built_in">String</span> || Integer,  <span class="hljs-comment">// string literal or index</span>
+  value: <span class="hljs-built_in">String</span> || Integer, <span class="hljs-comment">// string literal or index</span>
+  index: <span class="hljs-built_in">Boolean</span>            <span class="hljs-comment">// with or without indexing</span>
+}
+</code></pre><p><em>Important:</em> to ease the indexing of the header table, indexes start at 0 instead of 1.</p>
+<p>Examples:</p>
+<pre><code>Indexed:
+{ name: <span class="hljs-number">2</span>  , value: <span class="hljs-number">2</span>  , index: <span class="hljs-literal">false</span> }
+Literal:
+{ name: <span class="hljs-number">2</span>  , value: <span class="hljs-string">'X'</span>, index: <span class="hljs-literal">false</span> } <span class="hljs-comment">// without indexing</span>
+{ name: <span class="hljs-number">2</span>  , value: <span class="hljs-string">'Y'</span>, index: <span class="hljs-literal">true</span>  } <span class="hljs-comment">// with indexing</span>
+{ name: <span class="hljs-string">'A'</span>, value: <span class="hljs-string">'Z'</span>, index: <span class="hljs-literal">true</span>  } <span class="hljs-comment">// with indexing, literal name</span>
+</code></pre>
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>HeaderSetDecompressor.prototype._execute = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">_execute</span>(<span class="hljs-params">rep</span>) </span>{
+  <span class="hljs-keyword">this</span>._log.trace({ key: rep.name, value: rep.value, index: rep.index },
+                  <span class="hljs-string">'Executing header representation'</span>);
+
+  <span class="hljs-keyword">var</span> entry, pair;
+
+  <span class="hljs-keyword">if</span> (rep.contextUpdate) {
+    <span class="hljs-keyword">this</span>._table.setSizeLimit(rep.newMaxSize);
+  }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-19">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-19">&#182;</a>
+              </div>
+              <ul>
+<li>An <em>indexed representation</em> entails the following actions:<ul>
+<li>The header field corresponding to the referenced entry is emitted</li>
+</ul>
+</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (<span class="hljs-keyword">typeof</span> rep.value === <span class="hljs-string">'number'</span>) {
+    <span class="hljs-keyword">var</span> index = rep.value;
+    entry = <span class="hljs-keyword">this</span>._table[index];
+
+    pair = entry.slice();
+    <span class="hljs-keyword">this</span>.push(pair);
+  }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-20">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-20">&#182;</a>
+              </div>
+              <ul>
+<li>A <em>literal representation</em> that is <em>not added</em> to the header table entails the following
+action:<ul>
+<li>The header is emitted.</li>
+</ul>
+</li>
+<li>A <em>literal representation</em> that is <em>added</em> to the header table entails the following further
+actions:<ul>
+<li>The header is added to the header table.</li>
+<li>The header is emitted.</li>
+</ul>
+</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-keyword">else</span> {
+    <span class="hljs-keyword">if</span> (<span class="hljs-keyword">typeof</span> rep.name === <span class="hljs-string">'number'</span>) {
+      pair = [<span class="hljs-keyword">this</span>._table[rep.name][<span class="hljs-number">0</span>], rep.value];
+    } <span class="hljs-keyword">else</span> {
+      pair = [rep.name, rep.value];
+    }
+
+    <span class="hljs-keyword">if</span> (rep.index) {
+      entry = entryFromPair(pair);
+      <span class="hljs-keyword">this</span>._table.add(entry);
+    }
+
+    <span class="hljs-keyword">this</span>.push(pair);
+  }
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-21">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-21">&#182;</a>
+              </div>
+              <p><code>_flush</code> is the implementation of the <a href="https://nodejs.org/api/stream.html#stream_transform_flush_callback">corresponding virtual function</a> of the
+TransformStream class. The whole decompressing process is done in <code>_flush</code>. It gets called when
+the input stream is over.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>HeaderSetDecompressor.prototype._flush = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">_flush</span>(<span class="hljs-params">callback</span>) </span>{
+  <span class="hljs-keyword">var</span> buffer = concat(<span class="hljs-keyword">this</span>._chunks);</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-22">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-22">&#182;</a>
+              </div>
+              <ul>
+<li>processes the header representations</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  buffer.cursor = <span class="hljs-number">0</span>;
+  <span class="hljs-keyword">while</span> (buffer.cursor &lt; buffer.length) {
+    <span class="hljs-keyword">this</span>._execute(HeaderSetDecompressor.header(buffer));
+  }
+
+  callback();
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-23">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-23">&#182;</a>
+              </div>
+              <h2 id="the-headersetcompressor-class">The HeaderSetCompressor class</h2>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-24">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-24">&#182;</a>
+              </div>
+              
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-25">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-25">&#182;</a>
+              </div>
+              <p>A <code>HeaderSetCompressor</code> instance is a transform stream that can be used to <em>compress a single
+header set</em>. Its input is a stream of <code>[name, value]</code> pairs and its output is a stream of
+binary data chunks.</p>
+<p>It is a real streaming compressor, since it does not wait until the header set is complete.</p>
+<p>The compression algorithm is (intentionally) not specified by the spec. Therefore, the current
+compression algorithm can probably be improved in the future.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>
+util.inherits(HeaderSetCompressor, TransformStream);
+<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">HeaderSetCompressor</span>(<span class="hljs-params">log, table</span>) </span>{
+  TransformStream.call(<span class="hljs-keyword">this</span>, { objectMode: <span class="hljs-literal">true</span> });
+
+  <span class="hljs-keyword">this</span>._log = log.child({ component: <span class="hljs-string">'compressor'</span> });
+  <span class="hljs-keyword">this</span>._table = table;
+  <span class="hljs-keyword">this</span>.push = TransformStream.prototype.push.bind(<span class="hljs-keyword">this</span>);
+}
+
+HeaderSetCompressor.prototype.send = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">send</span>(<span class="hljs-params">rep</span>) </span>{
+  <span class="hljs-keyword">this</span>._log.trace({ key: rep.name, value: rep.value, index: rep.index },
+                  <span class="hljs-string">'Emitting header representation'</span>);
+
+  <span class="hljs-keyword">if</span> (!rep.chunks) {
+    rep.chunks = HeaderSetCompressor.header(rep);
+  }
+  rep.chunks.forEach(<span class="hljs-keyword">this</span>.push);
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-26">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-26">&#182;</a>
+              </div>
+              <p><code>_transform</code> is the implementation of the <a href="https://nodejs.org/api/stream.html#stream_transform_transform_chunk_encoding_callback">corresponding virtual function</a> of the
+TransformStream class. It processes the input headers one by one:</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>HeaderSetCompressor.prototype._transform = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">_transform</span>(<span class="hljs-params">pair, encoding, callback</span>) </span>{
+  <span class="hljs-keyword">var</span> name = pair[<span class="hljs-number">0</span>].toLowerCase();
+  <span class="hljs-keyword">var</span> value = pair[<span class="hljs-number">1</span>];
+  <span class="hljs-keyword">var</span> entry, rep;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-27">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-27">&#182;</a>
+              </div>
+              <ul>
+<li>tries to find full (name, value) or name match in the header table</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-keyword">var</span> nameMatch = -<span class="hljs-number">1</span>, fullMatch = -<span class="hljs-number">1</span>;
+  <span class="hljs-keyword">for</span> (<span class="hljs-keyword">var</span> droppedIndex = <span class="hljs-number">0</span>; droppedIndex &lt; <span class="hljs-keyword">this</span>._table.length; droppedIndex++) {
+    entry = <span class="hljs-keyword">this</span>._table[droppedIndex];
+    <span class="hljs-keyword">if</span> (entry[<span class="hljs-number">0</span>] === name) {
+      <span class="hljs-keyword">if</span> (entry[<span class="hljs-number">1</span>] === value) {
+        fullMatch = droppedIndex;
+        <span class="hljs-keyword">break</span>;
+      } <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (nameMatch === -<span class="hljs-number">1</span>) {
+        nameMatch = droppedIndex;
+      }
+    }
+  }
+
+  <span class="hljs-keyword">var</span> mustNeverIndex = ((name === <span class="hljs-string">'cookie'</span> &amp;&amp; value.length &lt; <span class="hljs-number">20</span>) ||
+                        (name === <span class="hljs-string">'set-cookie'</span> &amp;&amp; value.length &lt; <span class="hljs-number">20</span>) ||
+                        name === <span class="hljs-string">'authorization'</span>);
+
+  <span class="hljs-keyword">if</span> (fullMatch !== -<span class="hljs-number">1</span> &amp;&amp; !mustNeverIndex) {
+    <span class="hljs-keyword">this</span>.send({ name: fullMatch, value: fullMatch, index: <span class="hljs-literal">false</span> });
+  }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-28">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-28">&#182;</a>
+              </div>
+              <ul>
+<li>otherwise, it will be a literal representation (with a name index if there’s a name match)</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-keyword">else</span> {
+    entry = entryFromPair(pair);
+
+    <span class="hljs-keyword">var</span> indexing = (entry._size &lt; <span class="hljs-keyword">this</span>._table._limit / <span class="hljs-number">2</span>) &amp;&amp; !mustNeverIndex;
+
+    <span class="hljs-keyword">if</span> (indexing) {
+      <span class="hljs-keyword">this</span>._table.add(entry);
+    }
+
+    <span class="hljs-keyword">this</span>.send({ name: (nameMatch !== -<span class="hljs-number">1</span>) ? nameMatch : name, value: value, index: indexing, mustNeverIndex: mustNeverIndex, contextUpdate: <span class="hljs-literal">false</span> });
+  }
+
+  callback();
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-29">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-29">&#182;</a>
+              </div>
+              <p><code>_flush</code> is the implementation of the <a href="https://nodejs.org/api/stream.html#stream_transform_flush_callback">corresponding virtual function</a> of the
+TransformStream class. It gets called when there’s no more header to compress. The final step:</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>HeaderSetCompressor.prototype._flush = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">_flush</span>(<span class="hljs-params">callback</span>) </span>{
+  callback();
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-30">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-30">&#182;</a>
+              </div>
+              <h2 id="-detailed-format-https-tools-ietf-org-html-rfc7541-section-5-"><a href="https://tools.ietf.org/html/rfc7541#section-5">Detailed Format</a></h2>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-31">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-31">&#182;</a>
+              </div>
+              
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-32">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-32">&#182;</a>
+              </div>
+              <h3 id="integer-representation">Integer representation</h3>
+<p>The algorithm to represent an integer I is as follows:</p>
+<ol>
+<li>If I &lt; 2^N - 1, encode I on N bits</li>
+<li>Else, encode 2^N - 1 on N bits and do the following steps:<ol>
+<li>Set I to (I - (2^N - 1)) and Q to 1</li>
+<li>While Q &gt; 0<ol>
+<li>Compute Q and R, quotient and remainder of I divided by 2^7</li>
+<li>If Q is strictly greater than 0, write one 1 bit; otherwise, write one 0 bit</li>
+<li>Encode R on the next 7 bits</li>
+<li>I = Q</li>
+</ol>
+</li>
+</ol>
+</li>
+</ol>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>
+HeaderSetCompressor.integer = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">writeInteger</span>(<span class="hljs-params">I, N</span>) </span>{
+  <span class="hljs-keyword">var</span> limit = <span class="hljs-built_in">Math</span>.pow(<span class="hljs-number">2</span>,N) - <span class="hljs-number">1</span>;
+  <span class="hljs-keyword">if</span> (I &lt; limit) {
+    <span class="hljs-keyword">return</span> [<span class="hljs-keyword">new</span> Buffer([I])];
+  }
+
+  <span class="hljs-keyword">var</span> bytes = [];
+  <span class="hljs-keyword">if</span> (N !== <span class="hljs-number">0</span>) {
+    bytes.push(limit);
+  }
+  I -= limit;
+
+  <span class="hljs-keyword">var</span> Q = <span class="hljs-number">1</span>, R;
+  <span class="hljs-keyword">while</span> (Q &gt; <span class="hljs-number">0</span>) {
+    Q = <span class="hljs-built_in">Math</span>.floor(I / <span class="hljs-number">128</span>);
+    R = I % <span class="hljs-number">128</span>;
+
+    <span class="hljs-keyword">if</span> (Q &gt; <span class="hljs-number">0</span>) {
+      R += <span class="hljs-number">128</span>;
+    }
+    bytes.push(R);
+
+    I = Q;
+  }
+
+  <span class="hljs-keyword">return</span> [<span class="hljs-keyword">new</span> Buffer(bytes)];
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-33">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-33">&#182;</a>
+              </div>
+              <p>The inverse algorithm:</p>
+<ol>
+<li>Set I to the number coded on the lower N bits of the first byte</li>
+<li>If I is smaller than 2^N - 1 then return I</li>
+<li>Else the number is encoded on more than one byte, so do the following steps:<ol>
+<li>Set M to 0</li>
+<li>While returning with I<ol>
+<li>Let B be the next byte (the first byte if N is 0)</li>
+<li>Read out the lower 7 bits of B and multiply it with 2^M</li>
+<li>Increase I with this number</li>
+<li>Increase M by 7</li>
+<li>Return I if the most significant bit of B is 0</li>
+</ol>
+</li>
+</ol>
+</li>
+</ol>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>
+HeaderSetDecompressor.integer = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">readInteger</span>(<span class="hljs-params">buffer, N</span>) </span>{
+  <span class="hljs-keyword">var</span> limit = <span class="hljs-built_in">Math</span>.pow(<span class="hljs-number">2</span>,N) - <span class="hljs-number">1</span>;
+
+  <span class="hljs-keyword">var</span> I = buffer[buffer.cursor] &amp; limit;
+  <span class="hljs-keyword">if</span> (N !== <span class="hljs-number">0</span>) {
+    buffer.cursor += <span class="hljs-number">1</span>;
+  }
+
+  <span class="hljs-keyword">if</span> (I === limit) {
+    <span class="hljs-keyword">var</span> M = <span class="hljs-number">0</span>;
+    <span class="hljs-keyword">do</span> {
+      I += (buffer[buffer.cursor] &amp; <span class="hljs-number">127</span>) &lt;&lt; M;
+      M += <span class="hljs-number">7</span>;
+      buffer.cursor += <span class="hljs-number">1</span>;
+    } <span class="hljs-keyword">while</span> (buffer[buffer.cursor - <span class="hljs-number">1</span>] &amp; <span class="hljs-number">128</span>);
+  }
+
+  <span class="hljs-keyword">return</span> I;
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-34">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-34">&#182;</a>
+              </div>
+              <h3 id="huffman-encoding">Huffman Encoding</h3>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>
+<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">HuffmanTable</span>(<span class="hljs-params">table</span>) </span>{
+  <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">createTree</span>(<span class="hljs-params">codes, position</span>) </span>{
+    <span class="hljs-keyword">if</span> (codes.length === <span class="hljs-number">1</span>) {
+      <span class="hljs-keyword">return</span> [table.indexOf(codes[<span class="hljs-number">0</span>])];
+    }
+
+    <span class="hljs-keyword">else</span> {
+      position = position || <span class="hljs-number">0</span>;
+      <span class="hljs-keyword">var</span> zero = [];
+      <span class="hljs-keyword">var</span> one = [];
+      <span class="hljs-keyword">for</span> (<span class="hljs-keyword">var</span> i = <span class="hljs-number">0</span>; i &lt; codes.length; i++) {
+        <span class="hljs-keyword">var</span> string = codes[i];
+        <span class="hljs-keyword">if</span> (string[position] === <span class="hljs-string">'0'</span>) {
+          zero.push(string);
+        } <span class="hljs-keyword">else</span> {
+          one.push(string);
+        }
+      }
+      <span class="hljs-keyword">return</span> [createTree(zero, position + <span class="hljs-number">1</span>), createTree(one, position + <span class="hljs-number">1</span>)];
+    }
+  }
+
+  <span class="hljs-keyword">this</span>.tree = createTree(table);
+
+  <span class="hljs-keyword">this</span>.codes = table.map(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">bits</span>) </span>{
+    <span class="hljs-keyword">return</span> <span class="hljs-built_in">parseInt</span>(bits, <span class="hljs-number">2</span>);
+  });
+  <span class="hljs-keyword">this</span>.lengths = table.map(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">bits</span>) </span>{
+    <span class="hljs-keyword">return</span> bits.length;
+  });
+}
+
+HuffmanTable.prototype.encode = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">encode</span>(<span class="hljs-params">buffer</span>) </span>{
+  <span class="hljs-keyword">var</span> result = [];
+  <span class="hljs-keyword">var</span> space = <span class="hljs-number">8</span>;
+
+  <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">add</span>(<span class="hljs-params">data</span>) </span>{
+    <span class="hljs-keyword">if</span> (space === <span class="hljs-number">8</span>) {
+      result.push(data);
+    } <span class="hljs-keyword">else</span> {
+      result[result.length - <span class="hljs-number">1</span>] |= data;
+    }
+  }
+
+  <span class="hljs-keyword">for</span> (<span class="hljs-keyword">var</span> i = <span class="hljs-number">0</span>; i &lt; buffer.length; i++) {
+    <span class="hljs-keyword">var</span> byte = buffer[i];
+    <span class="hljs-keyword">var</span> code = <span class="hljs-keyword">this</span>.codes[byte];
+    <span class="hljs-keyword">var</span> length = <span class="hljs-keyword">this</span>.lengths[byte];
+
+    <span class="hljs-keyword">while</span> (length !== <span class="hljs-number">0</span>) {
+      <span class="hljs-keyword">if</span> (space &gt;= length) {
+        add(code &lt;&lt; (space - length));
+        code = <span class="hljs-number">0</span>;
+        space -= length;
+        length = <span class="hljs-number">0</span>;
+      } <span class="hljs-keyword">else</span> {
+        <span class="hljs-keyword">var</span> shift = length - space;
+        <span class="hljs-keyword">var</span> msb = code &gt;&gt; shift;
+        add(msb);
+        code -= msb &lt;&lt; shift;
+        length -= space;
+        space = <span class="hljs-number">0</span>;
+      }
+
+      <span class="hljs-keyword">if</span> (space === <span class="hljs-number">0</span>) {
+        space = <span class="hljs-number">8</span>;
+      }
+    }
+  }
+
+  <span class="hljs-keyword">if</span> (space !== <span class="hljs-number">8</span>) {
+    add(<span class="hljs-keyword">this</span>.codes[<span class="hljs-number">256</span>] &gt;&gt; (<span class="hljs-keyword">this</span>.lengths[<span class="hljs-number">256</span>] - space));
+  }
+
+  <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> Buffer(result);
+};
+
+HuffmanTable.prototype.decode = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">decode</span>(<span class="hljs-params">buffer</span>) </span>{
+  <span class="hljs-keyword">var</span> result = [];
+  <span class="hljs-keyword">var</span> subtree = <span class="hljs-keyword">this</span>.tree;
+
+  <span class="hljs-keyword">for</span> (<span class="hljs-keyword">var</span> i = <span class="hljs-number">0</span>; i &lt; buffer.length; i++) {
+    <span class="hljs-keyword">var</span> byte = buffer[i];
+
+    <span class="hljs-keyword">for</span> (<span class="hljs-keyword">var</span> j = <span class="hljs-number">0</span>; j &lt; <span class="hljs-number">8</span>; j++) {
+      <span class="hljs-keyword">var</span> bit = (byte &amp; <span class="hljs-number">128</span>) ? <span class="hljs-number">1</span> : <span class="hljs-number">0</span>;
+      byte = byte &lt;&lt; <span class="hljs-number">1</span>;
+
+      subtree = subtree[bit];
+      <span class="hljs-keyword">if</span> (subtree.length === <span class="hljs-number">1</span>) {
+        result.push(subtree[<span class="hljs-number">0</span>]);
+        subtree = <span class="hljs-keyword">this</span>.tree;
+      }
+    }
+  }
+
+  <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> Buffer(result);
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-35">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-35">&#182;</a>
+              </div>
+              <p>The initializer arrays for the Huffman tables are generated with feeding the tables from the
+spec to this sed command:</p>
+<pre><code>sed -e <span class="hljs-string">"s/^.* [|]//g"</span> -e <span class="hljs-string">"s/|//g"</span> -e <span class="hljs-string">"s/ .*//g"</span> -e <span class="hljs-string">"s/^/  '/g"</span> -e <span class="hljs-string">"s/$/',/g"</span>
+</code></pre>
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>
+HuffmanTable.huffmanTable = <span class="hljs-keyword">new</span> HuffmanTable([
+  <span class="hljs-string">'1111111111000'</span>,
+  <span class="hljs-string">'11111111111111111011000'</span>,
+  <span class="hljs-string">'1111111111111111111111100010'</span>,
+  <span class="hljs-string">'1111111111111111111111100011'</span>,
+  <span class="hljs-string">'1111111111111111111111100100'</span>,
+  <span class="hljs-string">'1111111111111111111111100101'</span>,
+  <span class="hljs-string">'1111111111111111111111100110'</span>,
+  <span class="hljs-string">'1111111111111111111111100111'</span>,
+  <span class="hljs-string">'1111111111111111111111101000'</span>,
+  <span class="hljs-string">'111111111111111111101010'</span>,
+  <span class="hljs-string">'111111111111111111111111111100'</span>,
+  <span class="hljs-string">'1111111111111111111111101001'</span>,
+  <span class="hljs-string">'1111111111111111111111101010'</span>,
+  <span class="hljs-string">'111111111111111111111111111101'</span>,
+  <span class="hljs-string">'1111111111111111111111101011'</span>,
+  <span class="hljs-string">'1111111111111111111111101100'</span>,
+  <span class="hljs-string">'1111111111111111111111101101'</span>,
+  <span class="hljs-string">'1111111111111111111111101110'</span>,
+  <span class="hljs-string">'1111111111111111111111101111'</span>,
+  <span class="hljs-string">'1111111111111111111111110000'</span>,
+  <span class="hljs-string">'1111111111111111111111110001'</span>,
+  <span class="hljs-string">'1111111111111111111111110010'</span>,
+  <span class="hljs-string">'111111111111111111111111111110'</span>,
+  <span class="hljs-string">'1111111111111111111111110011'</span>,
+  <span class="hljs-string">'1111111111111111111111110100'</span>,
+  <span class="hljs-string">'1111111111111111111111110101'</span>,
+  <span class="hljs-string">'1111111111111111111111110110'</span>,
+  <span class="hljs-string">'1111111111111111111111110111'</span>,
+  <span class="hljs-string">'1111111111111111111111111000'</span>,
+  <span class="hljs-string">'1111111111111111111111111001'</span>,
+  <span class="hljs-string">'1111111111111111111111111010'</span>,
+  <span class="hljs-string">'1111111111111111111111111011'</span>,
+  <span class="hljs-string">'010100'</span>,
+  <span class="hljs-string">'1111111000'</span>,
+  <span class="hljs-string">'1111111001'</span>,
+  <span class="hljs-string">'111111111010'</span>,
+  <span class="hljs-string">'1111111111001'</span>,
+  <span class="hljs-string">'010101'</span>,
+  <span class="hljs-string">'11111000'</span>,
+  <span class="hljs-string">'11111111010'</span>,
+  <span class="hljs-string">'1111111010'</span>,
+  <span class="hljs-string">'1111111011'</span>,
+  <span class="hljs-string">'11111001'</span>,
+  <span class="hljs-string">'11111111011'</span>,
+  <span class="hljs-string">'11111010'</span>,
+  <span class="hljs-string">'010110'</span>,
+  <span class="hljs-string">'010111'</span>,
+  <span class="hljs-string">'011000'</span>,
+  <span class="hljs-string">'00000'</span>,
+  <span class="hljs-string">'00001'</span>,
+  <span class="hljs-string">'00010'</span>,
+  <span class="hljs-string">'011001'</span>,
+  <span class="hljs-string">'011010'</span>,
+  <span class="hljs-string">'011011'</span>,
+  <span class="hljs-string">'011100'</span>,
+  <span class="hljs-string">'011101'</span>,
+  <span class="hljs-string">'011110'</span>,
+  <span class="hljs-string">'011111'</span>,
+  <span class="hljs-string">'1011100'</span>,
+  <span class="hljs-string">'11111011'</span>,
+  <span class="hljs-string">'111111111111100'</span>,
+  <span class="hljs-string">'100000'</span>,
+  <span class="hljs-string">'111111111011'</span>,
+  <span class="hljs-string">'1111111100'</span>,
+  <span class="hljs-string">'1111111111010'</span>,
+  <span class="hljs-string">'100001'</span>,
+  <span class="hljs-string">'1011101'</span>,
+  <span class="hljs-string">'1011110'</span>,
+  <span class="hljs-string">'1011111'</span>,
+  <span class="hljs-string">'1100000'</span>,
+  <span class="hljs-string">'1100001'</span>,
+  <span class="hljs-string">'1100010'</span>,
+  <span class="hljs-string">'1100011'</span>,
+  <span class="hljs-string">'1100100'</span>,
+  <span class="hljs-string">'1100101'</span>,
+  <span class="hljs-string">'1100110'</span>,
+  <span class="hljs-string">'1100111'</span>,
+  <span class="hljs-string">'1101000'</span>,
+  <span class="hljs-string">'1101001'</span>,
+  <span class="hljs-string">'1101010'</span>,
+  <span class="hljs-string">'1101011'</span>,
+  <span class="hljs-string">'1101100'</span>,
+  <span class="hljs-string">'1101101'</span>,
+  <span class="hljs-string">'1101110'</span>,
+  <span class="hljs-string">'1101111'</span>,
+  <span class="hljs-string">'1110000'</span>,
+  <span class="hljs-string">'1110001'</span>,
+  <span class="hljs-string">'1110010'</span>,
+  <span class="hljs-string">'11111100'</span>,
+  <span class="hljs-string">'1110011'</span>,
+  <span class="hljs-string">'11111101'</span>,
+  <span class="hljs-string">'1111111111011'</span>,
+  <span class="hljs-string">'1111111111111110000'</span>,
+  <span class="hljs-string">'1111111111100'</span>,
+  <span class="hljs-string">'11111111111100'</span>,
+  <span class="hljs-string">'100010'</span>,
+  <span class="hljs-string">'111111111111101'</span>,
+  <span class="hljs-string">'00011'</span>,
+  <span class="hljs-string">'100011'</span>,
+  <span class="hljs-string">'00100'</span>,
+  <span class="hljs-string">'100100'</span>,
+  <span class="hljs-string">'00101'</span>,
+  <span class="hljs-string">'100101'</span>,
+  <span class="hljs-string">'100110'</span>,
+  <span class="hljs-string">'100111'</span>,
+  <span class="hljs-string">'00110'</span>,
+  <span class="hljs-string">'1110100'</span>,
+  <span class="hljs-string">'1110101'</span>,
+  <span class="hljs-string">'101000'</span>,
+  <span class="hljs-string">'101001'</span>,
+  <span class="hljs-string">'101010'</span>,
+  <span class="hljs-string">'00111'</span>,
+  <span class="hljs-string">'101011'</span>,
+  <span class="hljs-string">'1110110'</span>,
+  <span class="hljs-string">'101100'</span>,
+  <span class="hljs-string">'01000'</span>,
+  <span class="hljs-string">'01001'</span>,
+  <span class="hljs-string">'101101'</span>,
+  <span class="hljs-string">'1110111'</span>,
+  <span class="hljs-string">'1111000'</span>,
+  <span class="hljs-string">'1111001'</span>,
+  <span class="hljs-string">'1111010'</span>,
+  <span class="hljs-string">'1111011'</span>,
+  <span class="hljs-string">'111111111111110'</span>,
+  <span class="hljs-string">'11111111100'</span>,
+  <span class="hljs-string">'11111111111101'</span>,
+  <span class="hljs-string">'1111111111101'</span>,
+  <span class="hljs-string">'1111111111111111111111111100'</span>,
+  <span class="hljs-string">'11111111111111100110'</span>,
+  <span class="hljs-string">'1111111111111111010010'</span>,
+  <span class="hljs-string">'11111111111111100111'</span>,
+  <span class="hljs-string">'11111111111111101000'</span>,
+  <span class="hljs-string">'1111111111111111010011'</span>,
+  <span class="hljs-string">'1111111111111111010100'</span>,
+  <span class="hljs-string">'1111111111111111010101'</span>,
+  <span class="hljs-string">'11111111111111111011001'</span>,
+  <span class="hljs-string">'1111111111111111010110'</span>,
+  <span class="hljs-string">'11111111111111111011010'</span>,
+  <span class="hljs-string">'11111111111111111011011'</span>,
+  <span class="hljs-string">'11111111111111111011100'</span>,
+  <span class="hljs-string">'11111111111111111011101'</span>,
+  <span class="hljs-string">'11111111111111111011110'</span>,
+  <span class="hljs-string">'111111111111111111101011'</span>,
+  <span class="hljs-string">'11111111111111111011111'</span>,
+  <span class="hljs-string">'111111111111111111101100'</span>,
+  <span class="hljs-string">'111111111111111111101101'</span>,
+  <span class="hljs-string">'1111111111111111010111'</span>,
+  <span class="hljs-string">'11111111111111111100000'</span>,
+  <span class="hljs-string">'111111111111111111101110'</span>,
+  <span class="hljs-string">'11111111111111111100001'</span>,
+  <span class="hljs-string">'11111111111111111100010'</span>,
+  <span class="hljs-string">'11111111111111111100011'</span>,
+  <span class="hljs-string">'11111111111111111100100'</span>,
+  <span class="hljs-string">'111111111111111011100'</span>,
+  <span class="hljs-string">'1111111111111111011000'</span>,
+  <span class="hljs-string">'11111111111111111100101'</span>,
+  <span class="hljs-string">'1111111111111111011001'</span>,
+  <span class="hljs-string">'11111111111111111100110'</span>,
+  <span class="hljs-string">'11111111111111111100111'</span>,
+  <span class="hljs-string">'111111111111111111101111'</span>,
+  <span class="hljs-string">'1111111111111111011010'</span>,
+  <span class="hljs-string">'111111111111111011101'</span>,
+  <span class="hljs-string">'11111111111111101001'</span>,
+  <span class="hljs-string">'1111111111111111011011'</span>,
+  <span class="hljs-string">'1111111111111111011100'</span>,
+  <span class="hljs-string">'11111111111111111101000'</span>,
+  <span class="hljs-string">'11111111111111111101001'</span>,
+  <span class="hljs-string">'111111111111111011110'</span>,
+  <span class="hljs-string">'11111111111111111101010'</span>,
+  <span class="hljs-string">'1111111111111111011101'</span>,
+  <span class="hljs-string">'1111111111111111011110'</span>,
+  <span class="hljs-string">'111111111111111111110000'</span>,
+  <span class="hljs-string">'111111111111111011111'</span>,
+  <span class="hljs-string">'1111111111111111011111'</span>,
+  <span class="hljs-string">'11111111111111111101011'</span>,
+  <span class="hljs-string">'11111111111111111101100'</span>,
+  <span class="hljs-string">'111111111111111100000'</span>,
+  <span class="hljs-string">'111111111111111100001'</span>,
+  <span class="hljs-string">'1111111111111111100000'</span>,
+  <span class="hljs-string">'111111111111111100010'</span>,
+  <span class="hljs-string">'11111111111111111101101'</span>,
+  <span class="hljs-string">'1111111111111111100001'</span>,
+  <span class="hljs-string">'11111111111111111101110'</span>,
+  <span class="hljs-string">'11111111111111111101111'</span>,
+  <span class="hljs-string">'11111111111111101010'</span>,
+  <span class="hljs-string">'1111111111111111100010'</span>,
+  <span class="hljs-string">'1111111111111111100011'</span>,
+  <span class="hljs-string">'1111111111111111100100'</span>,
+  <span class="hljs-string">'11111111111111111110000'</span>,
+  <span class="hljs-string">'1111111111111111100101'</span>,
+  <span class="hljs-string">'1111111111111111100110'</span>,
+  <span class="hljs-string">'11111111111111111110001'</span>,
+  <span class="hljs-string">'11111111111111111111100000'</span>,
+  <span class="hljs-string">'11111111111111111111100001'</span>,
+  <span class="hljs-string">'11111111111111101011'</span>,
+  <span class="hljs-string">'1111111111111110001'</span>,
+  <span class="hljs-string">'1111111111111111100111'</span>,
+  <span class="hljs-string">'11111111111111111110010'</span>,
+  <span class="hljs-string">'1111111111111111101000'</span>,
+  <span class="hljs-string">'1111111111111111111101100'</span>,
+  <span class="hljs-string">'11111111111111111111100010'</span>,
+  <span class="hljs-string">'11111111111111111111100011'</span>,
+  <span class="hljs-string">'11111111111111111111100100'</span>,
+  <span class="hljs-string">'111111111111111111111011110'</span>,
+  <span class="hljs-string">'111111111111111111111011111'</span>,
+  <span class="hljs-string">'11111111111111111111100101'</span>,
+  <span class="hljs-string">'111111111111111111110001'</span>,
+  <span class="hljs-string">'1111111111111111111101101'</span>,
+  <span class="hljs-string">'1111111111111110010'</span>,
+  <span class="hljs-string">'111111111111111100011'</span>,
+  <span class="hljs-string">'11111111111111111111100110'</span>,
+  <span class="hljs-string">'111111111111111111111100000'</span>,
+  <span class="hljs-string">'111111111111111111111100001'</span>,
+  <span class="hljs-string">'11111111111111111111100111'</span>,
+  <span class="hljs-string">'111111111111111111111100010'</span>,
+  <span class="hljs-string">'111111111111111111110010'</span>,
+  <span class="hljs-string">'111111111111111100100'</span>,
+  <span class="hljs-string">'111111111111111100101'</span>,
+  <span class="hljs-string">'11111111111111111111101000'</span>,
+  <span class="hljs-string">'11111111111111111111101001'</span>,
+  <span class="hljs-string">'1111111111111111111111111101'</span>,
+  <span class="hljs-string">'111111111111111111111100011'</span>,
+  <span class="hljs-string">'111111111111111111111100100'</span>,
+  <span class="hljs-string">'111111111111111111111100101'</span>,
+  <span class="hljs-string">'11111111111111101100'</span>,
+  <span class="hljs-string">'111111111111111111110011'</span>,
+  <span class="hljs-string">'11111111111111101101'</span>,
+  <span class="hljs-string">'111111111111111100110'</span>,
+  <span class="hljs-string">'1111111111111111101001'</span>,
+  <span class="hljs-string">'111111111111111100111'</span>,
+  <span class="hljs-string">'111111111111111101000'</span>,
+  <span class="hljs-string">'11111111111111111110011'</span>,
+  <span class="hljs-string">'1111111111111111101010'</span>,
+  <span class="hljs-string">'1111111111111111101011'</span>,
+  <span class="hljs-string">'1111111111111111111101110'</span>,
+  <span class="hljs-string">'1111111111111111111101111'</span>,
+  <span class="hljs-string">'111111111111111111110100'</span>,
+  <span class="hljs-string">'111111111111111111110101'</span>,
+  <span class="hljs-string">'11111111111111111111101010'</span>,
+  <span class="hljs-string">'11111111111111111110100'</span>,
+  <span class="hljs-string">'11111111111111111111101011'</span>,
+  <span class="hljs-string">'111111111111111111111100110'</span>,
+  <span class="hljs-string">'11111111111111111111101100'</span>,
+  <span class="hljs-string">'11111111111111111111101101'</span>,
+  <span class="hljs-string">'111111111111111111111100111'</span>,
+  <span class="hljs-string">'111111111111111111111101000'</span>,
+  <span class="hljs-string">'111111111111111111111101001'</span>,
+  <span class="hljs-string">'111111111111111111111101010'</span>,
+  <span class="hljs-string">'111111111111111111111101011'</span>,
+  <span class="hljs-string">'1111111111111111111111111110'</span>,
+  <span class="hljs-string">'111111111111111111111101100'</span>,
+  <span class="hljs-string">'111111111111111111111101101'</span>,
+  <span class="hljs-string">'111111111111111111111101110'</span>,
+  <span class="hljs-string">'111111111111111111111101111'</span>,
+  <span class="hljs-string">'111111111111111111111110000'</span>,
+  <span class="hljs-string">'11111111111111111111101110'</span>,
+  <span class="hljs-string">'111111111111111111111111111111'</span>
+]);</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-36">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-36">&#182;</a>
+              </div>
+              <h3 id="string-literal-representation">String literal representation</h3>
+<p>Literal <strong>strings</strong> can represent header names or header values. There’s two variant of the
+string encoding:</p>
+<p>String literal with Huffman encoding:</p>
+<pre><code>  <span class="hljs-number">0</span>   <span class="hljs-number">1</span>   <span class="hljs-number">2</span>   <span class="hljs-number">3</span>   <span class="hljs-number">4</span>   <span class="hljs-number">5</span>   <span class="hljs-number">6</span>   <span class="hljs-number">7</span>
++---+---+---+---+---+---+---+---+
+| <span class="hljs-number">1</span> |  Value Length Prefix (<span class="hljs-number">7</span>)  |
++---+---+---+---+---+---+---+---+
+|   Value Length (<span class="hljs-number">0</span>-N bytes)    |
++---+---+---+---+---+---+---+---+
+...
++---+---+---+---+---+---+---+---+
+| Huffman Encoded Data  |Padding|
++---+---+---+---+---+---+---+---+
+</code></pre><p>String literal without Huffman encoding:</p>
+<pre><code>  <span class="hljs-number">0</span>   <span class="hljs-number">1</span>   <span class="hljs-number">2</span>   <span class="hljs-number">3</span>   <span class="hljs-number">4</span>   <span class="hljs-number">5</span>   <span class="hljs-number">6</span>   <span class="hljs-number">7</span>
++---+---+---+---+---+---+---+---+
+| <span class="hljs-number">0</span> |  Value Length Prefix (<span class="hljs-number">7</span>)  |
++---+---+---+---+---+---+---+---+
+|   Value Length (<span class="hljs-number">0</span>-N bytes)    |
++---+---+---+---+---+---+---+---+
+...
++---+---+---+---+---+---+---+---+
+|  Field Bytes Without Encoding |
++---+---+---+---+---+---+---+---+
+</code></pre>
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>
+HeaderSetCompressor.string = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">writeString</span>(<span class="hljs-params">str</span>) </span>{
+  str = <span class="hljs-keyword">new</span> Buffer(str, <span class="hljs-string">'utf8'</span>);
+
+  <span class="hljs-keyword">var</span> huffman = HuffmanTable.huffmanTable.encode(str);
+  <span class="hljs-keyword">if</span> (huffman.length &lt; str.length) {
+    <span class="hljs-keyword">var</span> length = HeaderSetCompressor.integer(huffman.length, <span class="hljs-number">7</span>);
+    length[<span class="hljs-number">0</span>][<span class="hljs-number">0</span>] |= <span class="hljs-number">128</span>;
+    <span class="hljs-keyword">return</span> length.concat(huffman);
+  }
+
+  <span class="hljs-keyword">else</span> {
+    length = HeaderSetCompressor.integer(str.length, <span class="hljs-number">7</span>);
+    <span class="hljs-keyword">return</span> length.concat(str);
+  }
+};
+
+HeaderSetDecompressor.string = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">readString</span>(<span class="hljs-params">buffer</span>) </span>{
+  <span class="hljs-keyword">var</span> huffman = buffer[buffer.cursor] &amp; <span class="hljs-number">128</span>;
+  <span class="hljs-keyword">var</span> length = HeaderSetDecompressor.integer(buffer, <span class="hljs-number">7</span>);
+  <span class="hljs-keyword">var</span> encoded = buffer.slice(buffer.cursor, buffer.cursor + length);
+  buffer.cursor += length;
+  <span class="hljs-keyword">return</span> (huffman ? HuffmanTable.huffmanTable.decode(encoded) : encoded).toString(<span class="hljs-string">'utf8'</span>);
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-37">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-37">&#182;</a>
+              </div>
+              <h3 id="header-represenations">Header represenations</h3>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-38">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-38">&#182;</a>
+              </div>
+              <p>The JavaScript object representation is described near the
+<code>HeaderSetDecompressor.prototype._execute()</code> method definition.</p>
+<p><strong>All binary header representations</strong> start with a prefix signaling the representation type and
+an index represented using prefix coded integers:</p>
+<pre><code>  <span class="hljs-number">0</span>   <span class="hljs-number">1</span>   <span class="hljs-number">2</span>   <span class="hljs-number">3</span>   <span class="hljs-number">4</span>   <span class="hljs-number">5</span>   <span class="hljs-number">6</span>   <span class="hljs-number">7</span>
++---+---+---+---+---+---+---+---+
+| <span class="hljs-number">1</span> |        Index (<span class="hljs-number">7</span>+)         |  Indexed Representation
++---+---------------------------+
+
+  <span class="hljs-number">0</span>   <span class="hljs-number">1</span>   <span class="hljs-number">2</span>   <span class="hljs-number">3</span>   <span class="hljs-number">4</span>   <span class="hljs-number">5</span>   <span class="hljs-number">6</span>   <span class="hljs-number">7</span>
++---+---+---+---+---+---+---+---+
+| <span class="hljs-number">0</span> | <span class="hljs-number">1</span> |      Index (<span class="hljs-number">6</span>+)       |
++---+---+---+-------------------+  Literal w/ Indexing
+|       Value Length (<span class="hljs-number">8</span>+)       |
++-------------------------------+  w/ Indexed Name
+| Value <span class="hljs-built_in">String</span> (Length octets)  |
++-------------------------------+
+
+  <span class="hljs-number">0</span>   <span class="hljs-number">1</span>   <span class="hljs-number">2</span>   <span class="hljs-number">3</span>   <span class="hljs-number">4</span>   <span class="hljs-number">5</span>   <span class="hljs-number">6</span>   <span class="hljs-number">7</span>
++---+---+---+---+---+---+---+---+
+| <span class="hljs-number">0</span> | <span class="hljs-number">1</span> |           <span class="hljs-number">0</span>           |
++---+---+---+-------------------+
+|       Name Length (<span class="hljs-number">8</span>+)        |
++-------------------------------+  Literal w/ Indexing
+|  Name <span class="hljs-built_in">String</span> (Length octets)  |
++-------------------------------+  w/ New Name
+|       Value Length (<span class="hljs-number">8</span>+)       |
++-------------------------------+
+| Value <span class="hljs-built_in">String</span> (Length octets)  |
++-------------------------------+
+
+  <span class="hljs-number">0</span>   <span class="hljs-number">1</span>   <span class="hljs-number">2</span>   <span class="hljs-number">3</span>   <span class="hljs-number">4</span>   <span class="hljs-number">5</span>   <span class="hljs-number">6</span>   <span class="hljs-number">7</span>
++---+---+---+---+---+---+---+---+
+| <span class="hljs-number">0</span> | <span class="hljs-number">0</span> | <span class="hljs-number">0</span> | <span class="hljs-number">0</span> |  Index (<span class="hljs-number">4</span>+)   |
++---+---+---+-------------------+  Literal w/o Incremental Indexing
+|       Value Length (<span class="hljs-number">8</span>+)       |
++-------------------------------+  w/ Indexed Name
+| Value <span class="hljs-built_in">String</span> (Length octets)  |
++-------------------------------+
+
+  <span class="hljs-number">0</span>   <span class="hljs-number">1</span>   <span class="hljs-number">2</span>   <span class="hljs-number">3</span>   <span class="hljs-number">4</span>   <span class="hljs-number">5</span>   <span class="hljs-number">6</span>   <span class="hljs-number">7</span>
++---+---+---+---+---+---+---+---+
+| <span class="hljs-number">0</span> | <span class="hljs-number">0</span> | <span class="hljs-number">0</span> | <span class="hljs-number">0</span> |       <span class="hljs-number">0</span>       |
++---+---+---+-------------------+
+|       Name Length (<span class="hljs-number">8</span>+)        |
++-------------------------------+  Literal w/o Incremental Indexing
+|  Name <span class="hljs-built_in">String</span> (Length octets)  |
++-------------------------------+  w/ New Name
+|       Value Length (<span class="hljs-number">8</span>+)       |
++-------------------------------+
+| Value <span class="hljs-built_in">String</span> (Length octets)  |
++-------------------------------+
+
+  <span class="hljs-number">0</span>   <span class="hljs-number">1</span>   <span class="hljs-number">2</span>   <span class="hljs-number">3</span>   <span class="hljs-number">4</span>   <span class="hljs-number">5</span>   <span class="hljs-number">6</span>   <span class="hljs-number">7</span>
++---+---+---+---+---+---+---+---+
+| <span class="hljs-number">0</span> | <span class="hljs-number">0</span> | <span class="hljs-number">0</span> | <span class="hljs-number">1</span> |  Index (<span class="hljs-number">4</span>+)   |
++---+---+---+-------------------+  Literal never indexed
+|       Value Length (<span class="hljs-number">8</span>+)       |
++-------------------------------+  w/ Indexed Name
+| Value <span class="hljs-built_in">String</span> (Length octets)  |
++-------------------------------+
+
+  <span class="hljs-number">0</span>   <span class="hljs-number">1</span>   <span class="hljs-number">2</span>   <span class="hljs-number">3</span>   <span class="hljs-number">4</span>   <span class="hljs-number">5</span>   <span class="hljs-number">6</span>   <span class="hljs-number">7</span>
++---+---+---+---+---+---+---+---+
+| <span class="hljs-number">0</span> | <span class="hljs-number">0</span> | <span class="hljs-number">0</span> | <span class="hljs-number">1</span> |       <span class="hljs-number">0</span>       |
++---+---+---+-------------------+
+|       Name Length (<span class="hljs-number">8</span>+)        |
++-------------------------------+  Literal never indexed
+|  Name <span class="hljs-built_in">String</span> (Length octets)  |
++-------------------------------+  w/ New Name
+|       Value Length (<span class="hljs-number">8</span>+)       |
++-------------------------------+
+| Value <span class="hljs-built_in">String</span> (Length octets)  |
++-------------------------------+
+</code></pre><p>The <strong>Indexed Representation</strong> consists of the 1-bit prefix and the Index that is represented as
+a 7-bit prefix coded integer and nothing else.</p>
+<p>After the first bits, <strong>all literal representations</strong> specify the header name, either as a
+pointer to the Header Table (Index) or a string literal. When the string literal representation
+is used, the Index is set to 0 and the string literal starts at the second byte.</p>
+<p>For <strong>all literal representations</strong>, the specification of the header value comes next. It is
+always represented as a string.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>
+<span class="hljs-keyword">var</span> representations = {
+  indexed             : { prefix: <span class="hljs-number">7</span>, pattern: <span class="hljs-number">0x80</span> },
+  literalIncremental  : { prefix: <span class="hljs-number">6</span>, pattern: <span class="hljs-number">0x40</span> },
+  contextUpdate       : { prefix: <span class="hljs-number">0</span>, pattern: <span class="hljs-number">0x20</span> },
+  literalNeverIndexed : { prefix: <span class="hljs-number">4</span>, pattern: <span class="hljs-number">0x10</span> },
+  literal             : { prefix: <span class="hljs-number">4</span>, pattern: <span class="hljs-number">0x00</span> }
+};
+
+HeaderSetCompressor.header = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">writeHeader</span>(<span class="hljs-params">header</span>) </span>{
+  <span class="hljs-keyword">var</span> representation, buffers = [];
+
+  <span class="hljs-keyword">if</span> (header.contextUpdate) {
+    representation = representations.contextUpdate;
+  } <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (<span class="hljs-keyword">typeof</span> header.value === <span class="hljs-string">'number'</span>) {
+    representation = representations.indexed;
+  } <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (header.index) {
+    representation = representations.literalIncremental;
+  } <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (header.mustNeverIndex) {
+    representation = representations.literalNeverIndexed;
+  } <span class="hljs-keyword">else</span> {
+    representation = representations.literal;
+  }
+
+  <span class="hljs-keyword">if</span> (representation === representations.contextUpdate) {
+    buffers.push(HeaderSetCompressor.integer(header.newMaxSize, <span class="hljs-number">5</span>));
+  }
+
+  <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (representation === representations.indexed) {
+    buffers.push(HeaderSetCompressor.integer(header.value + <span class="hljs-number">1</span>, representation.prefix));
+  }
+
+  <span class="hljs-keyword">else</span> {
+    <span class="hljs-keyword">if</span> (<span class="hljs-keyword">typeof</span> header.name === <span class="hljs-string">'number'</span>) {
+      buffers.push(HeaderSetCompressor.integer(header.name + <span class="hljs-number">1</span>, representation.prefix));
+    } <span class="hljs-keyword">else</span> {
+      buffers.push(HeaderSetCompressor.integer(<span class="hljs-number">0</span>, representation.prefix));
+      buffers.push(HeaderSetCompressor.string(header.name));
+    }
+    buffers.push(HeaderSetCompressor.string(header.value));
+  }
+
+  buffers[<span class="hljs-number">0</span>][<span class="hljs-number">0</span>][<span class="hljs-number">0</span>] |= representation.pattern;
+
+  <span class="hljs-keyword">return</span> <span class="hljs-built_in">Array</span>.prototype.concat.apply([], buffers); <span class="hljs-comment">// array of arrays of buffers -&gt; array of buffers</span>
+};
+
+HeaderSetDecompressor.header = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">readHeader</span>(<span class="hljs-params">buffer</span>) </span>{
+  <span class="hljs-keyword">var</span> representation, header = {};
+
+  <span class="hljs-keyword">var</span> firstByte = buffer[buffer.cursor];
+  <span class="hljs-keyword">if</span> (firstByte &amp; <span class="hljs-number">0x80</span>) {
+    representation = representations.indexed;
+  } <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (firstByte &amp; <span class="hljs-number">0x40</span>) {
+    representation = representations.literalIncremental;
+  } <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (firstByte &amp; <span class="hljs-number">0x20</span>) {
+    representation = representations.contextUpdate;
+  } <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (firstByte &amp; <span class="hljs-number">0x10</span>) {
+    representation = representations.literalNeverIndexed;
+  } <span class="hljs-keyword">else</span> {
+    representation = representations.literal;
+  }
+
+  header.value = header.name = -<span class="hljs-number">1</span>;
+  header.index = <span class="hljs-literal">false</span>;
+  header.contextUpdate = <span class="hljs-literal">false</span>;
+  header.newMaxSize = <span class="hljs-number">0</span>;
+  header.mustNeverIndex = <span class="hljs-literal">false</span>;
+
+  <span class="hljs-keyword">if</span> (representation === representations.contextUpdate) {
+    header.contextUpdate = <span class="hljs-literal">true</span>;
+    header.newMaxSize = HeaderSetDecompressor.integer(buffer, <span class="hljs-number">5</span>);
+  }
+
+  <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (representation === representations.indexed) {
+    header.value = header.name = HeaderSetDecompressor.integer(buffer, representation.prefix) - <span class="hljs-number">1</span>;
+  }
+
+  <span class="hljs-keyword">else</span> {
+    header.name = HeaderSetDecompressor.integer(buffer, representation.prefix) - <span class="hljs-number">1</span>;
+    <span class="hljs-keyword">if</span> (header.name === -<span class="hljs-number">1</span>) {
+      header.name = HeaderSetDecompressor.string(buffer);
+    }
+    header.value = HeaderSetDecompressor.string(buffer);
+    header.index = (representation === representations.literalIncremental);
+    header.mustNeverIndex = (representation === representations.literalNeverIndexed);
+  }
+
+  <span class="hljs-keyword">return</span> header;
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-39">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-39">&#182;</a>
+              </div>
+              <h1 id="integration-with-http-2">Integration with HTTP/2</h1>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-40">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-40">&#182;</a>
+              </div>
+              
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-41">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-41">&#182;</a>
+              </div>
+              <p>This section describes the interaction between the compressor/decompressor and the rest of the
+HTTP/2 implementation. The <code>Compressor</code> and the <code>Decompressor</code> makes up a layer between the
+<a href="framer.html">framer</a> and the <a href="connection.html">connection handling component</a>. They let most
+frames pass through, except HEADERS and PUSH_PROMISE frames. They convert the frames between
+these two representations:</p>
+<pre><code>{                                   {
+ type: <span class="hljs-string">'HEADERS'</span>,                    type: <span class="hljs-string">'HEADERS'</span>,
+ flags: {},                          flags: {},
+ stream: <span class="hljs-number">1</span>,               <span class="xml"><span class="hljs-tag">&lt;<span class="hljs-title">===</span>&gt;</span>      stream: 1,
+ headers: {                          data: Buffer
+  N1: 'V1',                         }
+  N2: ['V1', 'V2', ...],
+  // ...
+ }
+}</span>
+</code></pre><p>There are possibly several binary frame that belong to a single non-binary frame.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>
+<span class="hljs-keyword">var</span> MAX_HTTP_PAYLOAD_SIZE = <span class="hljs-number">16384</span>;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-42">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-42">&#182;</a>
+              </div>
+              <h2 id="the-compressor-class">The Compressor class</h2>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-43">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-43">&#182;</a>
+              </div>
+              
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-44">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-44">&#182;</a>
+              </div>
+              <p>The Compressor transform stream is basically stateless.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>util.inherits(Compressor, TransformStream);
+<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">Compressor</span>(<span class="hljs-params">log, type</span>) </span>{
+  TransformStream.call(<span class="hljs-keyword">this</span>, { objectMode: <span class="hljs-literal">true</span> });
+
+  <span class="hljs-keyword">this</span>._log = log.child({ component: <span class="hljs-string">'compressor'</span> });
+
+  assert((type === <span class="hljs-string">'REQUEST'</span>) || (type === <span class="hljs-string">'RESPONSE'</span>));
+  <span class="hljs-keyword">this</span>._table = <span class="hljs-keyword">new</span> HeaderTable(<span class="hljs-keyword">this</span>._log);
+}</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-45">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-45">&#182;</a>
+              </div>
+              <p>Changing the header table size</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>Compressor.prototype.setTableSizeLimit = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">setTableSizeLimit</span>(<span class="hljs-params">size</span>) </span>{
+  <span class="hljs-keyword">this</span>._table.setSizeLimit(size);
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-46">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-46">&#182;</a>
+              </div>
+              <p><code>compress</code> takes a header set, and compresses it using a new <code>HeaderSetCompressor</code> stream
+instance. This means that from now on, the advantages of streaming header encoding are lost,
+but the API becomes simpler.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>Compressor.prototype.compress = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">compress</span>(<span class="hljs-params">headers</span>) </span>{
+  <span class="hljs-keyword">var</span> compressor = <span class="hljs-keyword">new</span> HeaderSetCompressor(<span class="hljs-keyword">this</span>._log, <span class="hljs-keyword">this</span>._table);
+  <span class="hljs-keyword">var</span> colonHeaders = [];
+  <span class="hljs-keyword">var</span> nonColonHeaders = [];</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-47">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-47">&#182;</a>
+              </div>
+              <p>To ensure we send colon headers first</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-keyword">for</span> (<span class="hljs-keyword">var</span> name <span class="hljs-keyword">in</span> headers) {
+    <span class="hljs-keyword">if</span> (name.trim()[<span class="hljs-number">0</span>] === <span class="hljs-string">':'</span>) {
+      colonHeaders.push(name);
+    } <span class="hljs-keyword">else</span> {
+      nonColonHeaders.push(name);
+    }
+  }
+
+  <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">compressHeader</span>(<span class="hljs-params">name</span>) </span>{
+    <span class="hljs-keyword">var</span> value = headers[name];
+    name = <span class="hljs-built_in">String</span>(name).toLowerCase();</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-48">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-48">&#182;</a>
+              </div>
+              <ul>
+<li>To allow for better compression efficiency, the Cookie header field MAY be split into
+separate header fields, each with one or more cookie-pairs.</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    <span class="hljs-keyword">if</span> (name == <span class="hljs-string">'cookie'</span>) {
+      <span class="hljs-keyword">if</span> (!(value <span class="hljs-keyword">instanceof</span> <span class="hljs-built_in">Array</span>)) {
+        value = [value];
+      }
+      value = <span class="hljs-built_in">Array</span>.prototype.concat.apply([], value.map(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">cookie</span>) </span>{
+        <span class="hljs-keyword">return</span> <span class="hljs-built_in">String</span>(cookie).split(<span class="hljs-string">';'</span>).map(trim);
+      }));
+    }
+
+    <span class="hljs-keyword">if</span> (value <span class="hljs-keyword">instanceof</span> <span class="hljs-built_in">Array</span>) {
+      <span class="hljs-keyword">for</span> (<span class="hljs-keyword">var</span> i = <span class="hljs-number">0</span>; i &lt; value.length; i++) {
+        compressor.write([name, <span class="hljs-built_in">String</span>(value[i])]);
+      }
+    } <span class="hljs-keyword">else</span> {
+      compressor.write([name, <span class="hljs-built_in">String</span>(value)]);
+    }
+  }
+
+  colonHeaders.forEach(compressHeader);
+  nonColonHeaders.forEach(compressHeader);
+
+  compressor.end();
+
+  <span class="hljs-keyword">var</span> chunk, chunks = [];
+  <span class="hljs-keyword">while</span> (chunk = compressor.read()) {
+    chunks.push(chunk);
+  }
+  <span class="hljs-keyword">return</span> concat(chunks);
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-49">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-49">&#182;</a>
+              </div>
+              <p>When a <code>frame</code> arrives</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>Compressor.prototype._transform = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">_transform</span>(<span class="hljs-params">frame, encoding, done</span>) </span>{</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-50">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-50">&#182;</a>
+              </div>
+              <ul>
+<li>and it is a HEADERS or PUSH_PROMISE frame<ul>
+<li>it generates a header block using the compress method</li>
+<li>cuts the header block into <code>chunks</code> that are not larger than <code>MAX_HTTP_PAYLOAD_SIZE</code></li>
+<li>for each chunk, it pushes out a chunk frame that is identical to the original, except
+the <code>data</code> property which holds the given chunk, the type of the frame which is always
+CONTINUATION except for the first frame, and the END_HEADERS/END_PUSH_STREAM flag that
+marks the last frame and the END_STREAM flag which is always false before the end</li>
+</ul>
+</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-keyword">if</span> (frame.type === <span class="hljs-string">'HEADERS'</span> || frame.type === <span class="hljs-string">'PUSH_PROMISE'</span>) {
+    <span class="hljs-keyword">var</span> buffer = <span class="hljs-keyword">this</span>.compress(frame.headers);</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-51">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-51">&#182;</a>
+              </div>
+              <p>This will result in CONTINUATIONs from a PUSH_PROMISE being 4 bytes shorter than they could
+be, but that’s not the end of the world, and it prevents us from going over MAX_HTTP_PAYLOAD_SIZE
+on the initial PUSH_PROMISE frame.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    <span class="hljs-keyword">var</span> adjustment = frame.type === <span class="hljs-string">'PUSH_PROMISE'</span> ? <span class="hljs-number">4</span> : <span class="hljs-number">0</span>;
+    <span class="hljs-keyword">var</span> chunks = cut(buffer, MAX_HTTP_PAYLOAD_SIZE - adjustment);
+
+    <span class="hljs-keyword">for</span> (<span class="hljs-keyword">var</span> i = <span class="hljs-number">0</span>; i &lt; chunks.length; i++) {
+      <span class="hljs-keyword">var</span> chunkFrame;
+      <span class="hljs-keyword">var</span> first = (i === <span class="hljs-number">0</span>);
+      <span class="hljs-keyword">var</span> last = (i === chunks.length - <span class="hljs-number">1</span>);
+
+      <span class="hljs-keyword">if</span> (first) {
+        chunkFrame = util._extend({}, frame);
+        chunkFrame.flags = util._extend({}, frame.flags);
+        chunkFrame.flags[<span class="hljs-string">'END_'</span> + frame.type] = last;
+      } <span class="hljs-keyword">else</span> {
+        chunkFrame = {
+          type: <span class="hljs-string">'CONTINUATION'</span>,
+          flags: { END_HEADERS: last },
+          stream: frame.stream
+        };
+      }
+      chunkFrame.data = chunks[i];
+
+      <span class="hljs-keyword">this</span>.push(chunkFrame);
+    }
+  }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-52">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-52">&#182;</a>
+              </div>
+              <ul>
+<li>otherwise, the frame is forwarded without taking any action</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-keyword">else</span> {
+    <span class="hljs-keyword">this</span>.push(frame);
+  }
+
+  done();
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-53">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-53">&#182;</a>
+              </div>
+              <h2 id="the-decompressor-class">The Decompressor class</h2>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-54">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-54">&#182;</a>
+              </div>
+              
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-55">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-55">&#182;</a>
+              </div>
+              <p>The Decompressor is a stateful transform stream, since it has to collect multiple frames first,
+and the decoding comes after unifying the payload of those frames.</p>
+<p>If there’s a frame in progress, <code>this._inProgress</code> is <code>true</code>. The frames are collected in
+<code>this._frames</code>, and the type of the frame and the stream identifier is stored in <code>this._type</code>
+and <code>this._stream</code> respectively.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>util.inherits(Decompressor, TransformStream);
+<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">Decompressor</span>(<span class="hljs-params">log, type</span>) </span>{
+  TransformStream.call(<span class="hljs-keyword">this</span>, { objectMode: <span class="hljs-literal">true</span> });
+
+  <span class="hljs-keyword">this</span>._log = log.child({ component: <span class="hljs-string">'compressor'</span> });
+
+  assert((type === <span class="hljs-string">'REQUEST'</span>) || (type === <span class="hljs-string">'RESPONSE'</span>));
+  <span class="hljs-keyword">this</span>._table = <span class="hljs-keyword">new</span> HeaderTable(<span class="hljs-keyword">this</span>._log);
+
+  <span class="hljs-keyword">this</span>._inProgress = <span class="hljs-literal">false</span>;
+  <span class="hljs-keyword">this</span>._base = <span class="hljs-literal">undefined</span>;
+}</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-56">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-56">&#182;</a>
+              </div>
+              <p>Changing the header table size</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>Decompressor.prototype.setTableSizeLimit = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">setTableSizeLimit</span>(<span class="hljs-params">size</span>) </span>{
+  <span class="hljs-keyword">this</span>._table.setSizeLimit(size);
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-57">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-57">&#182;</a>
+              </div>
+              <p><code>decompress</code> takes a full header block, and decompresses it using a new <code>HeaderSetDecompressor</code>
+stream instance. This means that from now on, the advantages of streaming header decoding are
+lost, but the API becomes simpler.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>Decompressor.prototype.decompress = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">decompress</span>(<span class="hljs-params">block</span>) </span>{
+  <span class="hljs-keyword">var</span> decompressor = <span class="hljs-keyword">new</span> HeaderSetDecompressor(<span class="hljs-keyword">this</span>._log, <span class="hljs-keyword">this</span>._table);
+  decompressor.end(block);
+
+  <span class="hljs-keyword">var</span> seenNonColonHeader = <span class="hljs-literal">false</span>;
+  <span class="hljs-keyword">var</span> headers = {};
+  <span class="hljs-keyword">var</span> pair;
+  <span class="hljs-keyword">while</span> (pair = decompressor.read()) {
+    <span class="hljs-keyword">var</span> name = pair[<span class="hljs-number">0</span>];
+    <span class="hljs-keyword">var</span> value = pair[<span class="hljs-number">1</span>];
+    <span class="hljs-keyword">var</span> isColonHeader = (name.trim()[<span class="hljs-number">0</span>] === <span class="hljs-string">':'</span>);
+    <span class="hljs-keyword">if</span> (seenNonColonHeader &amp;&amp; isColonHeader) {
+        <span class="hljs-keyword">this</span>.emit(<span class="hljs-string">'error'</span>, <span class="hljs-string">'PROTOCOL_ERROR'</span>);
+        <span class="hljs-keyword">return</span> headers;
+    }
+    seenNonColonHeader = !isColonHeader;
+    <span class="hljs-keyword">if</span> (name <span class="hljs-keyword">in</span> headers) {
+      <span class="hljs-keyword">if</span> (headers[name] <span class="hljs-keyword">instanceof</span> <span class="hljs-built_in">Array</span>) {
+        headers[name].push(value);
+      } <span class="hljs-keyword">else</span> {
+        headers[name] = [headers[name], value];
+      }
+    } <span class="hljs-keyword">else</span> {
+      headers[name] = value;
+    }
+  }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-58">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-58">&#182;</a>
+              </div>
+              <ul>
+<li>If there are multiple Cookie header fields after decompression, these MUST be concatenated
+into a single octet string using the two octet delimiter of 0x3B, 0x20 (the ASCII
+string “; “).</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-keyword">if</span> ((<span class="hljs-string">'cookie'</span> <span class="hljs-keyword">in</span> headers) &amp;&amp; (headers[<span class="hljs-string">'cookie'</span>] <span class="hljs-keyword">instanceof</span> <span class="hljs-built_in">Array</span>)) {
+    headers[<span class="hljs-string">'cookie'</span>] = headers[<span class="hljs-string">'cookie'</span>].join(<span class="hljs-string">'; '</span>);
+  }
+
+  <span class="hljs-keyword">return</span> headers;
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-59">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-59">&#182;</a>
+              </div>
+              <p>When a <code>frame</code> arrives</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>Decompressor.prototype._transform = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">_transform</span>(<span class="hljs-params">frame, encoding, done</span>) </span>{</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-60">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-60">&#182;</a>
+              </div>
+              <ul>
+<li>and the collection process is already <code>_inProgress</code>, the frame is simply stored, except if
+it’s an illegal frame</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-keyword">if</span> (<span class="hljs-keyword">this</span>._inProgress) {
+    <span class="hljs-keyword">if</span> ((frame.type !== <span class="hljs-string">'CONTINUATION'</span>) || (frame.stream !== <span class="hljs-keyword">this</span>._base.stream)) {
+      <span class="hljs-keyword">this</span>._log.error(<span class="hljs-string">'A series of HEADER frames were not continuous'</span>);
+      <span class="hljs-keyword">this</span>.emit(<span class="hljs-string">'error'</span>, <span class="hljs-string">'PROTOCOL_ERROR'</span>);
+      <span class="hljs-keyword">return</span>;
+    }
+    <span class="hljs-keyword">this</span>._frames.push(frame);
+  }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-61">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-61">&#182;</a>
+              </div>
+              <ul>
+<li>and the collection process is not <code>_inProgress</code>, but the new frame’s type is HEADERS or
+PUSH_PROMISE, a new collection process begins</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> ((frame.type === <span class="hljs-string">'HEADERS'</span>) || (frame.type === <span class="hljs-string">'PUSH_PROMISE'</span>)) {
+    <span class="hljs-keyword">this</span>._inProgress = <span class="hljs-literal">true</span>;
+    <span class="hljs-keyword">this</span>._base = util._extend({}, frame);
+    <span class="hljs-keyword">this</span>._frames = [frame];
+  }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-62">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-62">&#182;</a>
+              </div>
+              <ul>
+<li>otherwise, the frame is forwarded without taking any action</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-keyword">else</span> {
+    <span class="hljs-keyword">this</span>.push(frame);
+  }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-63">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-63">&#182;</a>
+              </div>
+              <ul>
+<li>When the frame signals that it’s the last in the series, the header block chunks are
+concatenated, the headers are decompressed, and a new frame gets pushed out with the
+decompressed headers.</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-keyword">if</span> (<span class="hljs-keyword">this</span>._inProgress &amp;&amp; (frame.flags.END_HEADERS || frame.flags.END_PUSH_PROMISE)) {
+    <span class="hljs-keyword">var</span> buffer = concat(<span class="hljs-keyword">this</span>._frames.map(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">frame</span>) </span>{
+      <span class="hljs-keyword">return</span> frame.data;
+    }));
+    <span class="hljs-keyword">try</span> {
+      <span class="hljs-keyword">var</span> headers = <span class="hljs-keyword">this</span>.decompress(buffer);
+    } <span class="hljs-keyword">catch</span>(error) {
+      <span class="hljs-keyword">this</span>._log.error({ err: error }, <span class="hljs-string">'Header decompression error'</span>);
+      <span class="hljs-keyword">this</span>.emit(<span class="hljs-string">'error'</span>, <span class="hljs-string">'COMPRESSION_ERROR'</span>);
+      <span class="hljs-keyword">return</span>;
+    }
+    <span class="hljs-keyword">this</span>.push(util._extend(<span class="hljs-keyword">this</span>._base, { headers: headers }));
+    <span class="hljs-keyword">this</span>._inProgress = <span class="hljs-literal">false</span>;
+  }
+
+  done();
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-64">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-64">&#182;</a>
+              </div>
+              <h1 id="helper-functions">Helper functions</h1>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-65">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-65">&#182;</a>
+              </div>
+              
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-66">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-66">&#182;</a>
+              </div>
+              <p>Concatenate an array of buffers into a new buffer</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">concat</span>(<span class="hljs-params">buffers</span>) </span>{
+  <span class="hljs-keyword">var</span> size = <span class="hljs-number">0</span>;
+  <span class="hljs-keyword">for</span> (<span class="hljs-keyword">var</span> i = <span class="hljs-number">0</span>; i &lt; buffers.length; i++) {
+    size += buffers[i].length;
+  }
+
+  <span class="hljs-keyword">var</span> concatenated = <span class="hljs-keyword">new</span> Buffer(size);
+  <span class="hljs-keyword">for</span> (<span class="hljs-keyword">var</span> cursor = <span class="hljs-number">0</span>, j = <span class="hljs-number">0</span>; j &lt; buffers.length; cursor += buffers[j].length, j++) {
+    buffers[j].copy(concatenated, cursor);
+  }
+
+  <span class="hljs-keyword">return</span> concatenated;
+}</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-67">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-67">&#182;</a>
+              </div>
+              <p>Cut <code>buffer</code> into chunks not larger than <code>size</code></p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">cut</span>(<span class="hljs-params">buffer, size</span>) </span>{
+  <span class="hljs-keyword">var</span> chunks = [];
+  <span class="hljs-keyword">var</span> cursor = <span class="hljs-number">0</span>;
+  <span class="hljs-keyword">do</span> {
+    <span class="hljs-keyword">var</span> chunkSize = <span class="hljs-built_in">Math</span>.min(size, buffer.length - cursor);
+    chunks.push(buffer.slice(cursor, cursor + chunkSize));
+    cursor += chunkSize;
+  } <span class="hljs-keyword">while</span>(cursor &lt; buffer.length);
+  <span class="hljs-keyword">return</span> chunks;
+}
+
+<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">trim</span>(<span class="hljs-params">string</span>) </span>{
+  <span class="hljs-keyword">return</span> string.trim();
+}</pre></div></div>
+            
+        </li>
+        
+    </ul>
+  </div>
+</body>
+</html>
