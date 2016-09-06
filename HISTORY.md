@@ -1,6 +1,9 @@
 Version history
 ===============
 
+### 3.3.5 (2016-09-06) ###
+* Fix issues with large DATA frames (https://github.com/molnarg/node-http2/issues/207)
+
 ### 3.3.4 (2016-04-22) ###
 * More PR bugfixes (https://github.com/molnarg/node-http2/issues?q=milestone%3Av3.3.4)
 
