@@ -30,6 +30,17 @@ function onRequest(request, response) {
     fileStream.on('finish',response.end);
   }
 
+  // Example for testing large (boundary-sized) frames.
+  else if (request.url === "/largeframe") {
+    response.writeHead(200);
+    var body = 'a';
+    for (var i = 0; i < 14; i++) {
+      body += body;
+    }
+    body = body + 'a';
+    response.end(body);
+  }
+
   // Otherwise responding with 404.
   else {
     response.writeHead(404);
