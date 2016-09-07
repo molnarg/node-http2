@@ -2,4 +2,6 @@ node_modules
 .idea
 coverage
 doc
-.vscode
+.vscode/.browse*
+npm-debug.log
+typings
