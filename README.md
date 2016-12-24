@@ -89,7 +89,7 @@ development dependencies.
 
 Used libraries:
 
-* [mocha](http://visionmedia.github.io/mocha/) for tests
+* [mocha](http://mochajs.org/) for tests
 * [chai](http://chaijs.com/) for assertions
 * [istanbul](https://github.com/gotwarlost/istanbul) for code coverage analysis
 * [docco](http://jashkenas.github.io/docco/) for developer documentation
