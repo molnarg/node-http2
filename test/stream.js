@@ -194,7 +194,7 @@ describe('stream.js', function() {
         stream.upstream.write({ type: 'HEADERS', headers:{}, flags: { END_STREAM: true }, count_change: util.noop });
         example_frames.slice(2).forEach(function(invalid_frame) {
           invalid_frame.count_change = util.noop;
-          expect(stream._transition.bind(stream, false, invalid_frame)).to.throw('Uncaught, unspecified "error" event.');
+          expect(stream._transition.bind(stream, false, invalid_frame)).to.throw(util.uncaughtErrorEventMessage);
         });
 
         // CLOSED state as a result of outgoing END_STREAM
@@ -204,7 +204,7 @@ describe('stream.js', function() {
         stream.end();
         example_frames.slice(3).forEach(function(invalid_frame) {
           invalid_frame.count_change = util.noop;
-          expect(stream._transition.bind(stream, false, invalid_frame)).to.throw('Uncaught, unspecified "error" event.');
+          expect(stream._transition.bind(stream, false, invalid_frame)).to.throw(util.uncaughtErrorEventMessage);
         });
       });
       it('should throw exception for invalid outgoing frames', function() {

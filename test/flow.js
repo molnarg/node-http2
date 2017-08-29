@@ -71,7 +71,7 @@ describe('flow.js', function() {
         flow._increaseWindow(Infinity);
         var increase = util.random(1,100);
 
-        expect(flow._increaseWindow.bind(flow, increase)).to.throw('Uncaught, unspecified "error" event.');
+        expect(flow._increaseWindow.bind(flow, increase)).to.throw(util.uncaughtErrorEventMessage);
       });
       it('should emit error when `_window` grows over the window limit', function() {
         var WINDOW_SIZE_LIMIT = Math.pow(2, 31) - 1;
@@ -79,7 +79,7 @@ describe('flow.js', function() {
         flow._window = 0;
 
         flow._increaseWindow(WINDOW_SIZE_LIMIT);
-        expect(flow._increaseWindow.bind(flow, 1)).to.throw('Uncaught, unspecified "error" event.');
+        expect(flow._increaseWindow.bind(flow, 1)).to.throw(util.uncaughtErrorEventMessage);
 
       });
     });
