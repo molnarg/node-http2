@@ -10,7 +10,7 @@ if (process.env.HTTP2_LOG) {
   if (process.stderr.isTTY) {
     var bin = path.resolve(path.dirname(require.resolve('bunyan')), '..', 'bin', 'bunyan');
     if(bin && fs.existsSync(bin)) {
-      logOutput = spawn(bin, ['-o', 'short'], {
+      logOutput = spawn(process.execPath, [bin, '-o', 'short'], {
         stdio: [null, process.stderr, process.stderr]
       }).stdin;
     }

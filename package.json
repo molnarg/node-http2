@@ -14,7 +14,7 @@
     "bunyan": "*"
   },
   "scripts": {
-    "test": "istanbul test _mocha -- --reporter spec --slow 500 --timeout 15000",
+    "test": "istanbul test node_modules/mocha/bin/_mocha -- --reporter spec --slow 500 --timeout 15000",
     "doc": "docco lib/* --output doc --layout parallel --template root.jst --css doc/docco.css && docco lib/protocol/* --output doc/protocol --layout parallel --template protocol.jst --css doc/docco.css"
   },
   "repository": {
