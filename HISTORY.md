@@ -1,6 +1,9 @@
 Version history
 ===============
 
+### 3.3.7 (2017-09-21) ###
+* Mark as incompatible with node >= 9.0.0 (to encourage using the built-in http2 module available by default in node >= 9.0.0).
+
 ### 3.3.6 (2016-09-16) ###
 * We were not appropriately sending HPACK context updates when receiving SETTINGS_HEADER_TABLE_SIZE. This release fixes that bug.
 
