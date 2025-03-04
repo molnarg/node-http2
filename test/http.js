@@ -30,13 +30,13 @@ describe('http.js', function() {
   });
   describe('Server', function() {
     describe('new Server(options)', function() {
-      it('should throw if called without \'plain\' or TLS options', function() {
+      it('should not throw if called without \'plain\' or TLS options', function() {
         expect(function() {
-          new http2.Server();
-        }).to.throw(Error);
+          new http2.Server().close();
+        }).not.to.throw(Error);
         expect(function() {
-          http2.createServer(util.noop);
-        }).to.throw(Error);
+          http2.createServer(util.noop).close();
+        }).not.to.throw(Error);
       });
     });
     describe('method `listen()`', function () {
