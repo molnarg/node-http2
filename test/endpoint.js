@@ -26,6 +26,17 @@ describe('endpoint.js', function() {
       });
     });
   });
+  describe('connection closing', function() {
+    describe('closing the endpoint connection', function() {
+      it('should emit an event', function(done) {
+        var c = new Endpoint(util.log.child({ role: 'client' }), 'CLIENT', settings);
+        c.on('closed', function () {
+          done();
+        });
+        c.close();
+      });
+    });
+  });
   describe('bunyan serializer', function() {
     describe('`e`', function() {
       var format = endpoint.serializers.e;

@@ -232,6 +232,12 @@ describe('connection.js', function() {
 
         c.close();
       });
+      it('should emit an event', function(done) {
+        c.on('closed', function () {
+          done();
+        });
+        c.close();
+      });
     });
   });
 });
